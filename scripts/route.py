@@ -145,6 +145,11 @@ def mark_error(kind: ErrorKind | str, detail: str = "") -> None:
     return None  # TODO
 
 
+def note(text: str) -> None:
+    """Leave a short note on the request root (what was asked, what was answered)."""
+    return None  # TODO
+
+
 def add_usage(tokens_in: int, tokens_out: int, cost_usd: float) -> None:
     """Attribute tokens and cost to the innermost open span AND roll them up to the root."""
     return None  # TODO

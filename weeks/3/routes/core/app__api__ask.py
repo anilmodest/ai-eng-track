@@ -24,7 +24,7 @@ from app.llm.structured import SchemaError, complete_structured
 from app.retrieval.embed import Embedder, get_embedder
 from app.retrieval.store import Hit, search
 from app.settings import Settings, get_settings
-from app.trace import mark_error
+from app.trace import mark_error, note
 
 router = APIRouter()
 
@@ -164,6 +164,7 @@ async def ask(
     # Gate 2: the model read the passages and says they do not answer the question.
     valid = list(result.citations)
     if not result.answer.strip() or not valid:
+        note(f"Q: {body.question} | A: (declined: the passages do not contain the answer)")
         return AskOut(
             question=body.question,
             abstained=True,
@@ -184,6 +185,7 @@ async def ask(
         )
         for n in valid
     ]
+    note(f"Q: {body.question} | A: {result.answer.strip()}")
     return AskOut(
         question=body.question,
         abstained=False,

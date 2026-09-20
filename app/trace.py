@@ -103,6 +103,16 @@ def mark_error(kind: ErrorKind | str, detail: str = "") -> None:
             s.detail = detail
 
 
+def note(text: str) -> None:
+    """Leave a short human-readable note on the request root (what was asked, what was answered).
+
+    Week 6 samples these to score live traffic after release. Never store secrets here.
+    """
+    stack = _stack.get()
+    if stack and not stack[0].detail:
+        stack[0].detail = text[:500]
+
+
 def add_usage(tokens_in: int, tokens_out: int, cost_usd: float) -> None:
     """Attribute tokens and cost to the innermost open span AND roll them up to the root."""
     stack = _stack.get()

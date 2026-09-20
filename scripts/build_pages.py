@@ -86,7 +86,7 @@ WEEK_RUN: dict[int, list[str]] = {
     5: ["uv run python explore/w5_01_read_a_trace.py", "uv run python scripts/attack.py"],
     6: ["uv run python scripts/smoke.py http://127.0.0.1:8000"],
 }
-WEEK_BUILD: dict[int, list[str]] = {
+WEEK_BUILD: dict[int, list[str]] = {  # app/trace.py is added to Week 5 on core and pro (below)
     0: [],
     1: ["app/api/extract.py"],
     2: ["app/retrieval/metrics.py", "app/retrieval/chunkers.py", "app/retrieval/context.py"],
@@ -95,6 +95,9 @@ WEEK_BUILD: dict[int, list[str]] = {
     5: ["app/guard.py"],
     6: ["reflections/writeup.md"],
 }
+if ROUTE != "start":
+    WEEK_BUILD[5] = ["app/trace.py", *WEEK_BUILD[5]]
+
 WEEK_MEASURE: dict[int, str] = {
     1: "make live-check",
     2: "uv run python scripts/retrieval_eval.py && uv run python scripts/degrade_repair.py",

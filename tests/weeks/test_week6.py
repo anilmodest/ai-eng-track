@@ -1,6 +1,7 @@
 """Week 6 gate: a deployed, non-deterministic system must say what it is, and be checkable after
 every deploy and every rollback, by a script, in under a minute."""
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -59,6 +60,35 @@ async def test_smoke_test_treats_the_kill_switch_as_intended(
     code = await smoke.run("http://smoke", transport=ASGITransport(app=app))
     assert code == 0
     assert fake.calls == 0
+
+
+async def test_live_traffic_can_be_sampled_and_scored(
+    api: AsyncClient, fake: FakeClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Two /ask requests leave notes on their root spans; the sampler finds and judges them."""
+    import io
+    from contextlib import redirect_stdout
+
+    from app.settings import get_settings
+    from scripts import sample_live
+
+    monkeypatch.setenv("CHUNK_STRATEGY", "paragraph")
+    get_settings.cache_clear()
+    corpus = ROOT / "corpus"
+    for path in sorted(corpus.iterdir()):
+        await api.post("/documents", files={"file": (path.name, path.read_bytes())})
+    await api.post("/index", params={"strategy": "paragraph"})
+    await api.post("/ask", json={"question": "What is the personal car mileage rate?"})
+    await api.post("/ask", json={"question": "zxq plimbo vortex kettle"})
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        code = await sample_live.run(n=10, judge=True)
+    out = buf.getvalue()
+    assert code == 0
+    assert "recent /ask requests" in out and "judge mean" in out, out
+    report = json.loads((ROOT / "reports" / "live-sample.json").read_text())
+    answered = [r for r in report["rows"] if not r["declined"]]
+    assert answered and answered[0]["judge_score"] == 4  # the fake judge
 
 
 def test_deploy_workflow_supports_rollback_by_ref() -> None:

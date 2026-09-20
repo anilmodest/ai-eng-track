@@ -34,7 +34,12 @@ repository variable `LIVE_URL` so the deploy workflow runs the smoke test for yo
 3. **Roll back.** Actions → *deploy to hugging face space* → *Run workflow* → `ref: v1.0.0`.
    Run the smoke test again with `--expect-sha` of the tag. Paste both outputs. Note the minutes.
 4. **Fix forward.** Revert the break properly, tag `v1.0.1`, deploy, smoke test.
-5. **Write it up.** Copy `weeks/6/WRITEUP_TEMPLATE.md` to `reflections/writeup.md` and fill it.
+5. **Score what people actually ask.** After a day of real use (yours, a peer's, your mentor's),
+   run `uv run python scripts/sample_live.py --judge` against the deployed database (or your
+   local one). It reads the last twenty `/ask` requests, re-runs retrieval and scores each answer
+   with the judge. Put the lowest five in your reflection with one line each on why. This is
+   the last bullet of Area 8: sampling live traffic for continuous scoring after release.
+6. **Write it up.** Copy `weeks/6/WRITEUP_TEMPLATE.md` to `reflections/writeup.md` and fill it.
    Every number in it comes from `reports/`: `eval.json`, `traces.json`, `attacks.json`,
    `compare.json`. No adjectives where a number will do.
 

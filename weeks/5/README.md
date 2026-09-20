@@ -42,9 +42,11 @@ Read, in this order, and answer in `reflections/week-5.md`, Q1b:
 
 Then read `tests/weeks/test_week5.py`.
 
-## Exercise — get attacked, then build the guard (5 hours)
+## Exercise — instrument, get attacked, then build the guard (5–7 hours)
 
-`app/guard.py` is yours. Every function exists with the right signature and does nothing:
+**On the core and pro routes, `app/trace.py` is signatures only.** Instrument the project first: `begin_request`, `span`, `add_usage`, `mark_error`, `end_request`, and the three readers. The five tracing tests in `tests/weeks/test_week5.py` say what a trace must contain, and `explore/w5_01_read_a_trace.py` shows what a good one looks like (run it on the start route's given tracer if you want to see the target). That is Area 9's exercise: *instrument your own project, then answer questions about it from the traces alone.*
+
+Then `app/guard.py` is yours. Every function exists with the right signature and does nothing:
 
 | Function | Build |
 | --- | --- |
