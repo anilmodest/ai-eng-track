@@ -21,6 +21,18 @@ call again. When it is slow, or wrong, or expensive, the question is *which step
 - **A dashboard a non-engineer can read.** Cost per query is now a standard interview question,
   and the person asking it will not read a span tree.
 
+One `/ask` request as its trace. Cost sits on the leaf that spent it and rolls up to the root.
+
+```mermaid
+flowchart TD
+  R["POST /ask  ·  root<br/>412 ms · $0.00094 · error_kind: none"]
+  R --> S["retrieval.search<br/>18 ms · $0"]
+  R --> M["model.call<br/>380 ms · 706 in / 115 out · $0.00094"]
+  R --> T["tool.search_documents (agents only)<br/>…"]
+  style M fill:#fff4e5,stroke:#9a5b00
+```
+
+
 ## Security: the model reads instructions in the data
 
 Prompt injection is not a prompt problem; it is a data problem. Any text the model reads (an
@@ -41,6 +53,19 @@ The disciplines, none sufficient alone:
 - **Kill switches and blast radius.** One setting that stops every model call, and a budget that
   caps how far a runaway loop, or an attacker, can get before someone notices.
 
+```mermaid
+flowchart LR
+  U["uploaded or retrieved text<br/>may carry instructions"] --> L{"check_limits<br/>kill switch? budget?"}
+  L -- blocked --> B["503 / 429<br/>no model call"]
+  L -- ok --> DI["detect_injection<br/>strip known patterns, report them"]
+  DI --> WR["wrap_untrusted<br/>fence as data + GUARD_PREAMBLE"]
+  WR --> M[model]
+  M --> SO["scan_output<br/>figures not in the source?"]
+  SO --> N["whatever reads the output next<br/>treat it as untrusted input"]
+  style M fill:#fff4e5,stroke:#9a5b00
+```
+
+
 ## What this looks like in the service
 
 | Idea | Where it lives | What you do this week |
@@ -58,3 +83,12 @@ The disciplines, none sufficient alone:
 - Which error kind your service produced most this week, and what you changed because of it.
 - The attack that got through your peer's service, and the one that got through yours.
 - What your input filter cannot catch, and what you rely on instead for that case.
+
+## Read more
+
+Checked September 2026.
+
+- [Simon Willison: prompt injection](https://simonwillison.net/series/prompt-injection/) — the series that defined the problem and keeps tracking it. Read the first two posts; then the newest one.
+- [OWASP Top 10 for LLM Applications](https://owasp.org/www-project-top-10-for-large-language-model-applications/) — Prompt Injection, Insecure Output Handling, Excessive Agency: this week's three, with real incidents.
+- [OpenTelemetry: semantic conventions for generative AI](https://opentelemetry.io/docs/specs/semconv/gen-ai/) — the industry's names for the span attributes `trace.py` records (tokens, model, cost). If you later move to a real tracer, this is the vocabulary.
+- [Google SRE book: Monitoring distributed systems](https://sre.google/sre-book/monitoring-distributed-systems/) — the four golden signals; `trace_report.py` shows three of them.

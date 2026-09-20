@@ -92,3 +92,7 @@ gives the agent a question that needs two tools and watches the loop. Then Week 
 
 Pass line: CI green, the comparison table with a shipping decision you can defend, and one thing
 you found wrong with your own permission boundary.
+
+## Optional: self-test
+
+`QUIZ.md` in this folder has a few questions on this week's concept, each with an explanation. On the hub page they are interactive and scored, but the score lives only in your browser: it never reaches the repo, your mentor or your route. Use it to find what to re-read.

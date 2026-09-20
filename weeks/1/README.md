@@ -99,3 +99,7 @@ probes the diff and runs three documents you have not seen. Then the Week 2 sent
 
 Pass line: CI green, provider switch shown, and you can explain, unprompted, why the model is
 treated as untrusted.
+
+## Optional: self-test
+
+`QUIZ.md` in this folder has a few questions on this week's concept, each with an explanation. On the hub page they are interactive and scored, but the score lives only in your browser: it never reaches the repo, your mentor or your route. Use it to find what to re-read.

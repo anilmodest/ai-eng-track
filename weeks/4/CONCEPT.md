@@ -30,6 +30,25 @@ optimiser* (one model produces, another grades), *orchestrator and workers* (one
 to others). Every one of them costs more and predicts less than the loop it replaces. Reach for
 them when a measurement, not a diagram, says the simpler thing failed.
 
+```mermaid
+flowchart LR
+  subgraph plain [plain code]
+    q1[question] --> c1[regex over invoices] --> a1["answer<br/>$0, exact, brittle"]
+  end
+  subgraph workflow [workflow: steps fixed by the programmer]
+    q2[question] --> l2[list_documents] --> e2["extract_document × N<br/>approval"] --> m2[one model call] --> a2["answer<br/>N+1 calls, predictable"]
+  end
+  subgraph agent [agent: steps chosen by the model]
+    q3[question] --> d3{model picks a tool}
+    d3 --> t3[run tool] --> r3[show result] --> d3
+    d3 -- finish --> a3["answer<br/>cost varies per run"]
+    w1{{wall: AGENT_MAX_STEPS}} -.- d3
+    w2{{checkpoint: costs_money → approved?}} -.- t3
+    w3{{recovery: bad call → error text, not a crash}} -.- t3
+  end
+```
+
+
 ## Connecting to real systems
 
 The Model Context Protocol is how a model client (an IDE, a desktop app, another agent) discovers
@@ -45,6 +64,19 @@ server, three questions matter more than the protocol:
 
 This is the point where an AI feature becomes an infrastructure risk, and where a junior can do
 real damage without intending to.
+
+```mermaid
+flowchart LR
+  C["MCP client<br/>IDE, desktop app, another agent"] -- "list tools / call tool" --> S["app/mcp_server.py"]
+  S --> SC{"check_scope<br/>token may call this tool?"}
+  SC -- no --> D1[denied]
+  SC -- yes --> RL{"rate limit<br/>calls in window?"}
+  RL -- over --> D2[denied]
+  RL -- ok --> T["run_tool<br/>same tools the agent uses"]
+  T -- "fails midway" --> E["error text back<br/>server stays up"]
+  T --> R[result]
+```
+
 
 ## What this looks like in the service
 
@@ -63,3 +95,12 @@ real damage without intending to.
 - What your agent did on the question it got wrong, step by step, and what wall or checkpoint caught it.
 - Why `extract_document` needs approval and `search_documents` does not.
 - What a `reader` token can and cannot do through your MCP server, and how you proved it.
+
+## Read more
+
+Checked September 2026.
+
+- [Anthropic: Building effective agents](https://www.anthropic.com/research/building-effective-agents) — the clearest statement of "workflows before agents", with the named patterns this week lists. Read it first.
+- [ReAct: Synergizing Reasoning and Acting in Language Models](https://arxiv.org/abs/2210.03629) (Yao et al., 2022) — the loop in `agent.py` is this paper's idea; [a short explainer](https://www.promptingguide.ai/techniques/react) if the paper is heavy going.
+- [Model Context Protocol](https://modelcontextprotocol.io/) — the specification and its examples; and the [Python SDK](https://github.com/modelcontextprotocol/python-sdk) that `mcp_server.py` is built on (note the 2.x rename from FastMCP to MCPServer: providers change under you here too).
+- [OWASP Top 10 for LLM Applications](https://owasp.org/www-project-top-10-for-large-language-model-applications/) — read "Excessive Agency" this week; the rest is Week 5.

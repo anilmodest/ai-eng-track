@@ -69,12 +69,19 @@ def esc(s: object) -> str:
     return html.escape(str(s))
 
 
+_MERMAID = re.compile(r'<pre><code class="language-mermaid">(.*?)</code></pre>', re.S)
+
+
 def md(path: Path) -> str:
     if not path.exists():
         return ""
     text = path.read_text(encoding="utf-8")
     text = re.sub(r"^# .*\n", "", text, count=1)  # the card already carries the title
-    return str(MD.render(text))
+    rendered = str(MD.render(text))
+    # markdown-it escapes fenced code; mermaid needs the raw source back.
+    return _MERMAID.sub(
+        lambda m: f'<pre class="mermaid">{html.unescape(m.group(1))}</pre>', rendered
+    )
 
 
 def read_json(path: Path) -> Any:
@@ -82,6 +89,42 @@ def read_json(path: Path) -> Any:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return None
+
+
+@dataclass
+class Question:
+    n: int
+    text: str
+    options: list[dict[str, Any]]  # {"text", "correct", "why"}
+    why: str
+    stretch: bool
+
+
+def parse_quiz(path: Path) -> list[Question]:
+    if not path.exists():
+        return []
+    out: list[Question] = []
+    cur: Question | None = None
+    for line in path.read_text(encoding="utf-8").splitlines():
+        m = re.match(r"^## Q(\d+)\.\s*(.+?)\s*(\(stretch: [^)]*\))?\s*$", line)
+        if m:
+            cur = Question(int(m.group(1)), m.group(2), [], "", bool(m.group(3)))
+            out.append(cur)
+            continue
+        if cur is None:
+            continue
+        m = re.match(r"^- \[([ x])\]\s*(.+)$", line)
+        if m:
+            body = m.group(2)
+            text, _, why = body.partition(" — ")
+            cur.options.append(
+                {"text": text.strip(), "correct": m.group(1) == "x", "why": why.strip()}
+            )
+            continue
+        m = re.match(r"^> Why:\s*(.+)$", line)
+        if m:
+            cur.why = m.group(1).strip()
+    return [q for q in out if q.options]
 
 
 @dataclass
@@ -96,6 +139,7 @@ class Week:
     concept_html: str = ""
     readme_html: str = ""
     checks_html: str = ""
+    quiz: list[Question] = field(default_factory=list)
 
     @property
     def state(self) -> str:
@@ -130,6 +174,7 @@ def load_weeks() -> list[Week]:
         w.concept_html = md(readme.parent / "CONCEPT.md")
         w.readme_html = md(readme)
         w.checks_html = md(readme.parent / "CHECKS.md")
+        w.quiz = parse_quiz(readme.parent / "QUIZ.md")
         weeks.append(w)
     prs = read_json(ROOT / "site" / "prs.json") or {}
     for w in weeks:
@@ -315,6 +360,21 @@ details[open] summary { margin-bottom: 8px; }
 .play textarea { min-height: 70px; }
 .play .out { background: var(--code); border-radius: 8px; padding: 10px 12px; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; white-space: pre-wrap; min-height: 60px; overflow-x: auto; margin-top: 8px; }
 .status { font-size: 13px; color: var(--muted); }
+.quiz .q { padding: 10px 0; border-bottom: 1px dashed var(--line); }
+.quiz .q:last-child { border-bottom: none; }
+.quiz .qt { font-weight: 600; margin: 0 0 6px; }
+.quiz .stretch { font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 6px; }
+.quiz label.opt { display: block; padding: 5px 8px; border-radius: 6px; cursor: pointer; }
+.quiz label.opt:hover { background: var(--soft); }
+.quiz label.opt input { margin-right: 8px; }
+.quiz .opt.right { background: rgba(46,125,79,.12); }
+.quiz .opt.wrong { background: rgba(179,38,30,.10); }
+.quiz .why { font-size: 14px; color: var(--muted); margin: 6px 0 0 8px; border-left: 3px solid var(--line); padding-left: 10px; }
+.quiz .why.ok { border-left-color: var(--green); }
+.quiz .why.no { border-left-color: var(--red); }
+.quiz .qbar { display:flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+.qscore { font-weight: 400; font-size: 13px; color: var(--muted); }
+pre.mermaid { background: var(--card); border: 1px solid var(--line); text-align: center; overflow-x: auto; }
 footer { color: var(--muted); font-size: 13px; margin-top: 32px; }
 """
 
@@ -383,6 +443,95 @@ JS = r"""
   on('pg-ask', () => call('pg-ask-out', '/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: document.getElementById('pg-question').value }) }));
   on('pg-task', () => call('pg-task-out', '/tasks/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: document.getElementById('pg-tq').value, mode: document.getElementById('pg-mode').value, approved: document.getElementById('pg-approved').checked }) }));
   on('pg-traces', () => call('pg-traces-out', '/traces?limit=10'));
+
+  // ---- diagrams --------------------------------------------------------------------------
+  if (window.mermaid) {
+    const dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
+    // render only when a panel is opened, so hidden tabs do not get zero-width diagrams
+    const rendered = new WeakSet();
+    async function renderIn(root) {
+      const nodes = [...root.querySelectorAll('pre.mermaid')].filter(n => !rendered.has(n));
+      nodes.forEach(n => rendered.add(n));
+      if (nodes.length) { try { await mermaid.run({ nodes }); } catch (e) { console.warn(e); } }
+    }
+    document.querySelectorAll('details').forEach(d => d.addEventListener('toggle', () => { if (d.open) renderIn(d); }));
+    tabs.forEach(b => b.addEventListener('click', () => renderIn(document.getElementById(b.dataset.tab))));
+    const visible = document.querySelector('section[role="tabpanel"]:not([hidden])');
+    if (visible) renderIn(visible);
+  }
+
+  // ---- self-test ---------------------------------------------------------------------------
+  const quiz = (cfg.quiz || {});
+  const KEY = 'hub.quiz';
+  function load() { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } }
+  function save(state) { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  function totals(state) {
+    let got = 0, of = 0;
+    for (const w in quiz) { of += quiz[w].length; got += (state[w] || {}).score || 0; }
+    return { got, of };
+  }
+  function paintTotals(state) {
+    const t = totals(state);
+    const el = document.getElementById('qtotal');
+    if (el) el.textContent = t.of ? '· self-test ' + t.got + '/' + t.of + ' (yours only)' : '';
+    for (const w in quiz) {
+      const sc = document.getElementById('qscore-' + w);
+      const st = state[w];
+      if (sc) sc.textContent = st && st.done ? '· ' + st.score + '/' + quiz[w].length : '';
+    }
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function build(w) {
+    const host = document.getElementById('quiz-' + w);
+    if (!host || host.dataset.built) return;
+    host.dataset.built = '1';
+    const qs = quiz[w];
+    let html = '';
+    qs.forEach((q, i) => {
+      html += '<div class="q" data-i="' + i + '"><p class="qt">Q' + q.n + '. ' + esc(q.text) + (q.stretch ? '<span class="stretch">stretch: core / pro</span>' : '') + '</p>';
+      q.options.forEach((o, j) => {
+        html += '<label class="opt" data-j="' + j + '"><input type="radio" name="q' + w + '-' + i + '" value="' + j + '">' + esc(o.text) + '</label>';
+      });
+      html += '<div class="why" hidden></div></div>';
+    });
+    html += '<div class="qbar"><button class="btn primary" data-act="check">Check answers</button><button class="btn" data-act="reset">Reset</button><span class="status" data-role="result"></span></div>';
+    host.innerHTML = html;
+    host.querySelector('[data-act=check]').onclick = () => check(w);
+    host.querySelector('[data-act=reset]').onclick = () => { const st = load(); delete st[w]; save(st); host.dataset.built = ''; host.innerHTML = ''; build(w); paintTotals(load()); };
+  }
+  function check(w) {
+    const host = document.getElementById('quiz-' + w);
+    const qs = quiz[w];
+    let score = 0, answered = 0;
+    qs.forEach((q, i) => {
+      const box = host.querySelector('.q[data-i="' + i + '"]');
+      const picked = box.querySelector('input:checked');
+      const why = box.querySelector('.why');
+      box.querySelectorAll('label.opt').forEach(l => l.classList.remove('right', 'wrong'));
+      if (!picked) { why.hidden = true; return; }
+      answered++;
+      const j = Number(picked.value);
+      const ok = q.options[j].correct;
+      if (ok) score++;
+      box.querySelectorAll('label.opt').forEach(l => {
+        const jj = Number(l.dataset.j);
+        if (q.options[jj].correct) l.classList.add('right');
+        else if (jj === j) l.classList.add('wrong');
+      });
+      const optWhy = q.options[j].why ? (ok ? '' : 'Not quite: ' + q.options[j].why + ' ') : '';
+      why.textContent = optWhy + (q.why || '');
+      why.className = 'why ' + (ok ? 'ok' : 'no');
+      why.hidden = false;
+    });
+    host.querySelector('[data-role=result]').textContent = answered < qs.length
+      ? score + ' right of ' + answered + ' answered (' + (qs.length - answered) + ' left)'
+      : score + ' of ' + qs.length + ' right';
+    const st = load(); st[w] = { score, done: answered === qs.length, at: Date.now() }; save(st);
+    paintTotals(st);
+  }
+  document.querySelectorAll('details.quiz').forEach(d => d.addEventListener('toggle', () => { if (d.open) build(d.dataset.week); }));
+  paintTotals(load());
 })();
 """
 
@@ -440,6 +589,13 @@ def week_card(w: Week, repo: str) -> str:
         body = fn()
         if body:
             panels += f"<details open><summary>{title}</summary>{body}</details>"
+    if w.quiz:
+        panels += (
+            f"<details class='quiz' data-week='{w.n}'><summary>Self-test "
+            f"<span class='muted'>&middot; {len(w.quiz)} questions, optional, scored only in your browser</span>"
+            f" <span class='qscore' id='qscore-{w.n}'></span></summary>"
+            f"<div id='quiz-{w.n}'></div></details>"
+        )
     checks = (
         f"<h3 style='margin-top:8px'>This week's checks</h3><ul class='checks'>{tests}</ul>"
         if tests
@@ -506,7 +662,15 @@ def render(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
         )
         or "<p class='muted'>No reports yet. They appear as each week's measurement script runs.</p>"
     )
-    cfg = json.dumps({"liveUrl": live_url, "repo": repo})
+    quiz_data = {
+        str(w.n): [
+            {"n": q.n, "text": q.text, "stretch": q.stretch, "why": q.why, "options": q.options}
+            for q in w.quiz
+        ]
+        for w in weeks
+        if w.quiz
+    }
+    cfg = json.dumps({"liveUrl": live_url, "repo": repo, "quiz": quiz_data})
     cards = "".join(week_card(w, repo) for w in weeks)
     gh = f"https://github.com/{esc(repo)}"
 
@@ -519,7 +683,7 @@ def render(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
 </head>
 <body><main>
 <h1>AI Engineering track</h1>
-<p class="sub"><a href="{gh}">{esc(repo)}</a> &middot; route <b>{esc(route)}</b> &middot; {len(done)} of {len(weeks)} released weeks green</p>
+<p class="sub"><a href="{gh}">{esc(repo)}</a> &middot; route <b>{esc(route)}</b> &middot; {len(done)} of {len(weeks)} released weeks green <span id="qtotal" class="muted"></span></p>
 <div class="topbar">
   <a class="btn primary" href="https://codespaces.new/{esc(repo)}?quickstart=1">Open in Codespaces</a>
   <a class="btn" href="{gh}/pulls">Pull requests</a>
@@ -615,6 +779,7 @@ def render(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
 
 <footer>Built by <code>scripts/build_pages.py</code> on every merge to <code>main</code> from <code>weeks/</code>, <code>reports/</code>, <code>reflections/</code> and the pull requests. Nothing on this page is typed in by hand.</footer>
 </main>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <script>{JS}</script>
 </body></html>
 """

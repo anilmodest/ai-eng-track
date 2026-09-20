@@ -20,6 +20,19 @@ different days, and its provider changes under it. So the disciplines shift:
 - **Watching it after release.** Traces from live traffic, sampled and scored, because the
   questions people ask drift away from the golden set you wrote.
 
+```mermaid
+flowchart LR
+  T1[tag v1.0.0] --> D1[deploy] --> S1["smoke ✓<br/>expect-sha matches"]
+  S1 --> BR["break on purpose<br/>RELEVANCE_THRESHOLD=1.5"] --> D2[deploy] --> S2["smoke ✗<br/>ask declines everything"]
+  S2 --> RB["rollback<br/>Run workflow, ref = v1.0.0"] --> S3["smoke ✓<br/>minutes: ___"]
+  S3 --> FX[fix forward] --> T2[tag v1.0.1] --> D3[deploy] --> S4[smoke ✓]
+  style S2 fill:#fbeeed,stroke:#b3261e
+  style S1 fill:#eef7ef,stroke:#2e7d4f
+  style S3 fill:#eef7ef,stroke:#2e7d4f
+  style S4 fill:#eef7ef,stroke:#2e7d4f
+```
+
+
 ## Proving it: the write-up and the portfolio
 
 The document says it plainly: interviewers ask what the feature did for the business. So:
@@ -48,3 +61,12 @@ The document says it plainly: interviewers ask what the feature did for the busi
 - What a rollback took, in minutes, and what the smoke test said before and after.
 - What the feature does for the business, in one sentence with a number in it.
 - What you would change before 10,000 documents a day, and what it would cost.
+
+## Read more
+
+Checked September 2026.
+
+- [Google SRE book: Release engineering](https://sre.google/sre-book/release-engineering/) — why a rollback you have never run is not a rollback.
+- [GitHub Docs: manually running a workflow](https://docs.github.com/en/actions/managing-workflow-runs/manually-running-a-workflow) — the `workflow_dispatch` mechanism your rollback uses.
+- [Hugging Face: Docker Spaces](https://huggingface.co/docs/hub/spaces-sdks-docker) — what the deploy workflow pushes to, and the constraints (port 7860, user 1000, sleeping).
+- [Hamel Husain: Your AI product needs evals](https://hamel.dev/blog/posts/evals/) — the last section, on what to say to stakeholders, is a good model for the write-up.

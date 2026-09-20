@@ -85,8 +85,9 @@ the repo. It is the one place to start from:
 
 - **Start here**: this README.
 - **Weeks**: one card per week with the gate result, your PR and its mentor comments, your own
-  words from `reflections/`, and the week's concept, exercise and checks rendered inline, plus
-  that week's measurement table when it exists.
+  words from `reflections/`, and the week's concept (with diagrams and a short reading list),
+  exercise and checks rendered inline, that week's measurement table when it exists, and an
+  optional self-test whose score stays in your browser.
 - **Playground**: call your running service (your Space, or a public Codespace port) from the
   browser: upload, extract, search, ask, run a task three ways, read traces.
 - **Reports** and **Links**.

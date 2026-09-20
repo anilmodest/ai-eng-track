@@ -88,3 +88,7 @@ instruction in a document you have not seen and sends it to your service. Then W
 
 Pass line: CI green including the attack gate, one attack that got through explained, and you can
 read a cost off a trace without looking at the code.
+
+## Optional: self-test
+
+`QUIZ.md` in this folder has a few questions on this week's concept, each with an explanation. On the hub page they are interactive and scored, but the score lives only in your browser: it never reaches the repo, your mentor or your route. Use it to find what to re-read.

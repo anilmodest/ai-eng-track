@@ -76,3 +76,7 @@ strategy, then runs a few questions the eval set does not contain. Then Week 3's
 
 Pass line: CI green, a strategy chosen with a number, and you can explain a precision/recall
 trade-off you saw in your own table.
+
+## Optional: self-test
+
+`QUIZ.md` in this folder has a few questions on this week's concept, each with an explanation. On the hub page they are interactive and scored, but the score lives only in your browser: it never reaches the repo, your mentor or your route. Use it to find what to re-read.

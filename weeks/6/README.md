@@ -69,3 +69,7 @@ you performed and can describe, and a write-up whose numbers you can defend.
 
 "Cannot defend at the final session": you complete the track. The gap is recorded honestly and
 stated plainly. That is the framework's rule, and it is the right one.
+
+## Optional: self-test
+
+`QUIZ.md` in this folder has a few questions on this week's concept, each with an explanation. On the hub page they are interactive and scored, but the score lives only in your browser: it never reaches the repo, your mentor or your route. Use it to find what to re-read.

@@ -16,6 +16,21 @@ next six weeks stand on is solid, and your mentor uses what they see to place yo
 | `GET /jobs/{id}` | Its status |
 | `GET /health` | Liveness |
 
+One upload, drawn. Trace it in the code, then trace it aloud.
+
+```mermaid
+flowchart LR
+  C["Client<br/>POST /documents"] --> R["FastAPI router<br/>app/api/documents.py"]
+  R --> P["parse()<br/>app/ingest/parsers.py"]
+  P --> D[("SQLite<br/>document row")]
+  R -. POST /jobs/reindex .-> Q{"queue<br/>REDIS_URL set?"}
+  Q -- no --> M["InMemoryQueue<br/>thread in the API process"]
+  Q -- yes --> X["RedisQueue<br/>arq worker"]
+  M & X --> J["reindex_all()<br/>app/jobs/tasks.py"]
+  J --> D
+```
+
+
 ## Do this (about 2 hours)
 
 1. `make check WEEK=0` — read the output. Everything should be green.
@@ -41,3 +56,15 @@ ask one or two of the questions above. Nothing else. There is no pass or fail; t
 ## Then
 
 `make route ROUTE=<what your mentor said>` once. Then open `weeks/1/CONCEPT.md`.
+
+## Read more
+
+Checked September 2026. Two pages, one video; the rest of the week is doing, not reading.
+
+- [The Twelve-Factor App: config](https://12factor.net/config) — why every setting in this repo lives in `.env` and nothing in code. Five minutes.
+- [FastAPI: middleware](https://fastapi.tiangolo.com/tutorial/middleware/) — how a request travels through the service; Week 5 adds a tracer exactly here.
+- [Andrej Karpathy, Intro to Large Language Models](https://www.youtube.com/watch?v=zjkBMFhNj_g) (video, 1 h) — the model you are about to treat as a dependency, from the inside. Watch before Week 1 if you have never looked under the hood.
+
+## Optional: self-test
+
+`QUIZ.md` in this folder has a few questions on this week's concept, each with an explanation. On the hub page they are interactive and scored, but the score lives only in your browser: it never reaches the repo, your mentor or your route. Use it to find what to re-read.

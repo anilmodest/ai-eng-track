@@ -91,3 +91,7 @@ asks five questions of their own and watches which gate fires. Then Week 4's sen
 
 Pass line: CI green including the eval gate, abstention shown live, and you can explain from your
 own numbers where a wrong answer would have come from.
+
+## Optional: self-test
+
+`QUIZ.md` in this folder has a few questions on this week's concept, each with an explanation. On the hub page they are interactive and scored, but the score lives only in your browser: it never reaches the repo, your mentor or your route. Use it to find what to re-read.
