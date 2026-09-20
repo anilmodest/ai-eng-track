@@ -35,7 +35,7 @@ class ModelError(Exception):
 
 class ModelTimeout(ModelError):
     def __init__(self, seconds: float) -> None:
-        super().__init__(f"model call exceeded {seconds:.1f}s", status=None, retryable=True)
+        super().__init__(f"model call exceeded {seconds:g}s", status=None, retryable=True)
 
 
 class ModelClient(Protocol):
