@@ -3,7 +3,7 @@
 One small service that grows, week by week, into an AI product you can defend in an interview.
 Six weeks, eleven areas, one repo: yours.
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/OWNER/REPO?quickstart=1)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/anilmodest/ai-eng-track?quickstart=1)
 
 ## Start here (three clicks, nothing to install)
 
