@@ -70,12 +70,18 @@ def test_precision_recall_mrr_on_a_toy_example() -> None:
 
 
 def test_evaluate_averages_per_query() -> None:
-    scores = evaluate([([True, False], 1), ([False, False], 2)], k=2)
+    # Query 1 has two relevant hits in the top 2: hit rate counts the query once, not twice.
+    scores = evaluate([([True, True], 2), ([False, False], 2)], k=2)
     assert scores.queries == 2
-    assert scores.precision_at_k == pytest.approx(0.25)
+    assert scores.precision_at_k == pytest.approx(0.5)
     assert scores.recall_at_k == pytest.approx(0.5)
     assert scores.mrr == pytest.approx(0.5)
     assert scores.hit_rate == pytest.approx(0.5)
+
+
+def test_precision_uses_k_not_the_number_of_hits() -> None:
+    # Three hits returned for k=5, one relevant: precision@5 is 1/5, not 1/3.
+    assert precision_at_k([False, True, False], 5) == pytest.approx(0.2)
 
 
 # ---- index and search through the API ------------------------------------------------------

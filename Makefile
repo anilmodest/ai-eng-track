@@ -1,7 +1,8 @@
 # Fellow-facing commands. Every week's README refers to these and nothing else.
 WEEK ?= 0
 ROUTE ?= start
-UV ?= uv
+# uv may live in ~/.local/bin (pip --user) before the shell's PATH knows it; find it anyway.
+UV ?= $(shell command -v uv 2>/dev/null || (test -x $(HOME)/.local/bin/uv && echo $(HOME)/.local/bin/uv) || echo uv)
 
 .PHONY: setup check test lint types run worker live-check route fmt
 

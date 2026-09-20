@@ -66,13 +66,8 @@ instruction in it that would change the extraction or the answer, and send it to
 (their forwarded port or live URL). Record what happened in your reflection. When one lands on
 you, add it to `eval/attacks.jsonl` and make it hold. The set grows every cohort.
 
-What your route adds:
-
-| Route | Exercise |
-| --- | --- |
-| `start` | the above |
-| `core` | plus one attack that `detect_injection` cannot catch (another language, an encoding, a paraphrase), a test that proves it, and the defence that does catch it |
-| `pro` | plus per-token budgets in the MCP server, and a `scripts/trace_report.py` extension that shows cost per *user*, not just per request |
+Your route changes what this week gives you: read `routes/start.md`, `routes/core.md` or
+`routes/pro.md` in this folder (the hub shows yours).
 
 ## Submit (30 minutes)
 

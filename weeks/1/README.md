@@ -66,13 +66,8 @@ Requirements (each one is a test):
 6. **Swappable.** Nothing in `app/api/extract.py` may name a provider, a model or an SDK. The
    gate runs your tests under two different fake providers to prove it.
 
-What your route gives you:
-
-| Route | Given | You build |
-| --- | --- | --- |
-| `start` | `retry.py`, `structured.py`, `cost.py` all working | the endpoint, the cache lookup, the `Extraction` row |
-| `core` | `retry.py` and `structured.py` are stubs | the above, plus retry with backoff and the validate–repair loop |
-| `pro` | as core, plus `cost.py` is a stub | the above, plus routing by input size, `MODEL_FALLBACK_PROVIDER`, and a streaming variant |
+Your route changes what this week gives you: read `routes/start.md`, `routes/core.md` or
+`routes/pro.md` in this folder (the hub shows yours).
 
 Run the gate as often as you like: `make check WEEK=1`.
 

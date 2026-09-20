@@ -21,3 +21,4 @@ uv run python scripts/check.py --week 0 || echo "(check reported a failure; open
 
 echo
 echo "Ready. Open weeks/0/README.md and run: make run"
+echo "(if this container was created before the uv fix, run: Codespaces: Full Rebuild Container)"

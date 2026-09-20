@@ -86,7 +86,16 @@ async def test_citation_numbers_outside_the_context_are_dropped(
     api: AsyncClient, fake: FakeClient
 ) -> None:
     await _load_and_index(api)
-    # k=1: the only valid citation is [1]. The fake cites its best passage, which must be [1].
+    fake.script = ["badcite"]  # cites [7]; only 5 passages were sent
+    r = await api.post("/ask", json={"question": "What is the personal car mileage rate?"})
+    assert r.status_code == 200, "an out-of-range citation must not crash the request"
+    out = r.json()
+    assert out["abstained"] is True, "an answer with no valid citation is not grounded"
+    assert out["citations"] == []
+
+
+async def test_valid_citations_map_to_real_chunks(api: AsyncClient, fake: FakeClient) -> None:
+    await _load_and_index(api)
     r = await api.post("/ask", json={"question": "What is the personal car mileage rate?", "k": 1})
     out = r.json()
     assert out["abstained"] is False

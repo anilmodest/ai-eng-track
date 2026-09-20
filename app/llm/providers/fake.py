@@ -11,7 +11,8 @@ Two dials:
        500        server error (retryable)
        400        bad request (NOT retryable)
        hang       never answers (caller's timeout must fire)
-       ungrounded (ask) the model admits the context does not answer the question
+       ungrounded (ask) the model hedges, cites [1], but sets grounded=false
+       badcite    (ask) the model answers confidently and cites passage [7], which was never sent
        obey       (extract) follow an injected instruction even if guarded
 
 2. The *task*: every system prompt in this repo starts with a line `TASK: <name>`. The fake reads
@@ -157,6 +158,8 @@ class FakeClient:
             return json.dumps({"tool": "finish", "args": {"answer": first[:300]}})
         if task == "judge":
             return json.dumps({"score": 4, "reason": "answer is supported by the cited context"})
+        if task == "language":  # the Week 1 worked example
+            return json.dumps({"language": "French", "confidence": 0.9})
         return "The single most important property is reliability."
 
     async def complete(self, messages: list[Message], *, json_mode: bool = True) -> ModelResponse:
@@ -179,7 +182,21 @@ class FakeClient:
             case "obey":
                 return ok(json.dumps(OBEYED_EXTRACT))
             case "ungrounded":
-                return ok(json.dumps({"answer": "", "citations": [], "grounded": False}))
+                # A hedge with a citation but grounded=false: only the flag can catch this.
+                return ok(
+                    json.dumps(
+                        {
+                            "answer": "Possibly 45 pence, but the passages do not say.",
+                            "citations": [1],
+                            "grounded": False,
+                        }
+                    )
+                )
+            case "badcite":
+                # Confident, cites a passage that was never sent.
+                return ok(
+                    json.dumps({"answer": "It is 45 pence.", "citations": [7], "grounded": True})
+                )
             case "malformed":
                 return ok("Sure! Here is the extraction you asked for: title=Invoice ...")
             case "invalid":

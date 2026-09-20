@@ -38,13 +38,8 @@ repository variable `LIVE_URL` so the deploy workflow runs the smoke test for yo
    Every number in it comes from `reports/`: `eval.json`, `traces.json`, `attacks.json`,
    `compare.json`. No adjectives where a number will do.
 
-What your route adds:
-
-| Route | Exercise |
-| --- | --- |
-| `start` | the above |
-| `core` | plus a `scripts/sample_live.py` that pulls the last 20 `/ask` traces and scores them with the judge: continuous evaluation, once |
-| `pro` | plus a written incident report for the break in step 2 as if it had reached users: timeline, blast radius from the trace report, what would have caught it earlier |
+Your route changes what this week gives you: read `routes/start.md`, `routes/core.md` or
+`routes/pro.md` in this folder (the hub shows yours).
 
 `make check WEEK=6` runs everything from all six weeks.
 

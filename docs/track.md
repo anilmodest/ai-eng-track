@@ -53,9 +53,19 @@ flowchart LR
 - **Defend**: a 30–40 minute session where your mentor probes your pull request and runs inputs
   you have not seen. Then the next week's sentence.
 
-Your **route** (start, core or pro) is set by your mentor after Week 0. The exercises are the same
-on every route; what changes is how much is given to you, which extra checks run, and where your
-mentor's hours go. Set it once with `make route ROUTE=...`.
+Your **route** (start, core or pro) is set by your mentor at discovery from two questions, in
+order: can you do the basic work of the track at all; and do you check what you produce. It holds
+for the programme, with one correction point at session 2. The route changes what you are given,
+never what is measured:
+
+| | start | core | pro |
+| --- | --- | --- | --- |
+| Exercises | faults named, a worked example given (`weeks/N/routes/worked_example.py`) | faults present, not located, count not given: each exercise file is complete with mistakes planted | no helpers, one real constraint added (`weeks/N/routes/pro.md`) |
+| Pace | slow, mentor-supported | compressed | self-directed |
+| Finished piece | modest and completed | full | harder, made public |
+
+Set it once with `make route ROUTE=...`; each week's `routes/<route>.md` says what that means for
+the week.
 
 ## Sessions and gates
 

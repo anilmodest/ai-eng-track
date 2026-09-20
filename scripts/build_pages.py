@@ -28,6 +28,8 @@ from markdown_it import MarkdownIt
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "site" / "index.html"
+_ROUTE_FILE = ROOT / ".route"
+ROUTE = _ROUTE_FILE.read_text().strip() if _ROUTE_FILE.exists() else "start"
 MD = MarkdownIt("commonmark", {"html": True}).enable("table")
 
 WEEK_AREAS: dict[int, list[int]] = {
@@ -709,9 +711,23 @@ def week_card(w: Week, repo: str, current: bool) -> str:
         f'<li><code>{esc(f)}</code> &middot; <a href="{_gh(repo, f)}">on GitHub</a></li>'
         for f in WEEK_BUILD.get(w.n, [])
     )
+    route_note = md(ROOT / "weeks" / str(w.n) / "routes" / f"{ROUTE}.md")
+    route_html = (
+        f"<details open><summary>Your route: {esc(ROUTE)}</summary><div class='doc'>{route_note}</div>"
+        + (
+            f"<p class='muted'>Worked example: <code>weeks/{w.n}/routes/worked_example.py</code> "
+            f"&middot; <a href='{_gh(repo, f'weeks/{w.n}/routes/worked_example.py')}'>on GitHub</a></p>"
+            if ROUTE == "start"
+            and (ROOT / "weeks" / str(w.n) / "routes" / "worked_example.py").exists()
+            else ""
+        )
+        + "</details>"
+        if route_note
+        else ""
+    )
     build = (
         f"<li class='{cls('Build')}'><div class='k'>Build<small>~4–5 h</small></div><div>"
-        f"<p>{esc(WEEK_BUILD_NOTE.get(w.n, ''))}</p>"
+        f"<p>{esc(WEEK_BUILD_NOTE.get(w.n, ''))}</p>{route_html}"
         + (f"<ul>{files}</ul>" if files else "")
         + (
             f"<p>Then measure: <code>{esc(WEEK_MEASURE[w.n])}</code> and paste the table into your reflection.</p>"
@@ -1100,8 +1116,7 @@ def render(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
 
 def main() -> int:
     weeks = load_weeks()
-    route_file = ROOT / ".route"
-    route = route_file.read_text().strip() if route_file.exists() else "start"
+    route = ROUTE
     live_url = os.environ.get("LIVE_URL", "").strip().rstrip("/")
     repo = os.environ.get("GITHUB_REPOSITORY", "anilmodest/ai-eng-track")
     OUT.parent.mkdir(exist_ok=True)

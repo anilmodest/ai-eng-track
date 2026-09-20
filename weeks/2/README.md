@@ -53,13 +53,8 @@ EMBED_PROVIDER=fastembed uv run python scripts/retrieval_eval.py   # real embedd
 Read the two tables side by side. Pick a strategy. Set `CHUNK_STRATEGY` in `.env`. Put both tables
 and one sentence of reasoning in `reflections/week-2.md`.
 
-What your route adds:
-
-| Route | Exercise |
-| --- | --- |
-| `start` | the two files above, and the measurement |
-| `core` | plus hybrid search: combine lexical and semantic scores (reciprocal rank fusion is enough) and show the metric that improved |
-| `pro` | plus a reranker over the top 20 (a cross-encoder via fastembed, or the model itself as judge) and a written cost/latency trade-off |
+Your route changes what this week gives you: read `routes/start.md`, `routes/core.md` or
+`routes/pro.md` in this folder (the hub shows yours).
 
 Run the gate as often as you like: `make check WEEK=2`.
 

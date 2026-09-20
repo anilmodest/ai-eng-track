@@ -69,13 +69,8 @@ Finally, wire the gate: `make check WEEK=3` already runs `scripts/eval.py` again
 thresholds. Open a PR that deliberately breaks citations (return `[]`) and watch CI go red.
 Revert it. That red run is evidence; link it in your reflection.
 
-What your route adds:
-
-| Route | Exercise |
-| --- | --- |
-| `start` | the above |
-| `core` | plus judge calibration: score 15 answers yourself 1–5, run `scripts/eval.py --judge`, and report where the judge disagreed with you and why |
-| `pro` | plus a `RELEVANCE_THRESHOLD` sweep (0.2 to 0.6) with the abstention/answer trade-off plotted in your reflection, and a written argument for the value you chose |
+Your route changes what this week gives you: read `routes/start.md`, `routes/core.md` or
+`routes/pro.md` in this folder (the hub shows yours).
 
 ## Submit (30 minutes)
 

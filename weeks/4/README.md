@@ -69,13 +69,8 @@ reader. It must be denied. Then find a way round your own scopes: a second token
 `MCP_TOKENS`, a tool that calls another tool, an argument the schema does not bound. Write down
 what you found, whether or not you fixed it.
 
-What your route adds:
-
-| Route | Exercise |
-| --- | --- |
-| `start` | the above |
-| `core` | plus one new tool (`count_documents_matching(query)`), schema and test included, and the agent using it |
-| `pro` | plus a *plan then execute* variant: one model call produces the whole plan, then the plan runs without the model; compare it with the loop on cost and correctness |
+Your route changes what this week gives you: read `routes/start.md`, `routes/core.md` or
+`routes/pro.md` in this folder (the hub shows yours).
 
 Run the gate as often as you like: `make check WEEK=4`.
 
