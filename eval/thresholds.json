@@ -1,0 +1,6 @@
+{
+  "min_abstain": 0.90,
+  "min_answer": 0.80,
+  "min_hit": 0.70,
+  "min_citation": 0.90
+}

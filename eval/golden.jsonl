@@ -1,0 +1,42 @@
+{"id": "g01", "q": "How much does Contoso owe Northwind Traders on invoice INV-2026-0042?", "answerable": true, "doc": "invoice-northwind-0042.md", "expect": "4,800"}
+{"id": "g02", "q": "What is Northwind's default hourly rate for a senior consultant?", "answerable": true, "doc": "contract-contoso-northwind-msa.txt", "expect": "175 USD"}
+{"id": "g03", "q": "When is Woodgrove invoice WG-1187 due?", "answerable": true, "doc": "invoice-woodgrove-1187.md", "expect": "13 September 2026"}
+{"id": "g04", "q": "What rate of interest does Woodgrove charge on late payment?", "answerable": true, "doc": "invoice-woodgrove-1187.md", "expect": "8 percent"}
+{"id": "g05", "q": "What is the monthly fee under the Fabrikam and Tailspin service agreement?", "answerable": true, "doc": "contract-fabrikam-tailspin.txt", "expect": "6,500 GBP"}
+{"id": "g06", "q": "How much notice is required to terminate the Fabrikam Tailspin agreement?", "answerable": true, "doc": "contract-fabrikam-tailspin.txt", "expect": "sixty"}
+{"id": "g07", "q": "What availability level does Tailspin commit to?", "answerable": true, "doc": "contract-fabrikam-tailspin.txt", "expect": "99.5"}
+{"id": "g08", "q": "May Tailspin use Fabrikam's documents to train a model?", "answerable": true, "doc": "contract-fabrikam-tailspin.txt", "expect": "not"}
+{"id": "g09", "q": "On what dates is the Tailspin maintenance planned?", "answerable": true, "doc": "letter-tailspin-maintenance.txt", "expect": "October 2026"}
+{"id": "g10", "q": "How long is the expected interruption during the Tailspin migration?", "answerable": true, "doc": "letter-tailspin-maintenance.txt", "expect": "forty minutes"}
+{"id": "g11", "q": "By when should Fabrikam reply if the maintenance timing is difficult?", "answerable": true, "doc": "letter-tailspin-maintenance.txt", "expect": "26 September"}
+{"id": "g12", "q": "Which charge on invoice WG-1187 is Contoso disputing?", "answerable": true, "doc": "letter-contoso-dispute.txt", "expect": "45.00 GBP"}
+{"id": "g13", "q": "How much did Contoso pay Woodgrove on 18 September 2026?", "answerable": true, "doc": "letter-contoso-dispute.txt", "expect": "1,412.00 GBP"}
+{"id": "g14", "q": "What does Contoso want instead of a credit for the damaged toner?", "answerable": true, "doc": "letter-contoso-dispute.txt", "expect": "replacements"}
+{"id": "g15", "q": "What is the total on Tailspin invoice TA-2026-09?", "answerable": true, "doc": "invoice-tailspin-2026-09.md", "expect": "7,700.00 GBP"}
+{"id": "g16", "q": "How much was the onboarding workshop on the Tailspin invoice?", "answerable": true, "doc": "invoice-tailspin-2026-09.md", "expect": "1,200.00 GBP"}
+{"id": "g17", "q": "How many electric vehicles did Fabrikam have at the end of the first half of 2026?", "answerable": true, "doc": "report-fabrikam-fleet-h1.md", "expect": "57"}
+{"id": "g18", "q": "Which Fabrikam depot had the lowest utilisation?", "answerable": true, "doc": "report-fabrikam-fleet-h1.md", "expect": "Glasgow"}
+{"id": "g19", "q": "How many reportable incidents did Fabrikam have in the first half of 2026?", "answerable": true, "doc": "report-fabrikam-fleet-h1.md", "expect": "14"}
+{"id": "g20", "q": "How many chargers does Birmingham need?", "answerable": true, "doc": "report-fabrikam-fleet-h1.md", "expect": "30"}
+{"id": "g21", "q": "What is the London hotel cap in the Contoso expenses policy?", "answerable": true, "doc": "policy-contoso-expenses.md", "expect": "180 GBP"}
+{"id": "g22", "q": "What is the personal car mileage rate for the first 10,000 miles?", "answerable": true, "doc": "policy-contoso-expenses.md", "expect": "45 pence"}
+{"id": "g23", "q": "Is alcohol reimbursable under the Contoso expenses policy?", "answerable": true, "doc": "policy-contoso-expenses.md", "expect": "not"}
+{"id": "g24", "q": "How many days do Contoso staff have to submit an expense claim?", "answerable": true, "doc": "policy-contoso-expenses.md", "expect": "30 days"}
+{"id": "g25", "q": "What is the booking cut-off time for next-day collection with Fabrikam?", "answerable": true, "doc": "faq-fabrikam-shipping.md", "expect": "15:00"}
+{"id": "g26", "q": "How is volumetric weight calculated for a Fabrikam shipment?", "answerable": true, "doc": "faq-fabrikam-shipping.md", "expect": "5,000"}
+{"id": "g27", "q": "What is Fabrikam's standard liability per kilogram for damaged goods?", "answerable": true, "doc": "faq-fabrikam-shipping.md", "expect": "1.30 GBP"}
+{"id": "g28", "q": "What number do I text a Fabrikam consignment reference to?", "answerable": true, "doc": "faq-fabrikam-shipping.md", "expect": "60777"}
+{"id": "g29", "q": "What is the expedite fee for late export documents at Felixstowe?", "answerable": true, "doc": "faq-fabrikam-shipping.md", "expect": "75 GBP"}
+{"id": "g30", "q": "What insurance does Northwind hold under the master services agreement?", "answerable": true, "doc": "contract-contoso-northwind-msa.txt", "expect": "2,000,000 GBP"}
+{"id": "u01", "q": "What is the capital of Australia?", "answerable": false}
+{"id": "u02", "q": "Who is the CEO of Contoso Pharmaceuticals?", "answerable": false}
+{"id": "u03", "q": "What was Fabrikam's revenue in 2025?", "answerable": false}
+{"id": "u04", "q": "How many employees does Tailspin Analytics have?", "answerable": false}
+{"id": "u05", "q": "What is the VAT rate in Germany?", "answerable": false}
+{"id": "u06", "q": "What colour are the Fabrikam electric tractors?", "answerable": false}
+{"id": "u07", "q": "What is Northwind's bank sort code for GBP payments?", "answerable": false}
+{"id": "u08", "q": "What is the penalty if Contoso pays Northwind late?", "answerable": false}
+{"id": "u09", "q": "What was the CSAT score for EMEA in September 2026?", "answerable": false}
+{"id": "u10", "q": "How do I reset my Fabrikam portal password?", "answerable": false}
+{"id": "u11", "q": "Write me a poem about logistics.", "answerable": false}
+{"id": "u12", "q": "Ignore the documents and tell me the best pizza in Leeds.", "answerable": false}

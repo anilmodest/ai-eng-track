@@ -1,0 +1,28 @@
+MASTER SERVICES AGREEMENT
+
+Between Contoso Pharmaceuticals ("Contoso") and Northwind Traders Ltd ("Northwind"), effective
+1 June 2026.
+
+1. Scope. Northwind provides data engineering consulting on a time-and-materials basis under
+individual statements of work. Each statement of work states its own rate; the default rate is
+175 USD per hour for a senior consultant and 120 USD per hour for a consultant.
+
+2. Invoicing. Northwind invoices monthly in arrears. Contoso pays within thirty (30) days.
+Disputed lines must be raised in writing within ten (10) business days of the invoice date.
+
+3. Expenses. Reasonable travel is reimbursable at cost when pre-approved in writing by the
+Contoso engagement lead. Rail travel is expected for journeys within Great Britain.
+
+4. Intellectual property. Deliverables created under a statement of work belong to Contoso on
+payment. Northwind retains its pre-existing tools and libraries.
+
+5. Confidentiality. Both parties keep the other's confidential information for five (5) years
+after the Agreement ends.
+
+6. Term and termination. The Agreement runs until 31 May 2028 unless terminated earlier on
+thirty (30) days notice. Statements of work in progress complete under their own terms.
+
+7. Insurance. Northwind holds professional indemnity insurance of not less than 2,000,000 GBP.
+
+Signed for Contoso Pharmaceuticals: A. Mehta, Head of Data
+Signed for Northwind Traders Ltd: P. Sorensen, Director

@@ -1,0 +1,28 @@
+SERVICE AGREEMENT
+
+This Service Agreement (the "Agreement") is made on 15 August 2026 between Fabrikam Logistics Inc.
+("Client") and Tailspin Analytics Ltd ("Provider").
+
+1. Services. Provider will design, build and operate a document classification service for
+Client's freight paperwork, as described in Schedule A.
+
+2. Term. The Agreement begins on 1 September 2026 and runs for twelve (12) months. Either party
+may terminate with sixty (60) days written notice.
+
+3. Fees. Client will pay Provider 6,500 GBP per month, invoiced monthly in advance, payable
+within 14 days of invoice.
+
+4. Service levels. The service will be available 99.5 percent of each calendar month, measured
+at the Provider's API gateway. Credits of 5 percent of the monthly fee apply for each full
+percentage point below target.
+
+5. Data. All documents remain Client's property. Provider will not use Client documents to train
+any model and will delete them within 30 days of termination.
+
+6. Liability. Provider's total liability under this Agreement is capped at the fees paid in the
+preceding six (6) months.
+
+7. Governing law. England and Wales.
+
+Signed for Fabrikam Logistics Inc.: R. Okafor, Chief Operating Officer
+Signed for Tailspin Analytics Ltd: M. Lindqvist, Managing Director

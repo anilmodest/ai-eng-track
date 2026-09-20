@@ -1,0 +1,7 @@
+{
+  "_note": "CI runs the fake model and the lexical hash embedder. These numbers prove the pipeline and catch regressions in retrieval, grounding and citations; they say nothing about model quality. The real bar is thresholds.json, run with a real model.",
+  "min_abstain": 0.70,
+  "min_answer": 0.50,
+  "min_hit": 0.60,
+  "min_citation": 0.80
+}

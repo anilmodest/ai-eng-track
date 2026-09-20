@@ -1,0 +1,30 @@
+Tailspin Analytics Ltd
+Unit 4, Riverside Business Park
+Leeds LS10 1AB
+
+12 September 2026
+
+Ms R. Okafor
+Chief Operating Officer
+Fabrikam Logistics Inc.
+1 Dockside Way
+Felixstowe IP11 3SY
+
+Dear Ms Okafor,
+
+Re: Service Agreement dated 15 August 2026 - notice of planned maintenance
+
+I am writing to give you the notice required under clause 4 of our agreement. We plan to migrate
+the document classification service to new infrastructure over the weekend of 3 to 4 October 2026.
+We expect a single interruption of no more than forty minutes, beginning at 02:00 BST on Saturday
+4 October. No documents will be lost and no action is needed from your team.
+
+The migration reduces median response time by roughly a third and moves all stored documents to
+UK-region storage, which I know your compliance team asked about in July.
+
+If the timing is difficult, please let me know by 26 September and we will find another window.
+
+Yours sincerely,
+
+M. Lindqvist
+Managing Director

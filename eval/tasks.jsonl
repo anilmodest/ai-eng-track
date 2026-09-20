@@ -1,0 +1,6 @@
+{"id": "t1", "q": "How much in total is due on invoices from Tailspin Analytics?", "expect": "7,700"}
+{"id": "t2", "q": "Which invoice has the largest total due, and what is it?", "expect": "7,700"}
+{"id": "t3", "q": "How many invoices are addressed to Contoso Pharmaceuticals?", "expect": "2"}
+{"id": "t4", "q": "What is the total due across all invoices in GBP?", "expect": "9,157"}
+{"id": "t5", "q": "When is the Woodgrove invoice due?", "expect": "13 September 2026"}
+{"id": "t6", "q": "What does the Fabrikam fleet report say about incidents at the Leeds depot?", "expect": "6"}

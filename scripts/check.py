@@ -57,8 +57,42 @@ def main() -> int:
             cmd,
             env={
                 "MODEL_PROVIDER": provider,
+                "EMBED_PROVIDER": "hash",
                 "CHECK_WEEK": str(args.week),
                 "CHECK_ROUTE": route,
+            },
+        )
+
+    # Week 3+: the evaluation gate is part of the check, against the CI thresholds.
+    if args.week >= 3 and (ROOT / "scripts" / "eval.py").exists():
+        results["eval-gate"] = run(
+            "evaluation gate (fake model, hash embedder, CI thresholds)",
+            [
+                "uv",
+                "run",
+                "python",
+                "scripts/eval.py",
+                "--thresholds",
+                "eval/thresholds-ci.json",
+                "--db",
+                "data/eval-check.db",
+            ],
+            env={
+                "MODEL_PROVIDER": "fake_a",
+                "EMBED_PROVIDER": "hash",
+                "CHUNK_STRATEGY": "paragraph",
+            },
+        )
+
+    # Week 5+: no attack in eval/attacks.jsonl may succeed against the guarded service.
+    if args.week >= 5 and (ROOT / "scripts" / "attack.py").exists():
+        results["attack-gate"] = run(
+            "attack gate (fake model, guard on)",
+            ["uv", "run", "python", "scripts/attack.py", "--db", "data/attack-check.db"],
+            env={
+                "MODEL_PROVIDER": "fake_a",
+                "EMBED_PROVIDER": "hash",
+                "CHUNK_STRATEGY": "paragraph",
             },
         )
 

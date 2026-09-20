@@ -3,11 +3,16 @@ name: deploy to hugging face space
 # call a live URL at any time. Does nothing until the fellow sets:
 #   repository variable  HF_SPACE   e.g. your-hf-username/ai-eng-track
 #   repository secret    HF_TOKEN   a Hugging Face token with write access
-# See README.md, "Deploy".
+# Rollback: Actions -> this workflow -> Run workflow -> ref = the tag or commit to deploy.
 on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      ref:
+        description: "Tag, branch or commit to deploy (rollback = an earlier tag)"
+        required: false
+        default: ""
 
 jobs:
   deploy:
@@ -15,11 +20,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Assemble the Space (service only, with the front matter Spaces needs)
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+          fetch-depth: 0
+      - name: Assemble the Space (service only, with build info and the front matter Spaces needs)
         run: |
           set -e
+          SHA=$(git rev-parse --short HEAD)
+          VERSION=$(git describe --tags --always 2>/dev/null || echo "$SHA")
           rm -rf /tmp/space && mkdir -p /tmp/space
           cp -r app pyproject.toml uv.lock Dockerfile /tmp/space/
+          cat > /tmp/space/app/build_info.py <<PY
+          """Written by deploy.yml. Do not edit: it says which commit this deployment is."""
+
+          APP_VERSION = "${VERSION}"
+          GIT_SHA = "${SHA}"
+          BUILT_AT = "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          PY
           cat > /tmp/space/README.md <<'MD'
           ---
           title: ai-eng-track
@@ -30,8 +47,11 @@ jobs:
           app_port: 7860
           pinned: false
           ---
-          Live service for the AI Engineering track. API docs at `/docs`. Deployed from GitHub on every merge to main.
+          Live service for the AI Engineering track. API docs at `/docs`, build at `/health`.
+          Deployed from GitHub on every merge to main; rolled back by re-running the deploy
+          workflow with an earlier tag.
           MD
+          echo "deploying ${VERSION} (${SHA})"
       - name: Push to the Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -43,6 +63,15 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add -A
-          git commit -q -m "deploy ${GITHUB_SHA::7}"
+          git commit -q -m "deploy $(python3 -c 'import app.build_info as b; print(b.APP_VERSION, b.GIT_SHA)')"
           git push -q --force "https://user:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE}" main
           echo "pushed to https://huggingface.co/spaces/${HF_SPACE}"
+      - name: Smoke test the Space (waits for the build, then runs scripts/smoke.py)
+        if: ${{ vars.LIVE_URL != '' }}
+        run: |
+          pip -q install httpx
+          for i in $(seq 1 30); do
+            if curl -sf "${{ vars.LIVE_URL }}/health" >/dev/null; then break; fi
+            sleep 20
+          done
+          python scripts/smoke.py "${{ vars.LIVE_URL }}" --expect-sha "$(git rev-parse --short HEAD)"

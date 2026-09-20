@@ -25,6 +25,25 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./data/app.db"
     redis_url: str | None = None
 
+    # Week 2+: retrieval
+    embed_provider: str = "hash"  # hash (lexical, CI) | fastembed (bge-small, CPU)
+    chunk_strategy: str = "sentence"  # fixed | sentence | paragraph | heading
+    search_k: int = 5
+    relevance_threshold: float = 0.30  # below this the system abstains (Week 3)
+
+    # Week 4+: agents
+    agent_max_steps: int = 8
+    require_approval_for_cost: bool = True  # tools that spend money need approved=true
+
+    # Week 5+: guardrails
+    guard_enabled: bool = True
+    kill_switch: bool = False
+    daily_budget_usd: float = 1.00
+
+    # Week 6: shipping
+    app_version: str = "0.1.0"
+    git_sha: str = "dev"
+
     # Test-only: script for the fake provider, e.g. "429,429,ok" (see app/llm/providers/fake.py)
     fake_script: str = "ok"
 

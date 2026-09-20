@@ -24,6 +24,11 @@ terminal, you are ready.
 | `make route ROUTE=core` | Set your route once, after your mentor places you (`start`, `core`, `pro`) |
 | `make fmt` | Format and auto-fix lint |
 
+Per-week measurement scripts (evidence for the session, not gates unless the week says so):
+`scripts/retrieval_eval.py` (Week 2), `scripts/eval.py` (Week 3, a gate from then on),
+`scripts/compare_week4.py`, `scripts/trace_report.py` and `scripts/attack.py` (Week 5, a gate),
+`scripts/smoke.py` (Week 6, runs after every deploy).
+
 ## Model access
 
 Copy `.env.example` to `.env` (Codespaces did this). The default provider is **Gemini** on Google
@@ -50,13 +55,28 @@ Concept (1 h) → Elaboration (2 h) → Exercise (3–5 h) → Defence (10 min w
 ## Layout
 
 ```
-app/        the service (FastAPI, SQLite, a job queue, and the model layer in app/llm)
+app/        the service: FastAPI, SQLite, a job queue, app/llm (model layer), app/retrieval,
+            app/agents, app/guard.py, app/trace.py, app/mcp_server.py
 weeks/N/    CONCEPT.md, README.md (the exercise), CHECKS.md (what the gate verifies)
 explore/    small scripts you run and read, one or two per week; you never edit them
 tests/      the gate; tests/weeks/test_weekN.py is the contract for week N
+corpus/     ten documents of two fictional companies: what you index, search and get attacked with
+eval/       golden set, retrieval queries, tasks, attacks, thresholds
 samples/    three documents used by tests and live-check
-scripts/    check.py, live_check.py, route.py
+scripts/    check.py, live_check.py, route.py, and one measurement script per week
 ```
+
+## The six weeks
+
+| Week | Area | You build | Gate adds |
+| --- | --- | --- | --- |
+| 0 | Foundations (assessed) | nothing: run, trace, containerise | Week 0 tests |
+| 1 | Model as a component | `app/api/extract.py` | Week 1 tests under two fake providers |
+| 2 | Context and retrieval | `app/retrieval/metrics.py`, `by_heading` | Week 2 tests |
+| 3 | Grounding and evaluation | `app/api/ask.py` | the evaluation gate |
+| 4 | Agents, tools, MCP | `app/agents/agent.py` | Week 4 tests incl. an in-process MCP call |
+| 5 | Observability and guardrails | `app/guard.py` (ships as a pass-through: you get attacked first) | the attack gate |
+| 6 | Shipping and proving it | a deploy, a break, a rollback, a write-up | Week 6 tests |
 
 ## Your progress page
 

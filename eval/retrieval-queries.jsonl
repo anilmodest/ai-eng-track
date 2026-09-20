@@ -1,0 +1,30 @@
+{"q": "How much does Contoso owe Northwind Traders?", "doc": "invoice-northwind-0042.md", "phrase": "4,800.00 USD"}
+{"q": "What is the hourly rate for a senior consultant at Northwind?", "doc": "contract-contoso-northwind-msa.txt", "phrase": "175 USD per hour"}
+{"q": "When is the Woodgrove invoice due?", "doc": "invoice-woodgrove-1187.md", "phrase": "13 September 2026"}
+{"q": "What interest is charged on late payment of the Woodgrove invoice?", "doc": "invoice-woodgrove-1187.md", "phrase": "8 percent above the Bank of England base rate"}
+{"q": "What is the monthly fee Fabrikam pays Tailspin?", "doc": "contract-fabrikam-tailspin.txt", "phrase": "6,500 GBP per month"}
+{"q": "How much notice is needed to terminate the Fabrikam Tailspin agreement?", "doc": "contract-fabrikam-tailspin.txt", "phrase": "sixty (60) days"}
+{"q": "What availability does Tailspin guarantee?", "doc": "contract-fabrikam-tailspin.txt", "phrase": "99.5 percent"}
+{"q": "Will Tailspin train models on Fabrikam documents?", "doc": "contract-fabrikam-tailspin.txt", "phrase": "will not use Client documents to train"}
+{"q": "What is Tailspin's liability cap?", "doc": "contract-fabrikam-tailspin.txt", "phrase": "fees paid in the\npreceding six (6) months"}
+{"q": "When is the planned maintenance for the document classification service?", "doc": "letter-tailspin-maintenance.txt", "phrase": "3 to 4 October 2026"}
+{"q": "How long will the maintenance interruption last?", "doc": "letter-tailspin-maintenance.txt", "phrase": "forty minutes"}
+{"q": "Where will Tailspin store documents after the migration?", "doc": "letter-tailspin-maintenance.txt", "phrase": "UK-region storage"}
+{"q": "Which line on the Woodgrove invoice is Contoso disputing?", "doc": "letter-contoso-dispute.txt", "phrase": "delivery charge of 45.00 GBP"}
+{"q": "How many toner cartridges arrived damaged?", "doc": "letter-contoso-dispute.txt", "phrase": "two of the six HP 59X toner cartridges"}
+{"q": "How much did Contoso pay Woodgrove?", "doc": "letter-contoso-dispute.txt", "phrase": "1,412.00 GBP"}
+{"q": "What is the total on the Tailspin September invoice?", "doc": "invoice-tailspin-2026-09.md", "phrase": "7,700.00 GBP"}
+{"q": "What was the onboarding workshop charged at?", "doc": "invoice-tailspin-2026-09.md", "phrase": "1,200.00 GBP"}
+{"q": "How many electric vehicles does Fabrikam have?", "doc": "report-fabrikam-fleet-h1.md", "phrase": "31 to 57"}
+{"q": "Which depot had the lowest utilisation?", "doc": "report-fabrikam-fleet-h1.md", "phrase": "Glasgow"}
+{"q": "How many reportable incidents were there in the first half?", "doc": "report-fabrikam-fleet-h1.md", "phrase": "14 reportable incidents"}
+{"q": "What is the charging constraint at Birmingham?", "doc": "report-fabrikam-fleet-h1.md", "phrase": "12 chargers today, 30 needed"}
+{"q": "What is the hotel cap in London under the Contoso expenses policy?", "doc": "policy-contoso-expenses.md", "phrase": "London 180 GBP"}
+{"q": "What is the mileage rate for a personal car?", "doc": "policy-contoso-expenses.md", "phrase": "45 pence per mile"}
+{"q": "Is alcohol reimbursable at Contoso?", "doc": "policy-contoso-expenses.md", "phrase": "Alcohol is not reimbursable"}
+{"q": "How soon must expense claims be submitted?", "doc": "policy-contoso-expenses.md", "phrase": "within 30 days"}
+{"q": "What is the cut-off time to book a next-day collection?", "doc": "faq-fabrikam-shipping.md", "phrase": "before 15:00"}
+{"q": "How is volumetric weight calculated?", "doc": "faq-fabrikam-shipping.md", "phrase": "divided by 5,000"}
+{"q": "What is the standard liability per kilogram for damaged goods?", "doc": "faq-fabrikam-shipping.md", "phrase": "1.30 GBP per kilogram"}
+{"q": "How do I track a Fabrikam shipment by SMS?", "doc": "faq-fabrikam-shipping.md", "phrase": "60777"}
+{"q": "What was the median first response time for APAC in August?", "doc": "report-support-q3.csv", "phrase": "2026-08 | region: APAC"}

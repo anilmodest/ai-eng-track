@@ -1,0 +1,28 @@
+Contoso Pharmaceuticals
+88 Science Park
+Cambridge CB4 0WS
+
+18 September 2026
+
+Woodgrove Office Supplies
+Unit 9, Trafford Park
+Manchester M17 1AB
+
+Dear Accounts Team,
+
+Re: Invoice WG-1187 dated 14 August 2026
+
+We are writing under our standard ten business day dispute window to query one line on the
+above invoice. The delivery charge of 45.00 GBP was not on the purchase order PO-7781, which
+stated delivery to Goods In was included. We have paid 1,412.00 GBP today and are withholding
+the 45.00 GBP pending your confirmation.
+
+Separately, two of the six HP 59X toner cartridges arrived with damaged seals. Our facilities
+team has photographs and would like replacements rather than a credit.
+
+Please reply to accounts.payable@contoso.example quoting PO-7781.
+
+Yours faithfully,
+
+J. Patel
+Procurement

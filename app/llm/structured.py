@@ -8,7 +8,9 @@ import json
 from pydantic import BaseModel, ValidationError
 
 from app.llm.client import Message, ModelClient, ModelResponse
+from app.llm.cost import estimate_cost_usd
 from app.llm.retry import with_retry
+from app.trace import add_usage, span
 
 
 class SchemaError(Exception):
@@ -37,12 +39,16 @@ async def complete_structured[T: BaseModel](
     responses: list[ModelResponse] = []
 
     async def call(msgs: list[Message]) -> ModelResponse:
-        r = await with_retry(
-            lambda: client.complete(msgs, json_mode=True),
-            attempts=attempts,
-            base_delay_s=base_delay_s,
-            timeout_s=timeout_s,
-        )
+        async with span("model.call"):
+            r = await with_retry(
+                lambda: client.complete(msgs, json_mode=True),
+                attempts=attempts,
+                base_delay_s=base_delay_s,
+                timeout_s=timeout_s,
+            )
+            add_usage(
+                r.tokens_in, r.tokens_out, estimate_cost_usd(r.model, r.tokens_in, r.tokens_out)
+            )
         responses.append(r)
         return r
 

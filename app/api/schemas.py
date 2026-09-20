@@ -51,6 +51,13 @@ class DocumentExtract(BaseModel):
         return v
 
 
+class GuardOut(BaseModel):
+    injection_detected: bool = False
+    patterns: list[str] = []
+    stripped_lines: int = 0
+    output_flags: list[str] = []
+
+
 class ExtractOut(BaseModel):
     document_id: int
     cached: bool
@@ -62,3 +69,4 @@ class ExtractOut(BaseModel):
     latency_ms: int
     cost_usd: float
     extract: DocumentExtract
+    guard: GuardOut | None = None

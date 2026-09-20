@@ -1,3 +1,4 @@
+TASK: extract
 You extract structured facts from a business document.
 
 Return ONLY a JSON object with exactly these keys:

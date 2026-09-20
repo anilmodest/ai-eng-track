@@ -11,7 +11,7 @@ pytestmark = pytest.mark.week0
 
 async def test_health(api: AsyncClient) -> None:
     r = await api.get("/health")
-    assert r.status_code == 200 and r.json() == {"status": "ok"}
+    assert r.status_code == 200 and r.json()["status"] == "ok"
 
 
 async def test_upload_then_read_back(api: AsyncClient) -> None:

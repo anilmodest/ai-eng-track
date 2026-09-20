@@ -16,6 +16,10 @@ def get_engine() -> Engine:
         if url.startswith("sqlite:///") and not url.endswith(":memory:"):
             Path(url.removeprefix("sqlite:///")).parent.mkdir(parents=True, exist_ok=True)
         _engine = create_engine(url, connect_args={"check_same_thread": False})
+        # Imported for the side effect: every table must be registered before create_all runs.
+        import app.retrieval.store  # noqa: F401
+        import app.trace  # noqa: F401
+
         SQLModel.metadata.create_all(_engine)
     return _engine
 
