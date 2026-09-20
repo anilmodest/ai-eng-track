@@ -1,7 +1,8 @@
 name: progress page
 # Rebuilds the fellow's progress page from the repo on every merge to main.
 # Nothing on the page is typed by hand: it runs each released week's gate, reads reflections/
-# and the PRs, and publishes site/ to GitHub Pages. Pages is enabled automatically on first run.
+# and the PRs, and publishes site/ to GitHub Pages.
+# One-time setup per repo: Settings -> Pages -> Source: GitHub Actions (the token cannot do it).
 on:
   push:
     branches: [main]
@@ -61,15 +62,27 @@ jobs:
         env:
           LIVE_URL: ${{ vars.LIVE_URL }}
         run: uv run python scripts/build_pages.py
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
+      - name: Is GitHub Pages switched on for this repo?
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/${GITHUB_REPOSITORY}/pages" >/dev/null 2>&1; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Progress page not published::Switch Pages on once: repo Settings -> Pages -> Source: GitHub Actions. Then re-run this workflow."
+          fi
       - uses: actions/upload-pages-artifact@v3
+        if: steps.pages.outputs.enabled == 'true'
         with:
           path: site
+    outputs:
+      pages_enabled: ${{ steps.pages.outputs.enabled }}
 
   deploy:
     needs: build
+    if: needs.build.outputs.pages_enabled == 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

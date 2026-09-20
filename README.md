@@ -62,8 +62,10 @@ scripts/    check.py, live_check.py, route.py
 
 Every merge to `main` rebuilds a page at `https://<your-user>.github.io/ai-eng-track` from what is in
 the repo: each week's gate, your own words from `reflections/`, your PRs and how many mentor comments
-they got. Nothing on it is typed in by hand. It appears after your first merge; GitHub Pages is
-switched on for you by the workflow. Your mentor opens it before every session.
+they got. Nothing on it is typed in by hand. Your mentor opens it before every session.
+
+One-time switch, 10 seconds: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+Until you do, the workflow builds the page but cannot publish it, and says so.
 
 ## Deploy (optional, 10 minutes, do it in Week 0 if you can)
 
