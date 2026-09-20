@@ -47,6 +47,7 @@ jobs:
           CHUNK_STRATEGY: paragraph
         run: |
           uv run python scripts/retrieval_eval.py || true
+          uv run python scripts/degrade_repair.py --db data/pages-degrade.db || true
           uv run python scripts/eval.py --thresholds eval/thresholds-ci.json --db data/pages-eval.db || true
           uv run python scripts/compare_week4.py --db data/pages-compare.db || true
           uv run python scripts/attack.py --db data/pages-attack.db || true

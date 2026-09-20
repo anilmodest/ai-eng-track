@@ -10,7 +10,9 @@ import pytest
 from httpx import AsyncClient
 
 from app.retrieval.chunkers import by_heading, by_paragraph, by_sentence, chunk, fixed
+from app.retrieval.context import select_and_compress
 from app.retrieval.metrics import evaluate, precision_at_k, recall_at_k, reciprocal_rank
+from app.retrieval.store import Hit
 from tests.conftest import upload
 
 pytestmark = pytest.mark.week2
@@ -125,3 +127,43 @@ async def test_search_respects_k_and_strategy(api: AsyncClient) -> None:
 async def test_unknown_strategy_on_index_is_400(api: AsyncClient) -> None:
     r = await api.post("/index", params={"strategy": "magic"})
     assert r.status_code == 400
+
+
+# ---- context engineering: select and compress ----------------------------------------------
+
+
+def _hit(i: int, text: str, score: float) -> Hit:
+    return Hit(chunk_id=i, document_id=i, filename=f"doc{i}.md", ordinal=0, text=text, score=score)
+
+
+MILEAGE = (
+    "## Mileage\nPersonal car: 45 pence per mile for the first 10,000 miles in the tax year, "
+    "then 25 pence. Electric cars: the same rate. Parking and tolls at cost."
+)
+HOTELS = "Hotel nightly caps: London 180 GBP, other UK cities 130 GBP. Breakfast is claimable."
+FLEET = "The fleet grew from 412 to 438 vehicles in the half. Electric vehicles rose from 31 to 57."
+
+
+def test_select_and_compress_keeps_the_passage_that_answers() -> None:
+    hits = [_hit(1, MILEAGE, 0.62), _hit(2, HOTELS, 0.31), _hit(3, FLEET, 0.12)]
+    out = select_and_compress("What is the mileage rate for a personal car?", hits, 1200)
+    assert out and "45 pence per mile" in out[0]
+
+
+def test_select_and_compress_drops_unrelated_passages() -> None:
+    hits = [_hit(1, MILEAGE, 0.62), _hit(2, HOTELS, 0.31), _hit(3, FLEET, 0.12)]
+    out = select_and_compress("What is the mileage rate for a personal car?", hits, 5000)
+    assert not any("fleet grew" in p for p in out), "a passage far below the best score was kept"
+
+
+def test_select_and_compress_respects_the_budget() -> None:
+    hits = [_hit(i, MILEAGE + " " + HOTELS, 0.5) for i in range(1, 9)]
+    out = select_and_compress("What is the mileage rate for a personal car?", hits, 300)
+    assert sum(len(p) for p in out) <= 300
+
+
+def test_select_and_compress_trims_inside_a_passage() -> None:
+    hits = [_hit(1, MILEAGE, 0.6)]
+    out = select_and_compress("What is the mileage rate for a personal car?", hits, 1200)
+    assert "45 pence per mile" in out[0]
+    assert "Parking and tolls" not in out[0], "a sentence sharing no term with the question stayed"

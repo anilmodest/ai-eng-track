@@ -93,6 +93,7 @@ flowchart LR
 | Store and search | `app/retrieval/store.py`, `/index`, `/search` | Read it; it is the interface a vector database would sit behind |
 | Metrics | `app/retrieval/metrics.py` | Build precision@k, recall@k, MRR, hit rate |
 | Attention budget | `explore/w2_02_lost_in_the_middle.py` | Bury one fact, watch cost and accuracy move |
+| Select, compress, budget | `app/retrieval/context.py`, `scripts/degrade_repair.py` | Degrade a working pipeline by stuffing it, then repair it by removing |
 
 ## What you should be able to say by Friday
 

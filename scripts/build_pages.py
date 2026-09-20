@@ -64,7 +64,13 @@ CONCEPTS = {
     6: "Interviewers ask what it did for the business, not what it scored.",
 }
 # Which measurement report belongs to which week's card.
-WEEK_REPORTS = {2: "retrieval", 3: "eval", 4: "compare", 5: "attacks", 6: "traces"}
+WEEK_REPORTS: dict[int, list[str]] = {
+    2: ["retrieval", "degrade"],
+    3: ["eval"],
+    4: ["compare"],
+    5: ["attacks"],
+    6: ["traces"],
+}
 
 # The loop, per week: what to run, which file(s) to build, how to measure. Mirrors weeks/N/README.md.
 STEPS = ["Read", "Run", "Build", "Check", "Submit"]
@@ -83,7 +89,7 @@ WEEK_RUN: dict[int, list[str]] = {
 WEEK_BUILD: dict[int, list[str]] = {
     0: [],
     1: ["app/api/extract.py"],
-    2: ["app/retrieval/metrics.py", "app/retrieval/chunkers.py"],
+    2: ["app/retrieval/metrics.py", "app/retrieval/chunkers.py", "app/retrieval/context.py"],
     3: ["app/api/ask.py"],
     4: ["app/agents/agent.py"],
     5: ["app/guard.py"],
@@ -91,7 +97,7 @@ WEEK_BUILD: dict[int, list[str]] = {
 }
 WEEK_MEASURE: dict[int, str] = {
     1: "make live-check",
-    2: "uv run python scripts/retrieval_eval.py",
+    2: "uv run python scripts/retrieval_eval.py && uv run python scripts/degrade_repair.py",
     3: "uv run python scripts/eval.py",
     4: "uv run python scripts/compare_week4.py",
     5: "uv run python scripts/attack.py",
@@ -107,7 +113,7 @@ WEEK_SESSION: dict[int, str] = {
 WEEK_BUILD_NOTE: dict[int, str] = {
     0: "Nothing to build. Run the service, trace one upload aloud, build the Docker image.",
     1: "The endpoint is a stub with the build order in comments. Every test in tests/weeks/test_week1.py is a sentence from the concept.",
-    2: "Metrics raise NotImplementedError; by_heading falls back to paragraphs. Then measure four strategies.",
+    2: "Metrics raise NotImplementedError; by_heading falls back to paragraphs; select_and_compress returns everything (the degraded pipeline). Build all three, then measure.",
     3: "POST /ask answers 501 until you build the two abstention gates and citations.",
     4: "run_agent returns not_implemented. Build the loop: wall, money checkpoint, recovery.",
     5: "The guard ships as a pass-through: get attacked first, then build the four defences.",
@@ -356,8 +362,26 @@ def report_traces() -> str:
     )
 
 
+def report_degrade() -> str:
+    r = read_json(ROOT / "reports" / "degrade.json")
+    if not r:
+        return ""
+    rows: list[list[object]] = [
+        [
+            mode,
+            f"{v['hits']}/{v['of']}",
+            v["mean_tokens_in"],
+            f"{v['total_cost_usd']:.5f}",
+            v["mean_latency_ms"],
+        ]
+        for mode, v in r.items()
+    ]
+    return table(["mode", "hits", "mean tokens in", "total $", "mean ms"], rows)
+
+
 REPORTS = {
     "retrieval": ("Retrieval evaluation", report_retrieval),
+    "degrade": ("Degrade and repair", report_degrade),
     "eval": ("Evaluation gate", report_eval),
     "compare": ("Three ways compared", report_compare),
     "attacks": ("Attack set", report_attacks),
@@ -738,12 +762,11 @@ def week_card(w: Week, repo: str, current: bool) -> str:
     )
     # Check
     rep_html = ""
-    rep_key = WEEK_REPORTS.get(w.n)
-    if rep_key:
+    for rep_key in WEEK_REPORTS.get(w.n, []):
         title, fn = REPORTS[rep_key]
         body = fn()
         if body:
-            rep_html = f"<details><summary>{title} (last run)</summary>{body}</details>"
+            rep_html += f"<details><summary>{title} (last run)</summary>{body}</details>"
     check = (
         f"<li class='{cls('Check')}'><div class='k'>Check<small>as often as you like</small></div><div>"
         f"<code class='cmd'>make check WEEK={w.n}</code>"

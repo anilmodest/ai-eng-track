@@ -35,13 +35,24 @@ Then read `tests/weeks/test_week2.py`: the contract for this week.
 
 ## Exercise — build and measure (4–5 hours)
 
-Two files are yours this week. The rest is given.
+Three pieces are yours this week. The rest is given.
 
 1. **`app/retrieval/metrics.py`** — implement `precision_at_k`, `recall_at_k`, `reciprocal_rank`
    and `evaluate`. The docstrings say what each means; the tests say what they return.
 2. **`app/retrieval/chunkers.py::by_heading`** — one chunk per markdown section, heading kept
    with its body; sections over `max_chars` fall back to paragraphs that each still carry the
    heading. A document with no headings behaves like `by_paragraph`.
+3. **`app/retrieval/context.py::select_and_compress`** — the repair. First see the damage:
+
+   ```
+   uv run python scripts/degrade_repair.py
+   ```
+
+   It answers the 30 queries three ways: the top 3 chunks (works), *every* chunk stuffed into
+   the context (degraded: watch the tokens, and with a real model the answers), and the top 10
+   passed through your `select_and_compress`, which as shipped returns everything. Build it: a
+   relevance floor, a shared-term check, sentence-level trimming, a character budget. Run again.
+   The repaired row should hold nearly all of the stuffed row's hits at a fraction of its tokens.
 
 Then measure:
 

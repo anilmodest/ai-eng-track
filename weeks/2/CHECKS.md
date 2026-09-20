@@ -16,6 +16,11 @@
 | `reindex_replaces_rather_than_duplicates` | indexing twice yields the same count |
 | `search_respects_k_and_strategy` | `k` limits results; an un-indexed strategy returns nothing rather than falling back |
 | `unknown_strategy_on_index_is_400` | typed error |
+| `precision_uses_k_not_the_number_of_hits` | P@5 with three hits returned is 1/5, not 1/3 |
+| `select_and_compress_keeps_the_passage_that_answers` | the passage with the fact survives |
+| `select_and_compress_drops_unrelated_passages` | a passage far below the best score is dropped |
+| `select_and_compress_respects_the_budget` | total characters never exceed the budget |
+| `select_and_compress_trims_inside_a_passage` | sentences sharing no term with the question go |
 
-`scripts/retrieval_eval.py` is **not** part of the gate: it is evidence for the session, and its
+`scripts/retrieval_eval.py` and `scripts/degrade_repair.py` are **not** part of the gate: it is evidence for the session, and its
 numbers depend on the embedder you ran it with. Paste its table into your reflection.
