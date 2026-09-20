@@ -1,14 +1,17 @@
-"""Build the progress page (site/index.html) from what is already in the repo.
+"""Build the hub page (site/index.html) from what is already in the repo. Nothing self-reported.
 
-Nothing on it is self-reported.
+The page is a mirror with a front door: every week's material rendered from weeks/N/*.md, every
+gate's result from reports/, the fellow's own words from reflections/, the PRs from GitHub, and a
+playground that calls the fellow's live service from the browser.
 
-Inputs, all optional (a missing one leaves its card section blank):
-    reports/week-N.json      written by scripts/check.py (the pages workflow runs it per week)
-    reflections/week-N.md    the fellow's own words (Q1 and Q2 are shown)
-    weeks/N/README.md        the week's title
-    .route                   start | core | pro
-    site/prs.json            PR links and review-comment counts, written by the pages workflow
-    LIVE_URL (env)           the deployed service, if any
+Inputs, all optional (a missing one leaves its panel blank or explains itself):
+    README.md, weeks/N/{CONCEPT,README,CHECKS}.md      rendered to HTML at build time
+    reports/week-N.json                                 scripts/check.py
+    reports/{retrieval,eval,compare,attacks,traces}.json the measurement scripts
+    reflections/week-N.md                               Q1 and Q2 shown on the week card
+    .route                                              start | core | pro
+    site/prs.json                                       written by the pages workflow
+    LIVE_URL, GITHUB_REPOSITORY (env)                   the deployed service, the repo
 
 Run locally: uv run python scripts/build_pages.py && open site/index.html
 """
@@ -21,10 +24,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from markdown_it import MarkdownIt
+
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "site" / "index.html"
+MD = MarkdownIt("commonmark", {"html": True}).enable("table")
 
-# Which of the eleven areas each week touches (from the programme plan).
 WEEK_AREAS: dict[int, list[int]] = {
     0: [1],
     1: [2],
@@ -56,6 +61,27 @@ CONCEPTS = {
     5: "Injected content is the defining vulnerability, and it does not look like a bug.",
     6: "Interviewers ask what it did for the business, not what it scored.",
 }
+# Which measurement report belongs to which week's card.
+WEEK_REPORTS = {2: "retrieval", 3: "eval", 4: "compare", 5: "attacks", 6: "traces"}
+
+
+def esc(s: object) -> str:
+    return html.escape(str(s))
+
+
+def md(path: Path) -> str:
+    if not path.exists():
+        return ""
+    text = path.read_text(encoding="utf-8")
+    text = re.sub(r"^# .*\n", "", text, count=1)  # the card already carries the title
+    return str(MD.render(text))
+
+
+def read_json(path: Path) -> Any:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
 
 
 @dataclass
@@ -67,6 +93,9 @@ class Week:
     reflection_q2: str = ""
     pr: dict[str, Any] | None = None
     tests: list[dict[str, str]] = field(default_factory=list)
+    concept_html: str = ""
+    readme_html: str = ""
+    checks_html: str = ""
 
     @property
     def state(self) -> str:
@@ -75,14 +104,12 @@ class Week:
         return "green" if self.report.get("ok") else "red"
 
 
-def _section(md: str, heading: str) -> str:
-    """Text under '## <heading>' up to the next '## '. Comments stripped."""
-    m = re.search(rf"^## {re.escape(heading)}[^\n]*\n(.*?)(?=^## |\Z)", md, re.S | re.M)
+def _section(text: str, heading: str) -> str:
+    m = re.search(rf"^## {re.escape(heading)}[^\n]*\n(.*?)(?=^## |\Z)", text, re.S | re.M)
     if not m:
         return ""
     body = re.sub(r"<!--.*?-->", "", m.group(1), flags=re.S).strip()
-    body = re.sub(r"^\d\.\s*$", "", body, flags=re.M).strip()
-    return body
+    return re.sub(r"^\d\.\s*$", "", body, flags=re.M).strip()
 
 
 def load_weeks() -> list[Week]:
@@ -90,130 +117,337 @@ def load_weeks() -> list[Week]:
     for readme in sorted(ROOT.glob("weeks/*/README.md")):
         n = int(readme.parent.name)
         first = readme.read_text(encoding="utf-8").splitlines()[0]
-        title = first.lstrip("# ").strip()
-        w = Week(n=n, title=title)
-        rep = ROOT / "reports" / f"week-{n}.json"
-        if rep.exists():
-            w.report = json.loads(rep.read_text(encoding="utf-8"))
-            w.tests = [t for t in w.report.get("tests", []) if f"test_week{n}" in t.get("file", "")]
+        w = Week(n=n, title=first.lstrip("# ").strip())
+        rep = read_json(ROOT / "reports" / f"week-{n}.json")
+        if rep:
+            w.report = rep
+            w.tests = [t for t in rep.get("tests", []) if f"test_week{n}" in t.get("file", "")]
         refl = ROOT / "reflections" / f"week-{n}.md"
         if refl.exists():
-            md = refl.read_text(encoding="utf-8")
-            w.reflection_q1 = _section(md, "Q1.")
-            w.reflection_q2 = _section(md, "Q2.")
+            text = refl.read_text(encoding="utf-8")
+            w.reflection_q1 = _section(text, "Q1.")
+            w.reflection_q2 = _section(text, "Q2.")
+        w.concept_html = md(readme.parent / "CONCEPT.md")
+        w.readme_html = md(readme)
+        w.checks_html = md(readme.parent / "CHECKS.md")
         weeks.append(w)
-    prs_path = ROOT / "site" / "prs.json"
-    if prs_path.exists():
-        prs = json.loads(prs_path.read_text(encoding="utf-8"))
-        for w in weeks:
-            w.pr = prs.get(str(w.n))
+    prs = read_json(ROOT / "site" / "prs.json") or {}
+    for w in weeks:
+        w.pr = prs.get(str(w.n))
     return weeks
 
 
+# ---- report renderers (each returns HTML or "") ----------------------------------------------
+
+
+def table(headers: list[str], rows: list[list[object]]) -> str:
+    th = "".join(f"<th>{esc(h)}</th>" for h in headers)
+    trs = "".join("<tr>" + "".join(f"<td>{esc(c)}</td>" for c in r) + "</tr>" for r in rows)
+    return f'<div class="tbl"><table><thead><tr>{th}</tr></thead><tbody>{trs}</tbody></table></div>'
+
+
+def report_retrieval() -> str:
+    r = read_json(ROOT / "reports" / "retrieval.json")
+    if not r:
+        return ""
+    rows: list[list[object]] = [
+        [
+            name,
+            s["chunks"],
+            s["avg_chars"],
+            s["precision_at_k"],
+            s["recall_at_k"],
+            s["mrr"],
+            s["hit_rate"],
+        ]
+        for name, s in r["strategies"].items()
+    ]
+    return f"<p class='muted'>embedder <code>{esc(r['embedder'])}</code>, k={r['k']}</p>" + table(
+        ["strategy", "chunks", "avg chars", "P@k", "R@k", "MRR", "hit"], rows
+    )
+
+
+def report_eval() -> str:
+    r = read_json(ROOT / "reports" / "eval.json")
+    if not r:
+        return ""
+    m, t, g = r["metrics"], r["thresholds"], r["gates"]
+    keys = [
+        ("abstain_rate_unanswerable", "min_abstain"),
+        ("answer_rate_answerable", "min_answer"),
+        ("hit_rate", "min_hit"),
+        ("citation_validity", "min_citation"),
+    ]
+    rows: list[list[object]] = [
+        [k, f"{m[k]:.2f}", f"{t[tk]:.2f}", "PASS" if g[k] else "FAIL"] for k, tk in keys
+    ]
+    rows.append(["total_cost_usd", f"{m.get('total_cost_usd', 0):.4f}", "", ""])
+    return table(["metric", "value", "threshold", "verdict"], rows)
+
+
+def report_compare() -> str:
+    r = read_json(ROOT / "reports" / "compare.json")
+    if not r:
+        return ""
+    rows: list[list[object]] = [
+        [
+            mode,
+            f"{s['correct']}/{s['of']}",
+            f"{s['cost_usd']:.5f}",
+            s["mean_latency_ms"],
+            s["mean_calls"],
+        ]
+        for mode, s in r.items()
+    ]
+    return table(["mode", "correct", "cost $", "mean ms", "mean calls"], rows)
+
+
+def report_attacks() -> str:
+    r = read_json(ROOT / "reports" / "attacks.json")
+    if not r:
+        return ""
+    rows: list[list[object]] = [
+        [
+            row["id"],
+            row["name"],
+            "SUCCEEDED" if row["attack_succeeded"] else "held",
+            row["injection_detected"],
+        ]
+        for row in r["rows"]
+    ]
+    verdict = (
+        f"<p><b>{r['succeeded']} of {r['attacks']} attacks succeeded</b> "
+        f"(guard {esc(r.get('guard_enabled'))})</p>"
+    )
+    return verdict + table(["id", "attack", "result", "detected"], rows)
+
+
+def report_traces() -> str:
+    r = read_json(ROOT / "reports" / "traces.json")
+    if not r:
+        return ""
+    rows: list[list[object]] = [
+        [name, s["count"], s["p50_ms"], s["p95_ms"], f"{s['cost_usd']:.5f}"]
+        for name, s in r["steps"].items()
+    ]
+    errs = ", ".join(f"{k}: {v}" for k, v in (r.get("errors") or {}).items()) or "none"
+    return (
+        f"<p class='muted'>{r['requests']} requests, ${r['total_cost_usd']:.5f} total; "
+        f"failures: {esc(errs)}</p>" + table(["step", "n", "p50 ms", "p95 ms", "cost $"], rows)
+    )
+
+
+REPORTS = {
+    "retrieval": ("Retrieval evaluation", report_retrieval),
+    "eval": ("Evaluation gate", report_eval),
+    "compare": ("Three ways compared", report_compare),
+    "attacks": ("Attack set", report_attacks),
+    "traces": ("Trace report", report_traces),
+}
+
+
+# ---- page --------------------------------------------------------------------------------------
+
 CSS = """
-:root { --bg:#fafaf7; --fg:#1b1b1b; --muted:#6b6b6b; --line:#e4e2dc; --card:#ffffff;
-        --green:#1f7a3d; --red:#b3261e; --grey:#9a9a9a; --accent:#2b4c7e; }
+:root { --bg:#f6f7f5; --fg:#1c2128; --muted:#5b6470; --line:#dbe0e3; --card:#ffffff; --soft:#e8eff5;
+        --green:#2e7d4f; --red:#b3261e; --grey:#9a9a9a; --accent:#1f5f8b; --code:#eef1f3; }
 @media (prefers-color-scheme: dark) {
-  :root { --bg:#141414; --fg:#ececec; --muted:#a3a3a3; --line:#2c2c2c; --card:#1d1d1d;
-          --green:#4cc27a; --red:#ff6b61; --grey:#777; --accent:#8fb3ff; }
+  :root { --bg:#141719; --fg:#e7eaec; --muted:#9aa4ad; --line:#2c3339; --card:#1c2024; --soft:#22303a;
+          --green:#6fcf97; --red:#ff6b61; --grey:#777; --accent:#7db4dc; --code:#252b30; }
 }
 * { box-sizing: border-box; }
 body { margin:0; background:var(--bg); color:var(--fg);
-       font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
-main { max-width: 900px; margin: 0 auto; padding: 32px 16px 64px; }
+       font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1000px; margin: 0 auto; padding: 24px 16px 80px; }
+a { color: var(--accent); }
 h1 { font-size: 26px; margin: 0 0 4px; }
-.sub { color: var(--muted); margin: 0 0 20px; }
-.sub a { color: var(--accent); }
-.strip { display:grid; grid-template-columns: repeat(11, 1fr); gap:4px; margin: 0 0 28px; }
+h2 { font-size: 21px; margin: 32px 0 10px; }
+h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 6px; }
+.sub { color: var(--muted); margin: 0 0 14px; }
+.muted { color: var(--muted); font-size: 14px; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em; background: var(--code); padding: 1px 5px; border-radius: 4px; }
+pre { background: var(--code); padding: 12px 14px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+pre code { background: none; padding: 0; }
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0 14px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 480px; }
+th, td { text-align: left; vertical-align: top; padding: 7px 10px; border-bottom: 1px solid var(--line); }
+th { background: var(--soft); font-weight: 600; }
+tr:last-child td { border-bottom: none; }
+.doc table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 8px 0 14px; display: block; overflow-x: auto; }
+.doc th, .doc td { text-align: left; vertical-align: top; padding: 6px 9px; border-bottom: 1px solid var(--line); }
+.doc th { background: var(--soft); }
+.doc blockquote { margin: 0 0 12px; padding: 6px 14px; border-left: 3px solid var(--accent); background: var(--soft); border-radius: 0 8px 8px 0; }
+.doc h2 { font-size: 17px; margin: 18px 0 6px; }
+.doc h3 { font-size: 15px; text-transform: none; letter-spacing: 0; color: var(--fg); margin: 14px 0 4px; }
+.doc p, .doc li { max-width: 78ch; }
+.topbar { display:flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 18px; }
+.btn { display:inline-block; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--fg); text-decoration: none; font-size: 14px; cursor: pointer; font-family: inherit; }
+.btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+nav.tabs { display:flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--line); margin: 0 0 20px; }
+nav.tabs button { background: none; border: none; border-bottom: 2px solid transparent; padding: 10px 12px; font: inherit; color: var(--muted); cursor: pointer; }
+nav.tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+section[role="tabpanel"][hidden] { display: none; }
+.strip { display:grid; grid-template-columns: repeat(11, 1fr); gap:4px; margin: 0 0 6px; }
 .strip div { height: 10px; border-radius: 3px; background: var(--line); }
-.strip div.green { background: var(--green); } .strip div.red { background: var(--red); }
-.strip div.touched { background: var(--grey); }
-.legend { font-size: 13px; color: var(--muted); margin: -20px 0 28px; }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
-        padding: 18px 20px; margin: 0 0 16px; }
+.strip div.green { background: var(--green); } .strip div.red { background: var(--red); } .strip div.touched { background: var(--grey); }
+.legend { font-size: 13px; color: var(--muted); margin: 0 0 22px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin: 0 0 14px; }
 .card h2 { font-size: 18px; margin: 0; display:flex; align-items:center; gap:10px; }
 .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--grey); flex: none; }
 .dot.green { background: var(--green); } .dot.red { background: var(--red); }
 .concept { font-style: italic; color: var(--muted); margin: 6px 0 12px; }
 .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@media (max-width: 640px) { .grid { grid-template-columns: 1fr; } .strip div { height: 8px; } }
-h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted);
-     margin: 0 0 6px; }
-ul { margin: 0; padding-left: 18px; } li { margin: 2px 0; }
+@media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+ul.checks { margin: 0; padding-left: 18px; } ul.checks li { margin: 2px 0; }
 li.pass::marker { color: var(--green); } li.fail::marker { color: var(--red); }
-blockquote { margin: 0; padding: 0 0 0 12px; border-left: 3px solid var(--line);
-             white-space: pre-wrap; font-size: 15px; }
-.gates span { display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: 13px;
-              border: 1px solid var(--line); margin: 0 6px 6px 0; }
+blockquote.refl { margin: 0; padding: 0 0 0 12px; border-left: 3px solid var(--line); white-space: pre-wrap; font-size: 15px; }
+.gates span { display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: 13px; border: 1px solid var(--line); margin: 0 6px 6px 0; }
 .gates span.pass { border-color: var(--green); color: var(--green); }
 .gates span.fail { border-color: var(--red); color: var(--red); }
-.next { margin-top: 12px; font-size: 14px; color: var(--muted); }
-.next a { color: var(--accent); }
+details { border-top: 1px solid var(--line); padding: 8px 0; }
+details summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+details[open] summary { margin-bottom: 8px; }
+.play { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 760px) { .play { grid-template-columns: 1fr; } }
+.play label { display:block; font-size: 13px; color: var(--muted); margin: 8px 0 4px; }
+.play input[type=text], .play textarea, .play select, #pg-base { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); font: inherit; }
+.play textarea { min-height: 70px; }
+.play .out { background: var(--code); border-radius: 8px; padding: 10px 12px; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; white-space: pre-wrap; min-height: 60px; overflow-x: auto; margin-top: 8px; }
+.status { font-size: 13px; color: var(--muted); }
 footer { color: var(--muted); font-size: 13px; margin-top: 32px; }
 """
 
+JS = r"""
+(function () {
+  const tabs = document.querySelectorAll('nav.tabs button');
+  const panels = document.querySelectorAll('section[role="tabpanel"]');
+  function show(id, push) {
+    tabs.forEach(b => b.setAttribute('aria-selected', b.dataset.tab === id ? 'true' : 'false'));
+    panels.forEach(p => { p.hidden = p.id !== id; });
+    if (push) history.replaceState(null, '', '#' + id);
+    try { localStorage.setItem('hub.tab', id); } catch (e) {}
+  }
+  tabs.forEach(b => b.addEventListener('click', () => show(b.dataset.tab, true)));
+  let initial = location.hash.replace('#', '');
+  if (initial.startsWith('week-')) {
+    show('weeks', false);
+    const el = document.getElementById(initial);
+    if (el) el.scrollIntoView();
+  } else {
+    if (!initial) { try { initial = localStorage.getItem('hub.tab') || ''; } catch (e) {} }
+    if (!document.getElementById(initial)) initial = 'start';
+    show(initial, false);
+  }
+  document.querySelectorAll('a[href^="#week-"]').forEach(a => a.addEventListener('click', (ev) => {
+    ev.preventDefault(); show('weeks', true);
+    const el = document.getElementById(a.getAttribute('href').slice(1)); if (el) el.scrollIntoView();
+  }));
 
-def esc(s: object) -> str:
-    return html.escape(str(s))
+  // ---- playground ------------------------------------------------------------------------
+  const base = document.getElementById('pg-base');
+  const st = document.getElementById('pg-status');
+  const cfg = window.HUB || {};
+  try { base.value = localStorage.getItem('hub.base') || cfg.liveUrl || ''; } catch (e) { base.value = cfg.liveUrl || ''; }
+  base.addEventListener('change', () => { try { localStorage.setItem('hub.base', base.value.trim()); } catch (e) {} });
+  function url(p) { return base.value.trim().replace(/\/$/, '') + p; }
+  function out(id, v) { document.getElementById(id).textContent = typeof v === 'string' ? v : JSON.stringify(v, null, 2); }
+  async function call(id, p, opts) {
+    if (!base.value.trim()) { out(id, 'Set the service URL first (your Space, or a public Codespace port).'); return; }
+    out(id, '...');
+    const t0 = performance.now();
+    try {
+      const r = await fetch(url(p), opts);
+      const ms = Math.round(performance.now() - t0);
+      const rid = r.headers.get('X-Request-Id');
+      let body; try { body = await r.json(); } catch (e) { body = await r.text(); }
+      out(id, 'HTTP ' + r.status + ' in ' + ms + ' ms' + (rid ? '  request ' + rid : '') + '\n' + JSON.stringify(body, null, 2));
+      st.textContent = 'last call: HTTP ' + r.status;
+      return body;
+    } catch (e) {
+      out(id, 'Could not reach ' + url(p) + '\n' + e + '\n\nIf the service is running, check that CORS_ORIGINS allows this page and the port is public.');
+    }
+  }
+  const on = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
+  on('pg-health', () => call('pg-health-out', '/health'));
+  on('pg-upload', async () => {
+    const f = document.getElementById('pg-file').files[0];
+    if (!f) { out('pg-upload-out', 'Choose a file first.'); return; }
+    const fd = new FormData(); fd.append('file', f);
+    const b = await call('pg-upload-out', '/documents', { method: 'POST', body: fd });
+    if (b && b.id) document.getElementById('pg-docid').value = b.id;
+  });
+  on('pg-extract', () => call('pg-extract-out', '/documents/' + document.getElementById('pg-docid').value + '/extract', { method: 'POST' }));
+  on('pg-index', () => call('pg-search-out', '/index', { method: 'POST' }));
+  on('pg-search', () => call('pg-search-out', '/search?q=' + encodeURIComponent(document.getElementById('pg-q').value) + '&k=3'));
+  on('pg-ask', () => call('pg-ask-out', '/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: document.getElementById('pg-question').value }) }));
+  on('pg-task', () => call('pg-task-out', '/tasks/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: document.getElementById('pg-tq').value, mode: document.getElementById('pg-mode').value, approved: document.getElementById('pg-approved').checked }) }));
+  on('pg-traces', () => call('pg-traces-out', '/traces?limit=10'));
+})();
+"""
 
 
-def render(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
-    area_state: dict[int, str] = {}
-    for w in weeks:
-        for a in WEEK_AREAS.get(w.n, []):
-            area_state[a] = w.state if w.state != "not started" else "touched"
-    strip = "".join(
-        f'<div class="{area_state.get(a, "")}" title="{a}. {esc(AREAS[a])}"></div>'
-        for a in range(1, 12)
+def week_card(w: Week, repo: str) -> str:
+    gates = ""
+    if w.report:
+        gates = "".join(
+            f'<span class="{"pass" if ok else "fail"}">{esc(k)}</span>'
+            for k, ok in (w.report.get("gates") or {}).items()
+        )
+    tests = "".join(
+        f'<li class="{"pass" if t["outcome"] == "passed" else "fail"}">'
+        f"{esc(t['id'].removeprefix('test_').replace('_', ' '))}</li>"
+        for t in w.tests
     )
-
-    done = [w for w in weeks if w.state == "green"]
-    current = next((w for w in weeks if w.state != "green"), None)
-    if current is None:
-        you_are_here = "Every released week is green."
-    else:
-        you_are_here = (
-            f"Week {current.n}: {esc(current.title)} &mdash; "
-            f'<a href="https://github.com/{esc(repo)}/blob/main/weeks/{current.n}/README.md">'
-            "open the README</a>"
+    pr = ""
+    if w.pr:
+        pr = (
+            f'<a href="{esc(w.pr.get("url", "#"))}">PR #{esc(w.pr.get("number", "?"))}</a> '
+            f"&middot; {esc(w.pr.get('state', ''))} &middot; "
+            f"{esc(w.pr.get('review_comments', 0))} mentor comments"
         )
-
-    cards = []
-    for w in weeks:
-        gates = ""
-        if w.report:
-            gates = "".join(
-                f'<span class="{"pass" if ok else "fail"}">{esc(k)}</span>'
-                for k, ok in (w.report.get("gates") or {}).items()
+    refl = ""
+    if w.reflection_q1:
+        refl += (
+            "<h3>Concept, in the fellow's words</h3>"
+            f"<blockquote class='refl'>{esc(w.reflection_q1)}</blockquote>"
+        )
+    if w.reflection_q2:
+        refl += (
+            "<h3 style='margin-top:10px'>What surprised them</h3>"
+            f"<blockquote class='refl'>{esc(w.reflection_q2)}</blockquote>"
+        )
+    no_refl = (
+        f"<h3>Reflection</h3><div class='muted'>not written yet: reflections/week-{w.n}.md</div>"
+    )
+    areas = ", ".join(f"{a} {AREAS[a]}" for a in WEEK_AREAS.get(w.n, []))
+    base = f"https://github.com/{repo}/blob/main/weeks/{w.n}"
+    panels = ""
+    for label, body, fname in (
+        ("Concept", w.concept_html, "CONCEPT.md"),
+        ("Exercise (README)", w.readme_html, "README.md"),
+        ("What the gate checks", w.checks_html, "CHECKS.md"),
+    ):
+        if body:
+            panels += (
+                f"<details><summary>{label} <span class='muted'>&middot; "
+                f"<a href='{base}/{fname}'>{fname} on GitHub</a></span></summary>"
+                f"<div class='doc'>{body}</div></details>"
             )
-        tests = "".join(
-            f'<li class="{t["outcome"] == "passed" and "pass" or "fail"}">'
-            f"{esc(t['id'].removeprefix('test_').replace('_', ' '))}</li>"
-            for t in w.tests
-        )
-        pr = ""
-        if w.pr:
-            pr = (
-                f'<a href="{esc(w.pr.get("url", "#"))}">PR #{esc(w.pr.get("number", "?"))}</a> '
-                f"&middot; {esc(w.pr.get('state', ''))} &middot; "
-                f"{esc(w.pr.get('review_comments', 0))} mentor comments"
-            )
-        refl = ""
-        if w.reflection_q1:
-            refl += "<h3>Concept, in the fellow's words</h3>"
-            refl += f"<blockquote>{esc(w.reflection_q1)}</blockquote>"
-        if w.reflection_q2:
-            refl += "<h3 style='margin-top:10px'>What surprised them</h3>"
-            refl += f"<blockquote>{esc(w.reflection_q2)}</blockquote>"
-        checks = (
-            f"<h3 style='margin-top:8px'>This week's checks</h3><ul>{tests}</ul>" if tests else ""
-        )
-        review = f"<h3 style='margin-top:10px'>Review</h3><div>{pr}</div>" if pr else ""
-        no_refl = "<h3>Reflection</h3><div style='color:var(--muted)'>not written yet</div>"
-        areas = ", ".join(f"{a} {AREAS[a]}" for a in WEEK_AREAS.get(w.n, []))
-        cards.append(
-            f"""
-<section class="card">
+    rep_key = WEEK_REPORTS.get(w.n)
+    if rep_key:
+        title, fn = REPORTS[rep_key]
+        body = fn()
+        if body:
+            panels += f"<details open><summary>{title}</summary>{body}</details>"
+    checks = (
+        f"<h3 style='margin-top:8px'>This week's checks</h3><ul class='checks'>{tests}</ul>"
+        if tests
+        else ""
+    )
+    review = f"<h3 style='margin-top:10px'>Review</h3><div>{pr}</div>" if pr else ""
+    return f"""
+<section class="card" id="week-{w.n}">
   <h2><span class="dot {w.state}"></span>Week {w.n} &mdash; {esc(w.title)}</h2>
   <p class="concept">{esc(CONCEPTS.get(w.n, ""))}</p>
   <div class="grid">
@@ -226,41 +460,163 @@ def render(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
     </div>
     <div>{refl or no_refl}</div>
   </div>
+  {panels}
 </section>"""
-        )
 
-    live = ""
-    if live_url:
-        live = f'&middot; live service: <a href="{esc(live_url)}">{esc(live_url)}</a>'
-    legend = (
-        "The eleven areas of the track. Green: this week's gate passed. "
-        "Red: it did not. Grey: reached, not yet run."
+
+def material_links(weeks: list[Week], repo: str) -> str:
+    items = []
+    for w in weeks:
+        base = f"https://github.com/{esc(repo)}/blob/main/weeks/{w.n}"
+        parts = [f'<a href="{base}/README.md">exercise</a>']
+        if (ROOT / "weeks" / str(w.n) / "CONCEPT.md").exists():
+            parts.insert(0, f'<a href="{base}/CONCEPT.md">concept</a>')
+        if (ROOT / "weeks" / str(w.n) / "CHECKS.md").exists():
+            parts.append(f'<a href="{base}/CHECKS.md">checks</a>')
+        items.append(f"<li>Week {w.n}: {' &middot; '.join(parts)}</li>")
+    return "".join(items)
+
+
+def render(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
+    area_state: dict[int, str] = {}
+    for w in weeks:
+        for a in WEEK_AREAS.get(w.n, []):
+            area_state[a] = w.state if w.state != "not started" else "touched"
+    strip = "".join(
+        f'<div class="{area_state.get(a, "")}" title="{a}. {esc(AREAS[a])}"></div>'
+        for a in range(1, 12)
     )
-    note = (
-        f"{len(done)} of {len(weeks)} released weeks green. This page is rebuilt from the repo "
-        "on every merge to <code>main</code>; nothing on it is typed in by hand."
+    done = [w for w in weeks if w.state == "green"]
+    current = next((w for w in weeks if w.state != "green"), None)
+    here = (
+        "every released week is green."
+        if current is None
+        else f'Week {current.n}, {esc(current.title)} &mdash; <a href="#week-{current.n}">open the card</a>'
     )
-    footer = (
-        "Built by <code>scripts/build_pages.py</code> from <code>reports/</code>, "
-        "<code>reflections/</code> and the PRs. Mentors: the held-out set and rubric live in "
-        "the mentor kit, not here."
+    live_html = (
+        f'<a class="btn" href="{esc(live_url)}/docs">Live API docs</a> '
+        f'<a class="btn" href="{esc(live_url)}/health">/health</a>'
+        if live_url
+        else '<span class="muted">no live URL yet: see Start here &rarr; Deploy</span>'
     )
+    start_html = md(ROOT / "README.md")
+    reports_html = (
+        "".join(
+            f"<h2>{title}</h2>{body}" for _key, (title, fn) in REPORTS.items() if (body := fn())
+        )
+        or "<p class='muted'>No reports yet. They appear as each week's measurement script runs.</p>"
+    )
+    cfg = json.dumps({"liveUrl": live_url, "repo": repo})
+    cards = "".join(week_card(w, repo) for w in weeks)
+    gh = f"https://github.com/{esc(repo)}"
+
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI Engineering track &mdash; progress</title>
-<style>{CSS}</style></head>
+<title>AI Engineering track &mdash; hub</title>
+<style>{CSS}</style>
+<script>window.HUB = {cfg};</script>
+</head>
 <body><main>
 <h1>AI Engineering track</h1>
-<p class="sub"><a href="https://github.com/{esc(repo)}">{esc(repo)}</a>
- &middot; route: <b>{esc(route)}</b> {live}</p>
+<p class="sub"><a href="{gh}">{esc(repo)}</a> &middot; route <b>{esc(route)}</b> &middot; {len(done)} of {len(weeks)} released weeks green</p>
+<div class="topbar">
+  <a class="btn primary" href="https://codespaces.new/{esc(repo)}?quickstart=1">Open in Codespaces</a>
+  <a class="btn" href="{gh}/pulls">Pull requests</a>
+  <a class="btn" href="{gh}/actions">CI runs</a>
+  {live_html}
+</div>
 <div class="strip">{strip}</div>
-<p class="legend">{legend}</p>
-<section class="card"><h3>You are here</h3><div>{you_are_here}</div>
-<div class="next">{note}</div></section>
-{"".join(cards)}
-<footer>{footer}</footer>
-</main></body></html>
+<p class="legend">The eleven areas of the track. Green: that week's gate passed. Red: it did not. Grey: reached, not yet run. You are here: {here}</p>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" data-tab="start">Start here</button>
+  <button role="tab" data-tab="weeks">Weeks</button>
+  <button role="tab" data-tab="playground">Playground</button>
+  <button role="tab" data-tab="reports">Reports</button>
+  <button role="tab" data-tab="links">Links</button>
+</nav>
+
+<section id="start" role="tabpanel" class="doc">{start_html}</section>
+
+<section id="weeks" role="tabpanel">{cards}</section>
+
+<section id="playground" role="tabpanel">
+  <p>Call your running service from this page. It works against your Hugging Face Space (set the repository variable <code>LIVE_URL</code>) or a Codespace port you have made public. Nothing here is stored except the URL, in your own browser.</p>
+  <label for="pg-base" class="status">Service URL</label>
+  <input type="text" id="pg-base" placeholder="https://yourname-ai-eng-track.hf.space">
+  <p id="pg-status" class="status"></p>
+  <div class="play">
+    <div class="card"><h3>Week 0 &middot; health and upload</h3>
+      <button class="btn" id="pg-health">GET /health</button>
+      <div class="out" id="pg-health-out"></div>
+      <label for="pg-file">Upload a .md / .txt / .csv / .pdf</label>
+      <input type="file" id="pg-file"> <button class="btn" id="pg-upload">POST /documents</button>
+      <div class="out" id="pg-upload-out"></div>
+    </div>
+    <div class="card"><h3>Week 1 &middot; extract</h3>
+      <label for="pg-docid">Document id</label>
+      <input type="text" id="pg-docid" value="1">
+      <button class="btn" id="pg-extract">POST /documents/{{id}}/extract</button>
+      <div class="out" id="pg-extract-out"></div>
+      <p class="status">Call it twice: the second answer must say <code>cached: true</code>.</p>
+    </div>
+    <div class="card"><h3>Week 2 &middot; index and search</h3>
+      <button class="btn" id="pg-index">POST /index</button>
+      <label for="pg-q">Query</label>
+      <input type="text" id="pg-q" value="mileage rate personal car">
+      <button class="btn" id="pg-search">GET /search</button>
+      <div class="out" id="pg-search-out"></div>
+    </div>
+    <div class="card"><h3>Week 3 &middot; ask</h3>
+      <label for="pg-question">Question</label>
+      <textarea id="pg-question">What is the London hotel cap in the Contoso expenses policy?</textarea>
+      <button class="btn" id="pg-ask">POST /ask</button>
+      <div class="out" id="pg-ask-out"></div>
+      <p class="status">Try one the documents cannot answer. A good system declines.</p>
+    </div>
+    <div class="card"><h3>Week 4 &middot; one task, three ways</h3>
+      <label for="pg-tq">Question</label>
+      <input type="text" id="pg-tq" value="Which invoice has the largest total due, and what is it?">
+      <label for="pg-mode">Mode</label>
+      <select id="pg-mode"><option value="plain">plain code</option><option value="workflow">workflow</option><option value="agent" selected>agent</option></select>
+      <label><input type="checkbox" id="pg-approved"> approve tools that cost money</label>
+      <button class="btn" id="pg-task">POST /tasks/run</button>
+      <div class="out" id="pg-task-out"></div>
+    </div>
+    <div class="card"><h3>Week 5 &middot; traces</h3>
+      <button class="btn" id="pg-traces">GET /traces</button>
+      <div class="out" id="pg-traces-out"></div>
+      <p class="status">Every call above returned an <code>X-Request-Id</code>; look it up here.</p>
+    </div>
+  </div>
+</section>
+
+<section id="reports" role="tabpanel">{reports_html}</section>
+
+<section id="links" role="tabpanel" class="doc">
+  <h2>This repo</h2>
+  <ul>
+    <li><a href="{gh}">Repository</a> &middot; <a href="{gh}/pulls">pull requests</a> &middot; <a href="{gh}/actions">CI runs</a> &middot; <a href="{gh}/tree/main/reflections">reflections</a></li>
+    <li><a href="https://codespaces.new/{esc(repo)}?quickstart=1">Open in Codespaces</a></li>
+    <li>{live_html}</li>
+  </ul>
+  <h2>Material</h2>
+  <ul>{material_links(weeks, repo)}</ul>
+  <h2>Providers</h2>
+  <ul>
+    <li><a href="https://aistudio.google.com/apikey">Gemini key (free tier, default)</a></li>
+    <li><a href="https://console.groq.com/keys">Groq key (second provider)</a></li>
+    <li><a href="https://huggingface.co/new-space">Create a Hugging Face Space</a> for the live URL</li>
+  </ul>
+  <h2>For mentors</h2>
+  <p>Runbooks, held-out sets, the rubric and reference solutions live in the private mentor kit, not here.</p>
+</section>
+
+<footer>Built by <code>scripts/build_pages.py</code> on every merge to <code>main</code> from <code>weeks/</code>, <code>reports/</code>, <code>reflections/</code> and the pull requests. Nothing on this page is typed in by hand.</footer>
+</main>
+<script>{JS}</script>
+</body></html>
 """
 
 
@@ -268,11 +624,11 @@ def main() -> int:
     weeks = load_weeks()
     route_file = ROOT / ".route"
     route = route_file.read_text().strip() if route_file.exists() else "start"
-    live_url = os.environ.get("LIVE_URL", "").strip()
+    live_url = os.environ.get("LIVE_URL", "").strip().rstrip("/")
     repo = os.environ.get("GITHUB_REPOSITORY", "anilmodest/ai-eng-track")
     OUT.parent.mkdir(exist_ok=True)
     OUT.write_text(render(weeks, route, live_url, repo), encoding="utf-8")
-    print(f"wrote {OUT.relative_to(ROOT)} ({len(weeks)} weeks)")
+    print(f"wrote {OUT.relative_to(ROOT)} ({len(weeks)} weeks, {OUT.stat().st_size // 1024} KB)")
     return 0
 
 

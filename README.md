@@ -78,11 +78,20 @@ scripts/    check.py, live_check.py, route.py, and one measurement script per we
 | 5 | Observability and guardrails | `app/guard.py` (ships as a pass-through: you get attacked first) | the attack gate |
 | 6 | Shipping and proving it | a deploy, a break, a rollback, a write-up | Week 6 tests |
 
-## Your progress page
+## Your hub page
 
 Every merge to `main` rebuilds a page at `https://<your-user>.github.io/ai-eng-track` from what is in
-the repo: each week's gate, your own words from `reflections/`, your PRs and how many mentor comments
-they got. Nothing on it is typed in by hand. Your mentor opens it before every session.
+the repo. It is the one place to start from:
+
+- **Start here**: this README.
+- **Weeks**: one card per week with the gate result, your PR and its mentor comments, your own
+  words from `reflections/`, and the week's concept, exercise and checks rendered inline, plus
+  that week's measurement table when it exists.
+- **Playground**: call your running service (your Space, or a public Codespace port) from the
+  browser: upload, extract, search, ask, run a task three ways, read traces.
+- **Reports** and **Links**.
+
+Nothing on it is typed in by hand. Your mentor opens it before every session.
 
 One-time switch, 10 seconds: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 Until you do, the workflow builds the page but cannot publish it, and says so.

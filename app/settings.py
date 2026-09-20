@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     # Week 6: shipping
     app_version: str = "0.1.0"
     git_sha: str = "dev"
+    # Which browser origins may call the API (the hub page's playground). "*" is the learning
+    # default; a Pro exercise narrows it to the fellow's own Pages origin.
+    cors_origins: str = "*"
 
     # Test-only: script for the fake provider, e.g. "429,429,ok" (see app/llm/providers/fake.py)
     fake_script: str = "ok"

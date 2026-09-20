@@ -4,12 +4,14 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlmodel import Session
 
 from app.api import ask, documents, extract, health, search, tasks, traces
 from app.api.schemas import ErrorOut
 from app.db.session import get_engine
+from app.settings import get_settings
 from app.trace import ErrorKind, begin_request, end_request, mark_error
 
 
@@ -27,6 +29,14 @@ app.include_router(ask.router)
 app.include_router(tasks.router)
 app.include_router(traces.router)
 app.include_router(health.router)
+# The hub page (GitHub Pages) calls the live service from the browser: CORS must allow it.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[o.strip() for o in get_settings().cors_origins.split(",")],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["X-Request-Id"],
+)
 
 
 @app.middleware("http")

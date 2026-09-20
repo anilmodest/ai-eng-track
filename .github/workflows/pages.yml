@@ -1,5 +1,5 @@
-name: progress page
-# Rebuilds the fellow's progress page from the repo on every merge to main.
+name: hub page
+# Rebuilds the fellow's hub page from the repo on every merge to main.
 # Nothing on the page is typed by hand: it runs each released week's gate, reads reflections/
 # and the PRs, and publishes site/ to GitHub Pages.
 # One-time setup per repo: Settings -> Pages -> Source: GitHub Actions (the token cannot do it).
@@ -40,6 +40,17 @@ jobs:
               uv run python scripts/check.py --week "$w" --skip-static || true
             fi
           done
+      - name: Run the measurement scripts that need no key (fake model, hash embedder)
+        env:
+          MODEL_PROVIDER: fake_a
+          EMBED_PROVIDER: hash
+          CHUNK_STRATEGY: paragraph
+        run: |
+          uv run python scripts/retrieval_eval.py || true
+          uv run python scripts/eval.py --thresholds eval/thresholds-ci.json --db data/pages-eval.db || true
+          uv run python scripts/compare_week4.py --db data/pages-compare.db || true
+          uv run python scripts/attack.py --db data/pages-attack.db || true
+          uv run python scripts/trace_report.py --db data/pages-attack.db || true
       - name: Collect PR links and mentor comment counts
         env:
           GH_TOKEN: ${{ github.token }}
@@ -71,7 +82,7 @@ jobs:
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::warning title=Progress page not published::Switch Pages on once: repo Settings -> Pages -> Source: GitHub Actions. Then re-run this workflow."
+            echo "::warning title=Hub page not published::Switch Pages on once: repo Settings -> Pages -> Source: GitHub Actions. Then re-run this workflow."
           fi
       - uses: actions/upload-pages-artifact@v3
         if: steps.pages.outputs.enabled == 'true'
