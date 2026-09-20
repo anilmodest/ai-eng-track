@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     # Model access
-    model_provider: str = "github"
+    model_provider: str = "gemini"
     model_name: str | None = None
     model_api_key: str | None = None
     model_fallback_provider: str | None = None

@@ -19,8 +19,8 @@ The first sends one prompt five times. Note what varies: wording, facts, tokens,
 The second breaks the dependency on purpose (429, 429, ok; then a 400; then a 50 ms timeout against
 your real provider) and shows the retry helper coping. Watch the backoff delays.
 
-Both scripts need a provider. The default (`github`) works with no key inside Codespaces. If it
-does not, set `MODEL_PROVIDER=gemini` and a key: see `README.md`, Model access.
+Both scripts need a provider and a key: see `README.md`, Model access. The default is Gemini's
+free tier. If it rate-limits you, switch to `groq` or `openrouter`; that switch is the week's lesson.
 
 ## Elaboration 2 — read it (1 hour, change nothing)
 

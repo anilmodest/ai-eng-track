@@ -26,12 +26,14 @@ terminal, you are ready.
 
 ## Model access
 
-Copy `.env.example` to `.env` (Codespaces did this). By default it uses **GitHub Models** through
-the token Codespaces already has: zero signup. To use another provider, change two lines:
+Copy `.env.example` to `.env` (Codespaces did this). The default provider is **Gemini** on Google
+AI Studio's free tier: one free key, no card, from <https://aistudio.google.com/apikey>. Put it in
+`.env` as `MODEL_API_KEY`, or better, as the Codespaces secret `GEMINI_API_KEY` so it survives
+rebuilds and is never committed. To use another provider, change two lines:
 
 ```
-MODEL_PROVIDER=gemini
-MODEL_API_KEY=...        # or set GEMINI_API_KEY as a Codespaces secret
+MODEL_PROVIDER=groq
+MODEL_API_KEY=...        # or set GROQ_API_KEY as a Codespaces secret
 ```
 
 Known providers are listed in `app/llm/registry.py`. If one runs out of quota, switch. Nothing in

@@ -29,6 +29,10 @@ schema. When it does not fit, you ask once more with the error attached, then yo
 appear and vanish. If the model's name is in your code, a provider change is a code change, a
 review, a deploy. If it is in configuration, it is two lines in `.env`.
 
+This happened to this repo. Its first default provider was GitHub Models, chosen because it needed
+no signup. GitHub retired the service on 30 July 2026. The fix was one entry in `registry.py` and
+two lines in `.env.example`; not one line of the service changed. That is the whole argument.
+
 ## What this looks like in the service
 
 | Betrayal | Where the defence lives | What you do this week |

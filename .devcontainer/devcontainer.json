@@ -22,7 +22,7 @@
     "codespaces": { "openFiles": ["weeks/0/README.md"] }
   },
   "secrets": {
-    "MODEL_API_KEY": { "description": "Optional. Key for MODEL_PROVIDER in .env. Leave unset to use GitHub Models via GITHUB_TOKEN." },
-    "GEMINI_API_KEY": { "description": "Optional. Second provider for the Week 1 switch (aistudio.google.com)." }
+    "GEMINI_API_KEY": { "description": "Default provider. Free key, no card: https://aistudio.google.com/apikey" },
+    "GROQ_API_KEY": { "description": "Optional second provider for the Week 1 switch: https://console.groq.com/keys" }
   }
 }

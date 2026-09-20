@@ -20,24 +20,21 @@ class ProviderSpec:
     signup: str
 
 
+# GitHub Models ("zero signup, uses GITHUB_TOKEN") was the default here until it was retired on
+# 30 July 2026. It stayed in this file for one commit as the Week 1 lesson: providers change
+# under you, and the fix was two lines of .env, not a code change.
 PROVIDERS: dict[str, ProviderSpec] = {
-    "github": ProviderSpec(
-        base_url="https://models.github.ai/inference",
-        key_env="GITHUB_TOKEN",
-        default_model="openai/gpt-4o-mini",
-        signup="none: uses the GITHUB_TOKEN Codespaces injects",
-    ),
     "gemini": ProviderSpec(
         base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
         key_env="GEMINI_API_KEY",
-        default_model="gemini-2.0-flash",
-        signup="https://aistudio.google.com/apikey",
+        default_model="gemini-3.5-flash-lite",
+        signup="https://aistudio.google.com/apikey (free tier, no card)",
     ),
     "groq": ProviderSpec(
         base_url="https://api.groq.com/openai/v1",
         key_env="GROQ_API_KEY",
         default_model="llama-3.3-70b-versatile",
-        signup="https://console.groq.com/keys",
+        signup="https://console.groq.com/keys (free tier)",
     ),
     "openrouter": ProviderSpec(
         base_url="https://openrouter.ai/api/v1",
