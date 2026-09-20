@@ -295,70 +295,82 @@ REPORTS = {
 
 CSS = """
 :root { --bg:#f6f7f5; --fg:#1c2128; --muted:#5b6470; --line:#dbe0e3; --card:#ffffff; --soft:#e8eff5;
-        --green:#2e7d4f; --red:#b3261e; --grey:#9a9a9a; --accent:#1f5f8b; --code:#eef1f3; }
+        --green:#2e7d4f; --red:#b3261e; --grey:#9a9a9a; --accent:#1f5f8b; --accent-ink:#fff; --code:#eef1f3; }
 @media (prefers-color-scheme: dark) {
   :root { --bg:#141719; --fg:#e7eaec; --muted:#9aa4ad; --line:#2c3339; --card:#1c2024; --soft:#22303a;
-          --green:#6fcf97; --red:#ff6b61; --grey:#777; --accent:#7db4dc; --code:#252b30; }
+          --green:#6fcf97; --red:#ff6b61; --grey:#777; --accent:#7db4dc; --accent-ink:#0f1a22; --code:#252b30; }
 }
 * { box-sizing: border-box; }
 body { margin:0; background:var(--bg); color:var(--fg);
-       font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
-main { max-width: 1000px; margin: 0 auto; padding: 24px 16px 80px; }
+       font: 16px/1.55 "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 32px 20px 80px; display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 44px; }
+@media (max-width: 880px) { .wrap { grid-template-columns: minmax(0, 1fr); gap: 20px; } }
+aside { position: sticky; top: 16px; align-self: start; font-size: 14px; }
+@media (max-width: 880px) { aside { position: static; } }
+aside .eyebrow { font: 500 12px/1.4 "IBM Plex Mono", ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+aside ol { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--line); }
+aside li a { display: block; padding: 5px 12px; color: var(--muted); text-decoration: none; border-left: 2px solid transparent; margin-left: -2px; }
+aside li a:hover, aside li a.on { color: var(--fg); border-left-color: var(--accent); }
+aside .side { margin-top: 18px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+article { min-width: 0; max-width: 780px; }
 a { color: var(--accent); }
-h1 { font-size: 26px; margin: 0 0 4px; }
-h2 { font-size: 21px; margin: 32px 0 10px; }
+h1 { font-size: 32px; line-height: 1.15; margin: 0 0 6px; font-weight: 600; }
+h2 { font-size: 23px; line-height: 1.25; margin: 44px 0 10px; font-weight: 600; padding-top: 10px; border-top: 1px solid var(--line); }
+h2:first-of-type { border-top: none; padding-top: 0; }
 h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 6px; }
-.sub { color: var(--muted); margin: 0 0 14px; }
+p { margin: 0 0 12px; }
+.lead { font-size: 17px; color: var(--muted); margin: 0 0 18px; }
 .muted { color: var(--muted); font-size: 14px; }
-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em; background: var(--code); padding: 1px 5px; border-radius: 4px; }
-pre { background: var(--code); padding: 12px 14px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+code, pre { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
+code { font-size: .9em; background: var(--code); padding: 1px 5px; border-radius: 4px; }
+pre { background: var(--code); padding: 12px 14px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.5; }
 pre code { background: none; padding: 0; }
-.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0 14px; }
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0 14px; background: var(--card); }
 table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 480px; }
 th, td { text-align: left; vertical-align: top; padding: 7px 10px; border-bottom: 1px solid var(--line); }
-th { background: var(--soft); font-weight: 600; }
+th { background: var(--soft); font-weight: 600; white-space: nowrap; }
 tr:last-child td { border-bottom: none; }
 .doc table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 8px 0 14px; display: block; overflow-x: auto; }
 .doc th, .doc td { text-align: left; vertical-align: top; padding: 6px 9px; border-bottom: 1px solid var(--line); }
 .doc th { background: var(--soft); }
 .doc blockquote { margin: 0 0 12px; padding: 6px 14px; border-left: 3px solid var(--accent); background: var(--soft); border-radius: 0 8px 8px 0; }
-.doc h2 { font-size: 17px; margin: 18px 0 6px; }
+.doc h2 { font-size: 17px; margin: 18px 0 6px; border: none; padding: 0; }
 .doc h3 { font-size: 15px; text-transform: none; letter-spacing: 0; color: var(--fg); margin: 14px 0 4px; }
-.doc p, .doc li { max-width: 78ch; }
-.topbar { display:flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 18px; }
-.btn { display:inline-block; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--fg); text-decoration: none; font-size: 14px; cursor: pointer; font-family: inherit; }
-.btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.doc p, .doc li { max-width: 72ch; }
+.doc ul, .doc ol { padding-left: 22px; }
+.here { background: var(--soft); border-left: 3px solid var(--accent); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 14px 0 6px; }
+.here p { margin: 0 0 8px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { display: inline-block; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--fg); text-decoration: none; font-size: 14px; cursor: pointer; font-family: inherit; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-nav.tabs { display:flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--line); margin: 0 0 20px; }
-nav.tabs button { background: none; border: none; border-bottom: 2px solid transparent; padding: 10px 12px; font: inherit; color: var(--muted); cursor: pointer; }
-nav.tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
-section[role="tabpanel"][hidden] { display: none; }
-.strip { display:grid; grid-template-columns: repeat(11, 1fr); gap:4px; margin: 0 0 6px; }
+.strip { display: grid; grid-template-columns: repeat(11, 1fr); gap: 4px; margin: 12px 0 4px; }
 .strip div { height: 10px; border-radius: 3px; background: var(--line); }
 .strip div.green { background: var(--green); } .strip div.red { background: var(--red); } .strip div.touched { background: var(--grey); }
-.legend { font-size: 13px; color: var(--muted); margin: 0 0 22px; }
+.legend { font-size: 13px; color: var(--muted); margin: 0 0 14px; }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin: 0 0 14px; }
-.card h2 { font-size: 18px; margin: 0; display:flex; align-items:center; gap:10px; }
+.card h2 { font-size: 18px; margin: 0; padding: 0; border: none; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.card h2 .gates { margin-left: auto; }
 .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--grey); flex: none; }
 .dot.green { background: var(--green); } .dot.red { background: var(--red); }
 .concept { font-style: italic; color: var(--muted); margin: 6px 0 12px; }
-.grid { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
 ul.checks { margin: 0; padding-left: 18px; } ul.checks li { margin: 2px 0; }
 li.pass::marker { color: var(--green); } li.fail::marker { color: var(--red); }
 blockquote.refl { margin: 0; padding: 0 0 0 12px; border-left: 3px solid var(--line); white-space: pre-wrap; font-size: 15px; }
-.gates span { display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: 13px; border: 1px solid var(--line); margin: 0 6px 6px 0; }
+.gates span { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--line); margin: 0 4px 4px 0; font-weight: 400; }
 .gates span.pass { border-color: var(--green); color: var(--green); }
 .gates span.fail { border-color: var(--red); color: var(--red); }
 details { border-top: 1px solid var(--line); padding: 8px 0; }
 details summary { cursor: pointer; font-weight: 600; font-size: 14px; }
 details[open] summary { margin-bottom: 8px; }
-.play { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.play { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 760px) { .play { grid-template-columns: 1fr; } }
-.play label { display:block; font-size: 13px; color: var(--muted); margin: 8px 0 4px; }
+.play label { display: block; font-size: 13px; color: var(--muted); margin: 8px 0 4px; }
 .play input[type=text], .play textarea, .play select, #pg-base { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); font: inherit; }
 .play textarea { min-height: 70px; }
-.play .out { background: var(--code); border-radius: 8px; padding: 10px 12px; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; white-space: pre-wrap; min-height: 60px; overflow-x: auto; margin-top: 8px; }
+.play .out { background: var(--code); border-radius: 8px; padding: 10px 12px; font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; font-size: 12.5px; white-space: pre-wrap; min-height: 60px; overflow-x: auto; margin-top: 8px; }
 .status { font-size: 13px; color: var(--muted); }
 .quiz .q { padding: 10px 0; border-bottom: 1px dashed var(--line); }
 .quiz .q:last-child { border-bottom: none; }
@@ -372,37 +384,23 @@ details[open] summary { margin-bottom: 8px; }
 .quiz .why { font-size: 14px; color: var(--muted); margin: 6px 0 0 8px; border-left: 3px solid var(--line); padding-left: 10px; }
 .quiz .why.ok { border-left-color: var(--green); }
 .quiz .why.no { border-left-color: var(--red); }
-.quiz .qbar { display:flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+.quiz .qbar { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
 .qscore { font-weight: 400; font-size: 13px; color: var(--muted); }
 pre.mermaid { background: var(--card); border: 1px solid var(--line); text-align: center; overflow-x: auto; }
-footer { color: var(--muted); font-size: 13px; margin-top: 32px; }
+footer { color: var(--muted); font-size: 13px; margin-top: 40px; border-top: 1px solid var(--line); padding-top: 14px; }
 """
 
 JS = r"""
 (function () {
-  const tabs = document.querySelectorAll('nav.tabs button');
-  const panels = document.querySelectorAll('section[role="tabpanel"]');
-  function show(id, push) {
-    tabs.forEach(b => b.setAttribute('aria-selected', b.dataset.tab === id ? 'true' : 'false'));
-    panels.forEach(p => { p.hidden = p.id !== id; });
-    if (push) history.replaceState(null, '', '#' + id);
-    try { localStorage.setItem('hub.tab', id); } catch (e) {}
+  // side nav: highlight the section in view
+  const links = [...document.querySelectorAll('aside a[href^="#"]')];
+  const targets = links.map(l => document.getElementById(l.getAttribute('href').slice(1))).filter(Boolean);
+  if ('IntersectionObserver' in window && targets.length) {
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) links.forEach(l => l.classList.toggle('on', l.getAttribute('href') === '#' + e.target.id)); });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    targets.forEach(t => io.observe(t));
   }
-  tabs.forEach(b => b.addEventListener('click', () => show(b.dataset.tab, true)));
-  let initial = location.hash.replace('#', '');
-  if (initial.startsWith('week-')) {
-    show('weeks', false);
-    const el = document.getElementById(initial);
-    if (el) el.scrollIntoView();
-  } else {
-    if (!initial) { try { initial = localStorage.getItem('hub.tab') || ''; } catch (e) {} }
-    if (!document.getElementById(initial)) initial = 'start';
-    show(initial, false);
-  }
-  document.querySelectorAll('a[href^="#week-"]').forEach(a => a.addEventListener('click', (ev) => {
-    ev.preventDefault(); show('weeks', true);
-    const el = document.getElementById(a.getAttribute('href').slice(1)); if (el) el.scrollIntoView();
-  }));
 
   // ---- playground ------------------------------------------------------------------------
   const base = document.getElementById('pg-base');
@@ -456,9 +454,7 @@ JS = r"""
       if (nodes.length) { try { await mermaid.run({ nodes }); } catch (e) { console.warn(e); } }
     }
     document.querySelectorAll('details').forEach(d => d.addEventListener('toggle', () => { if (d.open) renderIn(d); }));
-    tabs.forEach(b => b.addEventListener('click', () => renderIn(document.getElementById(b.dataset.tab))));
-    const visible = document.querySelector('section[role="tabpanel"]:not([hidden])');
-    if (visible) renderIn(visible);
+    renderIn(document.body);
   }
 
   // ---- self-test ---------------------------------------------------------------------------
@@ -474,7 +470,8 @@ JS = r"""
   function paintTotals(state) {
     const t = totals(state);
     const el = document.getElementById('qtotal');
-    if (el) el.textContent = t.of ? '· self-test ' + t.got + '/' + t.of + ' (yours only)' : '';
+    if (el) el.textContent = t.of ? '<br>self-test ' + t.got + '/' + t.of + ' (yours only)' : '';
+    if (el) el.innerHTML = el.textContent;
     for (const w in quiz) {
       const sc = document.getElementById('qscore-' + w);
       const st = state[w];
@@ -604,16 +601,11 @@ def week_card(w: Week, repo: str) -> str:
     review = f"<h3 style='margin-top:10px'>Review</h3><div>{pr}</div>" if pr else ""
     return f"""
 <section class="card" id="week-{w.n}">
-  <h2><span class="dot {w.state}"></span>Week {w.n} &mdash; {esc(w.title)}</h2>
-  <p class="concept">{esc(CONCEPTS.get(w.n, ""))}</p>
+  <h2><span class="dot {w.state}"></span>Week {w.n} &mdash; {esc(w.title)}
+      <span class="gates">{gates or "<span>gate not run yet</span>"}</span></h2>
+  <p class="concept">{esc(CONCEPTS.get(w.n, ""))} <span class="muted">&middot; areas {esc(areas) or "&mdash;"}</span></p>
   <div class="grid">
-    <div>
-      <h3>Gate</h3>
-      <div class="gates">{gates or "<span>not run yet</span>"}</div>
-      {checks}
-      <h3 style="margin-top:10px">Areas</h3><div>{esc(areas) or "&mdash;"}</div>
-      {review}
-    </div>
+    <div>{checks or "<h3>This week's checks</h3><div class='muted'>run make check WEEK=" + str(w.n) + " to see them here</div>"}{review}</div>
     <div>{refl or no_refl}</div>
   </div>
   {panels}
@@ -633,6 +625,21 @@ def material_links(weeks: list[Week], repo: str) -> str:
     return "".join(items)
 
 
+def _split_track() -> dict[str, str]:
+    """docs/track.md holds three level-2 sections; return each rendered, keyed by heading."""
+    path = ROOT / "docs" / "track.md"
+    if not path.exists():
+        return {}
+    text = re.sub(r"<!--.*?-->", "", path.read_text(encoding="utf-8"), flags=re.S)
+    parts: dict[str, str] = {}
+    for m in re.finditer(r"^## (.+?)\n(.*?)(?=^## |\Z)", text, re.S | re.M):
+        body = MD.render(m.group(2))
+        parts[m.group(1).strip()] = _MERMAID.sub(
+            lambda mm: f'<pre class="mermaid">{html.unescape(mm.group(1))}</pre>', str(body)
+        )
+    return parts
+
+
 def render(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
     area_state: dict[int, str] = {}
     for w in weeks:
@@ -644,21 +651,33 @@ def render(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
     )
     done = [w for w in weeks if w.state == "green"]
     current = next((w for w in weeks if w.state != "green"), None)
-    here = (
-        "every released week is green."
-        if current is None
-        else f'Week {current.n}, {esc(current.title)} &mdash; <a href="#week-{current.n}">open the card</a>'
-    )
-    live_html = (
-        f'<a class="btn" href="{esc(live_url)}/docs">Live API docs</a> '
-        f'<a class="btn" href="{esc(live_url)}/health">/health</a>'
+    gh = f"https://github.com/{esc(repo)}"
+    codespace = f"https://codespaces.new/{esc(repo)}?quickstart=1"
+    if current is None:
+        here = "<p><b>Every released week is green.</b> Time for the write-up and the final session.</p>"
+        actions = '<a class="btn primary" href="#week-6">Open Week 6</a>'
+    else:
+        here = (
+            f"<p><b>You are on Week {current.n}: {esc(current.title)}.</b> "
+            f"{esc(CONCEPTS.get(current.n, ''))}</p>"
+        )
+        actions = (
+            f'<a class="btn primary" href="#week-{current.n}">Open Week {current.n}</a> '
+            f'<a class="btn" href="{codespace}">Open in Codespaces</a>'
+        )
+    live_line = (
+        f'Live service: <a href="{esc(live_url)}/docs">{esc(live_url)}</a> '
+        f'(<a href="{esc(live_url)}/health">/health</a>)'
         if live_url
-        else '<span class="muted">no live URL yet: see Start here &rarr; Deploy</span>'
+        else "No live service yet. The deploy step in <a href='#start'>Start here</a> gives you one."
     )
+    track = _split_track()
     start_html = md(ROOT / "README.md")
     reports_html = (
         "".join(
-            f"<h2>{title}</h2>{body}" for _key, (title, fn) in REPORTS.items() if (body := fn())
+            f"<h3 style='margin-top:14px'>{title}</h3>{body}"
+            for _key, (title, fn) in REPORTS.items()
+            if (body := fn())
         )
         or "<p class='muted'>No reports yet. They appear as each week's measurement script runs.</p>"
     )
@@ -672,113 +691,133 @@ def render(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
     }
     cfg = json.dumps({"liveUrl": live_url, "repo": repo, "quiz": quiz_data})
     cards = "".join(week_card(w, repo) for w in weeks)
-    gh = f"https://github.com/{esc(repo)}"
+    self_test = ' <span id="qtotal"></span>'
 
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI Engineering track &mdash; hub</title>
+<title>AI Engineering track</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>{CSS}</style>
 <script>window.HUB = {cfg};</script>
 </head>
-<body><main>
+<body><div class="wrap">
+<aside>
+  <p class="eyebrow">Contents</p>
+  <ol>
+    <li><a href="#track">1. The track</a></li>
+    <li><a href="#how">2. How a week works</a></li>
+    <li><a href="#start">3. Start here</a></li>
+    <li><a href="#weeks">4. The six weeks</a></li>
+    <li><a href="#sessions">5. Sessions and gates</a></li>
+    <li><a href="#playground">6. Playground</a></li>
+    <li><a href="#reports">7. Reports</a></li>
+    <li><a href="#links">8. Links</a></li>
+  </ol>
+  <p class="side"><a href="{gh}">{esc(repo)}</a><br>route <b>{esc(route)}</b><br>{len(done)} of {len(weeks)} weeks green{self_test}</p>
+</aside>
+
+<article>
 <h1>AI Engineering track</h1>
-<p class="sub"><a href="{gh}">{esc(repo)}</a> &middot; route <b>{esc(route)}</b> &middot; {len(done)} of {len(weeks)} released weeks green <span id="qtotal" class="muted"></span></p>
-<div class="topbar">
-  <a class="btn primary" href="https://codespaces.new/{esc(repo)}?quickstart=1">Open in Codespaces</a>
-  <a class="btn" href="{gh}/pulls">Pull requests</a>
-  <a class="btn" href="{gh}/actions">CI runs</a>
-  {live_html}
-</div>
+<p class="lead">One service that grows, week by week, into an AI product you can deploy, measure and defend. This page is built from your repository on every merge; nothing on it is typed in by hand.</p>
+<div class="here">{here}<div class="actions">{actions}</div></div>
+<p class="muted">{live_line}</p>
+
+<h2 id="track">1. The track</h2>
+<div class="doc">{track.get("The track", "")}</div>
 <div class="strip">{strip}</div>
-<p class="legend">The eleven areas of the track. Green: that week's gate passed. Red: it did not. Grey: reached, not yet run. You are here: {here}</p>
+<p class="legend">The eleven areas as they stand in your repo. Green: that week's gate passed. Red: it did not yet. Grey: reached, not run.</p>
 
-<nav class="tabs" role="tablist">
-  <button role="tab" data-tab="start">Start here</button>
-  <button role="tab" data-tab="weeks">Weeks</button>
-  <button role="tab" data-tab="playground">Playground</button>
-  <button role="tab" data-tab="reports">Reports</button>
-  <button role="tab" data-tab="links">Links</button>
-</nav>
+<h2 id="how">2. How a week works</h2>
+<div class="doc">{track.get("How a week works", "")}</div>
 
-<section id="start" role="tabpanel" class="doc">{start_html}</section>
+<h2 id="start">3. Start here</h2>
+<p class="lead">Three clicks, nothing to install. <a class="btn primary" href="{codespace}">Open in Codespaces</a></p>
+<div class="doc">{start_html}</div>
 
-<section id="weeks" role="tabpanel">{cards}</section>
+<h2 id="weeks">4. The six weeks</h2>
+<p class="lead">One card per week: the gate, your pull request and your own words; then the concept with its diagrams and reading list, the exercise, what the gate checks, the week's measurement, and an optional self-test.</p>
+{cards}
 
-<section id="playground" role="tabpanel">
-  <p>Call your running service from this page. It works against your Hugging Face Space (set the repository variable <code>LIVE_URL</code>) or a Codespace port you have made public. Nothing here is stored except the URL, in your own browser.</p>
-  <label for="pg-base" class="status">Service URL</label>
-  <input type="text" id="pg-base" placeholder="https://yourname-ai-eng-track.hf.space">
-  <p id="pg-status" class="status"></p>
-  <div class="play">
-    <div class="card"><h3>Week 0 &middot; health and upload</h3>
-      <button class="btn" id="pg-health">GET /health</button>
-      <div class="out" id="pg-health-out"></div>
-      <label for="pg-file">Upload a .md / .txt / .csv / .pdf</label>
-      <input type="file" id="pg-file"> <button class="btn" id="pg-upload">POST /documents</button>
-      <div class="out" id="pg-upload-out"></div>
-    </div>
-    <div class="card"><h3>Week 1 &middot; extract</h3>
-      <label for="pg-docid">Document id</label>
-      <input type="text" id="pg-docid" value="1">
-      <button class="btn" id="pg-extract">POST /documents/{{id}}/extract</button>
-      <div class="out" id="pg-extract-out"></div>
-      <p class="status">Call it twice: the second answer must say <code>cached: true</code>.</p>
-    </div>
-    <div class="card"><h3>Week 2 &middot; index and search</h3>
-      <button class="btn" id="pg-index">POST /index</button>
-      <label for="pg-q">Query</label>
-      <input type="text" id="pg-q" value="mileage rate personal car">
-      <button class="btn" id="pg-search">GET /search</button>
-      <div class="out" id="pg-search-out"></div>
-    </div>
-    <div class="card"><h3>Week 3 &middot; ask</h3>
-      <label for="pg-question">Question</label>
-      <textarea id="pg-question">What is the London hotel cap in the Contoso expenses policy?</textarea>
-      <button class="btn" id="pg-ask">POST /ask</button>
-      <div class="out" id="pg-ask-out"></div>
-      <p class="status">Try one the documents cannot answer. A good system declines.</p>
-    </div>
-    <div class="card"><h3>Week 4 &middot; one task, three ways</h3>
-      <label for="pg-tq">Question</label>
-      <input type="text" id="pg-tq" value="Which invoice has the largest total due, and what is it?">
-      <label for="pg-mode">Mode</label>
-      <select id="pg-mode"><option value="plain">plain code</option><option value="workflow">workflow</option><option value="agent" selected>agent</option></select>
-      <label><input type="checkbox" id="pg-approved"> approve tools that cost money</label>
-      <button class="btn" id="pg-task">POST /tasks/run</button>
-      <div class="out" id="pg-task-out"></div>
-    </div>
-    <div class="card"><h3>Week 5 &middot; traces</h3>
-      <button class="btn" id="pg-traces">GET /traces</button>
-      <div class="out" id="pg-traces-out"></div>
-      <p class="status">Every call above returned an <code>X-Request-Id</code>; look it up here.</p>
-    </div>
+<h2 id="sessions">5. Sessions and gates</h2>
+<div class="doc">{track.get("Sessions and gates", "")}</div>
+
+<h2 id="playground">6. Playground</h2>
+<p class="lead">Call your running service from here: your Space (set the repository variable <code>LIVE_URL</code>) or a Codespace port you have made public. Only the URL is remembered, in your browser.</p>
+<label for="pg-base" class="status">Service URL</label>
+<input type="text" id="pg-base" placeholder="https://yourname-ai-eng-track.hf.space">
+<p id="pg-status" class="status"></p>
+<div class="play">
+  <div class="card"><h3>Week 0 &middot; health and upload</h3>
+    <button class="btn" id="pg-health">GET /health</button>
+    <div class="out" id="pg-health-out"></div>
+    <label for="pg-file">Upload a .md / .txt / .csv / .pdf</label>
+    <input type="file" id="pg-file"> <button class="btn" id="pg-upload">POST /documents</button>
+    <div class="out" id="pg-upload-out"></div>
   </div>
-</section>
+  <div class="card"><h3>Week 1 &middot; extract</h3>
+    <label for="pg-docid">Document id</label>
+    <input type="text" id="pg-docid" value="1">
+    <button class="btn" id="pg-extract">POST /documents/{{id}}/extract</button>
+    <div class="out" id="pg-extract-out"></div>
+    <p class="status">Call it twice: the second answer must say <code>cached: true</code>.</p>
+  </div>
+  <div class="card"><h3>Week 2 &middot; index and search</h3>
+    <button class="btn" id="pg-index">POST /index</button>
+    <label for="pg-q">Query</label>
+    <input type="text" id="pg-q" value="mileage rate personal car">
+    <button class="btn" id="pg-search">GET /search</button>
+    <div class="out" id="pg-search-out"></div>
+  </div>
+  <div class="card"><h3>Week 3 &middot; ask</h3>
+    <label for="pg-question">Question</label>
+    <textarea id="pg-question">What is the London hotel cap in the Contoso expenses policy?</textarea>
+    <button class="btn" id="pg-ask">POST /ask</button>
+    <div class="out" id="pg-ask-out"></div>
+    <p class="status">Try one the documents cannot answer. A good system declines.</p>
+  </div>
+  <div class="card"><h3>Week 4 &middot; one task, three ways</h3>
+    <label for="pg-tq">Question</label>
+    <input type="text" id="pg-tq" value="Which invoice has the largest total due, and what is it?">
+    <label for="pg-mode">Mode</label>
+    <select id="pg-mode"><option value="plain">plain code</option><option value="workflow">workflow</option><option value="agent" selected>agent</option></select>
+    <label><input type="checkbox" id="pg-approved"> approve tools that cost money</label>
+    <button class="btn" id="pg-task">POST /tasks/run</button>
+    <div class="out" id="pg-task-out"></div>
+  </div>
+  <div class="card"><h3>Week 5 &middot; traces</h3>
+    <button class="btn" id="pg-traces">GET /traces</button>
+    <div class="out" id="pg-traces-out"></div>
+    <p class="status">Every call above returned an <code>X-Request-Id</code>; look it up here.</p>
+  </div>
+</div>
 
-<section id="reports" role="tabpanel">{reports_html}</section>
+<h2 id="reports">7. Reports</h2>
+<p class="lead">Every measurement your repo has produced, in one place.</p>
+{reports_html}
 
-<section id="links" role="tabpanel" class="doc">
-  <h2>This repo</h2>
+<h2 id="links">8. Links</h2>
+<div class="doc">
   <ul>
     <li><a href="{gh}">Repository</a> &middot; <a href="{gh}/pulls">pull requests</a> &middot; <a href="{gh}/actions">CI runs</a> &middot; <a href="{gh}/tree/main/reflections">reflections</a></li>
-    <li><a href="https://codespaces.new/{esc(repo)}?quickstart=1">Open in Codespaces</a></li>
-    <li>{live_html}</li>
+    <li><a href="{codespace}">Open in Codespaces</a></li>
+    <li>{live_line}</li>
   </ul>
-  <h2>Material</h2>
+  <h3>Material on GitHub</h3>
   <ul>{material_links(weeks, repo)}</ul>
-  <h2>Providers</h2>
+  <h3>Providers</h3>
   <ul>
     <li><a href="https://aistudio.google.com/apikey">Gemini key (free tier, default)</a></li>
     <li><a href="https://console.groq.com/keys">Groq key (second provider)</a></li>
     <li><a href="https://huggingface.co/new-space">Create a Hugging Face Space</a> for the live URL</li>
   </ul>
-  <h2>For mentors</h2>
+  <h3>For mentors</h3>
   <p>Runbooks, held-out sets, the rubric and reference solutions live in the private mentor kit, not here.</p>
-</section>
+</div>
 
-<footer>Built by <code>scripts/build_pages.py</code> on every merge to <code>main</code> from <code>weeks/</code>, <code>reports/</code>, <code>reflections/</code> and the pull requests. Nothing on this page is typed in by hand.</footer>
-</main>
+<footer>Built by <code>scripts/build_pages.py</code> on every merge to <code>main</code> from <code>docs/track.md</code>, <code>README.md</code>, <code>weeks/</code>, <code>reports/</code>, <code>reflections/</code> and the pull requests.</footer>
+</article>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <script>{JS}</script>
 </body></html>

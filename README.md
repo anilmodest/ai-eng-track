@@ -46,7 +46,9 @@ the code changes. That is the point of Week 1.
 
 ## How a week works
 
-Concept (1 h) → Elaboration (2 h) → Exercise (3–5 h) → Defence (10 min with your mentor).
+Concept → Elaboration → Exercise → Defence, every week, on one growing repo. The track, the
+four steps, the routes and how sessions and gates work are in [`docs/track.md`](docs/track.md)
+(also section 1, 2 and 5 of your hub page).
 
 - Work on a branch named `week-N`. Open a PR to `main`. CI runs `make check WEEK=N`.
 - Fill `reflections/week-N.md` (copy `REFLECTION_TEMPLATE.md` there) before you send the PR link.
@@ -66,17 +68,6 @@ samples/    three documents used by tests and live-check
 scripts/    check.py, live_check.py, route.py, and one measurement script per week
 ```
 
-## The six weeks
-
-| Week | Area | You build | Gate adds |
-| --- | --- | --- | --- |
-| 0 | Foundations (assessed) | nothing: run, trace, containerise | Week 0 tests |
-| 1 | Model as a component | `app/api/extract.py` | Week 1 tests under two fake providers |
-| 2 | Context and retrieval | `app/retrieval/metrics.py`, `by_heading` | Week 2 tests |
-| 3 | Grounding and evaluation | `app/api/ask.py` | the evaluation gate |
-| 4 | Agents, tools, MCP | `app/agents/agent.py` | Week 4 tests incl. an in-process MCP call |
-| 5 | Observability and guardrails | `app/guard.py` (ships as a pass-through: you get attacked first) | the attack gate |
-| 6 | Shipping and proving it | a deploy, a break, a rollback, a write-up | Week 6 tests |
 
 ## Your hub page
 
