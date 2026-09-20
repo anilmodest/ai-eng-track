@@ -46,7 +46,7 @@ the code changes. That is the point of Week 1.
 
 ## How a week works
 
-Concept → Elaboration → Exercise → Defence, every week, on one growing repo. The track, the
+Read → Run → Build → Check → Submit → Defend, every week, on one growing repo. The track, the
 four steps, the routes and how sessions and gates work are in [`docs/track.md`](docs/track.md)
 (also section 1, 2 and 5 of your hub page).
 

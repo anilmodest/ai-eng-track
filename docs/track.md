@@ -29,23 +29,29 @@ They get the most hours.
 
 ## How a week works
 
-Every week has the same four steps, and you never scaffold a new project after Week 0.
+Every week is the same loop, in six words you will see everywhere: **Read, Run, Build, Check,
+Submit, Defend**. You never scaffold a new project after Week 0.
 
 ```mermaid
 flowchart LR
-  A["Concept<br/>read, 1 h"] --> B["Elaboration<br/>2 guided steps, 2 h"]
-  B --> C["Exercise<br/>a change to your own service, 3–5 h"]
-  C --> D["Defence<br/>10 min aloud with your mentor"]
-  D --> E["PR merged"]
+  A["Read<br/>the concept, 1 h"] --> B["Run<br/>the scripts, 2 h"]
+  B --> C["Build<br/>the one file, 3–5 h"]
+  C --> D["Check<br/>make check WEEK=N"]
+  D --> E["Submit<br/>PR + reflection"]
+  E --> F["Defend<br/>the session, 40 min"]
+  F --> G["merge"]
 ```
 
-- **Concept**: one page, one sentence you must be able to say back in your own words, a few
-  diagrams and a short reading list.
-- **Elaboration**: run one or two small scripts and read a few files. Change nothing yet.
-- **Exercise**: build the one piece that week leaves out (it ships as a stub with the build order
-  in comments), then measure something with the week's script.
-- **Defence**: a 30–40 minute session where your mentor probes your pull request and runs a few
-  inputs you have not seen. Then the next week's sentence.
+- **Read**: one page, one sentence you must be able to say back in your own words, a few
+  diagrams and a short reading list. Write the sentence in `reflections/week-N.md`, Q1.
+- **Run**: one or two small scripts and a few files to read. Change nothing yet.
+- **Build**: the one piece that week leaves out ships as a stub with the build order in comments.
+  Build it, then measure something with the week's script.
+- **Check**: `make check WEEK=N`, as often as you like. Green is the goal, not the end.
+- **Submit**: a pull request from branch `week-N` to `main`, and your reflection, 24 hours before
+  the session.
+- **Defend**: a 30–40 minute session where your mentor probes your pull request and runs inputs
+  you have not seen. Then the next week's sentence.
 
 Your **route** (start, core or pro) is set by your mentor after Week 0. The exercises are the same
 on every route; what changes is how much is given to you, which extra checks run, and where your

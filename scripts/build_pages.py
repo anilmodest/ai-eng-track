@@ -64,6 +64,47 @@ CONCEPTS = {
 # Which measurement report belongs to which week's card.
 WEEK_REPORTS = {2: "retrieval", 3: "eval", 4: "compare", 5: "attacks", 6: "traces"}
 
+# The loop, per week: what to run, which file(s) to build, how to measure. Mirrors weeks/N/README.md.
+STEPS = ["Read", "Run", "Build", "Check", "Submit"]
+WEEK_RUN: dict[int, list[str]] = {
+    0: ["make check WEEK=0", "make run", "docker build -t ai-eng-track ."],
+    1: ["uv run python explore/w1_01_same_prompt_x5.py", "uv run python explore/w1_02_break_it.py"],
+    2: [
+        "uv run python explore/w2_01_chunk_and_look.py",
+        "uv run python explore/w2_02_lost_in_the_middle.py --trials 3 --filler 40",
+    ],
+    3: ["uv run python explore/w3_01_ask_without_a_net.py"],
+    4: ["uv run python explore/w4_01_watch_the_agent_think.py"],
+    5: ["uv run python explore/w5_01_read_a_trace.py", "uv run python scripts/attack.py"],
+    6: ["uv run python scripts/smoke.py http://127.0.0.1:8000"],
+}
+WEEK_BUILD: dict[int, list[str]] = {
+    0: [],
+    1: ["app/api/extract.py"],
+    2: ["app/retrieval/metrics.py", "app/retrieval/chunkers.py"],
+    3: ["app/api/ask.py"],
+    4: ["app/agents/agent.py"],
+    5: ["app/guard.py"],
+    6: ["reflections/writeup.md"],
+}
+WEEK_MEASURE: dict[int, str] = {
+    1: "make live-check",
+    2: "uv run python scripts/retrieval_eval.py",
+    3: "uv run python scripts/eval.py",
+    4: "uv run python scripts/compare_week4.py",
+    5: "uv run python scripts/attack.py",
+    6: "uv run python scripts/smoke.py $LIVE_URL --expect-sha <sha>",
+}
+WEEK_BUILD_NOTE: dict[int, str] = {
+    0: "Nothing to build. Run the service, trace one upload aloud, build the Docker image.",
+    1: "The endpoint is a stub with the build order in comments. Every test in tests/weeks/test_week1.py is a sentence from the concept.",
+    2: "Metrics raise NotImplementedError; by_heading falls back to paragraphs. Then measure four strategies.",
+    3: "POST /ask answers 501 until you build the two abstention gates and citations.",
+    4: "run_agent returns not_implemented. Build the loop: wall, money checkpoint, recovery.",
+    5: "The guard ships as a pass-through: get attacked first, then build the four defences.",
+    6: "Tag, deploy, break, roll back, then write the one page that says what it did for the business.",
+}
+
 
 def esc(s: object) -> str:
     return html.escape(str(s))
@@ -140,6 +181,28 @@ class Week:
     readme_html: str = ""
     checks_html: str = ""
     quiz: list[Question] = field(default_factory=list)
+    has_reflection: bool = False
+
+    @property
+    def merged(self) -> bool:
+        return bool(self.pr and str(self.pr.get("state", "")).upper() == "MERGED")
+
+    @property
+    def done(self) -> bool:
+        return self.state == "green" and (self.merged or self.n == 0)
+
+    @property
+    def step(self) -> str:
+        """Where a fellow most likely is inside this week, from files alone."""
+        if self.pr and not self.merged:
+            return "Submit"
+        if self.state == "green":
+            return "Submit"
+        if self.has_reflection:
+            return "Build"
+        if self.state == "red":
+            return "Build"
+        return "Read"
 
     @property
     def state(self) -> str:
@@ -161,13 +224,15 @@ def load_weeks() -> list[Week]:
     for readme in sorted(ROOT.glob("weeks/*/README.md")):
         n = int(readme.parent.name)
         first = readme.read_text(encoding="utf-8").splitlines()[0]
-        w = Week(n=n, title=first.lstrip("# ").strip())
+        title = re.sub(r"^Week \d+\s*[—-]\s*", "", first.lstrip("# ").strip())
+        w = Week(n=n, title=title)
         rep = read_json(ROOT / "reports" / f"week-{n}.json")
         if rep:
             w.report = rep
             w.tests = [t for t in rep.get("tests", []) if f"test_week{n}" in t.get("file", "")]
         refl = ROOT / "reflections" / f"week-{n}.md"
         if refl.exists():
+            w.has_reflection = True
             text = refl.read_text(encoding="utf-8")
             w.reflection_q1 = _section(text, "Q1.")
             w.reflection_q2 = _section(text, "Q2.")
@@ -388,12 +453,63 @@ details[open] summary { margin-bottom: 8px; }
 .qscore { font-weight: 400; font-size: 13px; color: var(--muted); }
 pre.mermaid { background: var(--card); border: 1px solid var(--line); text-align: center; overflow-x: auto; }
 footer { color: var(--muted); font-size: 13px; margin-top: 40px; border-top: 1px solid var(--line); padding-top: 14px; }
+/* level 1: action */
+.next { border: 2px solid var(--accent); border-radius: 12px; padding: 16px 18px; margin: 18px 0 10px; background: var(--card); }
+.next h2 { border: none; padding: 0; margin: 0 0 6px; font-size: 20px; }
+.next .what { margin: 0 0 12px; }
+.steps { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 12px; }
+.steps span { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.steps span.done { border-color: var(--green); color: var(--green); }
+.steps span.now { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+/* stepper */
+.stepper { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 16px 0 6px; }
+.stepper a { display: block; text-decoration: none; color: var(--muted); font-size: 12px; text-align: center; padding: 8px 4px 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); }
+.stepper a b { display: block; font-size: 15px; color: var(--fg); }
+.stepper a.done { border-color: var(--green); } .stepper a.done b { color: var(--green); }
+.stepper a.now { border-color: var(--accent); border-width: 2px; } .stepper a.now b { color: var(--accent); }
+.stepper a.red b { color: var(--red); }
+@media (max-width: 640px) { .stepper { grid-template-columns: repeat(4, 1fr); } }
+/* the loop */
+.loop { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 14px; }
+.loop span { padding: 6px 10px; border-radius: 8px; background: var(--soft); font-size: 13.5px; }
+.loop span.act { background: var(--accent); color: var(--accent-ink); }
+.loop i { color: var(--muted); font-style: normal; }
+/* codespace card */
+.cs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 720px) { .cs { grid-template-columns: 1fr; } }
+.term { background: #16191d; color: #d7dde3; border-radius: 8px; padding: 12px 14px; font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; font-size: 12.5px; line-height: 1.55; overflow-x: auto; white-space: pre; }
+.term .ok { color: #6fcf97; } .term .cmd { color: #8fc1ff; } .term .dim { color: #8a949e; }
+ol.todo { padding-left: 22px; margin: 0; } ol.todo li { margin: 6px 0; }
+/* week cards */
+.card.now { border: 2px solid var(--accent); }
+.card.ahead h2 { color: var(--muted); }
+.wsteps { list-style: none; padding: 0; margin: 12px 0 0; }
+.wsteps > li { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.wsteps > li .k { font-weight: 600; font-size: 14px; }
+.wsteps > li .k small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+.wsteps > li.now .k { color: var(--accent); }
+.wsteps > li.done .k { color: var(--green); }
+.wsteps code.cmd { display: block; padding: 6px 10px; margin: 4px 0; background: var(--code); border-radius: 6px; white-space: pre-wrap; }
+.wsteps details { border: none; padding: 4px 0 0; }
+.wsteps details summary { font-weight: 500; color: var(--accent); }
+summary.wsum { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 600; }
+summary.wsum::-webkit-details-marker { display: none; }
+summary.wsum .muted { font-weight: 400; }
+details.wk { border: 1px solid var(--line); border-radius: 10px; padding: 12px 18px; margin: 0 0 10px; background: var(--card); }
+details.wk[open] { padding-bottom: 16px; }
+.nextlink { text-align: right; font-size: 14px; margin: 14px 0 0; }
+.ref details { border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; margin: 0 0 10px; background: var(--card); }
+.ref details summary { font-size: 16px; }
+.play .card:target { border: 2px solid var(--accent); }
+aside .prog { list-style: none; margin: 0 0 14px; padding: 0; }
+aside .prog li a { display: block; padding: 3px 0; color: var(--muted); text-decoration: none; }
+aside .prog li a.done { color: var(--green); } aside .prog li a.now { color: var(--accent); font-weight: 600; }
 """
 
 JS = r"""
 (function () {
   // side nav: highlight the section in view
-  const links = [...document.querySelectorAll('aside a[href^="#"]')];
+  const links = [...document.querySelectorAll('aside ol a[href^="#"]')];
   const targets = links.map(l => document.getElementById(l.getAttribute('href').slice(1))).filter(Boolean);
   if ('IntersectionObserver' in window && targets.length) {
     const io = new IntersectionObserver(entries => {
@@ -533,96 +649,134 @@ JS = r"""
 """
 
 
-def week_card(w: Week, repo: str) -> str:
-    gates = ""
-    if w.report:
-        gates = "".join(
-            f'<span class="{"pass" if ok else "fail"}">{esc(k)}</span>'
-            for k, ok in (w.report.get("gates") or {}).items()
-        )
+def _gh(repo: str, path: str) -> str:
+    return f"https://github.com/{repo}/blob/main/{path}"
+
+
+def _cmds(cmds: list[str]) -> str:
+    return "".join(f'<code class="cmd">{esc(c)}</code>' for c in cmds)
+
+
+def week_card(w: Week, repo: str, current: bool) -> str:
+    gates = "".join(
+        f'<span class="{"pass" if ok else "fail"}">{esc(k)}</span>'
+        for k, ok in ((w.report or {}).get("gates") or {}).items()
+    )
     tests = "".join(
         f'<li class="{"pass" if t["outcome"] == "passed" else "fail"}">'
         f"{esc(t['id'].removeprefix('test_').replace('_', ' '))}</li>"
         for t in w.tests
     )
-    pr = ""
-    if w.pr:
-        pr = (
-            f'<a href="{esc(w.pr.get("url", "#"))}">PR #{esc(w.pr.get("number", "?"))}</a> '
-            f"&middot; {esc(w.pr.get('state', ''))} &middot; "
-            f"{esc(w.pr.get('review_comments', 0))} mentor comments"
-        )
-    refl = ""
-    if w.reflection_q1:
-        refl += (
-            "<h3>Concept, in the fellow's words</h3>"
-            f"<blockquote class='refl'>{esc(w.reflection_q1)}</blockquote>"
-        )
-    if w.reflection_q2:
-        refl += (
-            "<h3 style='margin-top:10px'>What surprised them</h3>"
-            f"<blockquote class='refl'>{esc(w.reflection_q2)}</blockquote>"
-        )
-    no_refl = (
-        f"<h3>Reflection</h3><div class='muted'>not written yet: reflections/week-{w.n}.md</div>"
+    step = w.step
+    order = ["Read", "Run", "Build", "Check", "Submit"]
+    idx = order.index(step)
+
+    def cls(name: str) -> str:
+        i = order.index(name)
+        if w.done:
+            return "done"
+        return "done" if i < idx else ("now" if i == idx else "")
+
+    # Read
+    read_body = (
+        f"<details{' open' if current and step == 'Read' else ''}><summary>Concept, diagrams and reading list</summary>"
+        f"<div class='doc'>{w.concept_html}</div></details>"
+        if w.concept_html
+        else f"<div class='doc'>{w.readme_html}</div>"
     )
-    areas = ", ".join(f"{a} {AREAS[a]}" for a in WEEK_AREAS.get(w.n, []))
-    base = f"https://github.com/{repo}/blob/main/weeks/{w.n}"
-    panels = ""
-    for label, body, fname in (
-        ("Concept", w.concept_html, "CONCEPT.md"),
-        ("Exercise (README)", w.readme_html, "README.md"),
-        ("What the gate checks", w.checks_html, "CHECKS.md"),
-    ):
-        if body:
-            panels += (
-                f"<details><summary>{label} <span class='muted'>&middot; "
-                f"<a href='{base}/{fname}'>{fname} on GitHub</a></span></summary>"
-                f"<div class='doc'>{body}</div></details>"
-            )
+    read = (
+        f"<li class='{cls('Read')}'><div class='k'>Read<small>~1 h</small></div><div>"
+        f"<p>One sentence to be able to say back: <i>{esc(CONCEPTS.get(w.n, ''))}</i> "
+        f"Write it in your words in <code>reflections/week-{w.n}.md</code>, Q1.</p>{read_body}</div></li>"
+    )
+    # Run
+    run = (
+        f"<li class='{cls('Run')}'><div class='k'>Run<small>~2 h, change nothing</small></div><div>"
+        f"{_cmds(WEEK_RUN.get(w.n, []))}"
+        f"<details><summary>What to look for, and the reading questions</summary><div class='doc'>{w.readme_html}</div></details>"
+        f"</div></li>"
+    )
+    # Build
+    files = "".join(
+        f'<li><code>{esc(f)}</code> &middot; <a href="{_gh(repo, f)}">on GitHub</a></li>'
+        for f in WEEK_BUILD.get(w.n, [])
+    )
+    build = (
+        f"<li class='{cls('Build')}'><div class='k'>Build<small>~4–5 h</small></div><div>"
+        f"<p>{esc(WEEK_BUILD_NOTE.get(w.n, ''))}</p>"
+        + (f"<ul>{files}</ul>" if files else "")
+        + (
+            f"<p>Then measure: <code>{esc(WEEK_MEASURE[w.n])}</code> and paste the table into your reflection.</p>"
+            if w.n in WEEK_MEASURE
+            else ""
+        )
+        + "</div></li>"
+    )
+    # Check
+    rep_html = ""
     rep_key = WEEK_REPORTS.get(w.n)
     if rep_key:
         title, fn = REPORTS[rep_key]
         body = fn()
         if body:
-            panels += f"<details open><summary>{title}</summary>{body}</details>"
-    if w.quiz:
-        panels += (
-            f"<details class='quiz' data-week='{w.n}'><summary>Self-test "
-            f"<span class='muted'>&middot; {len(w.quiz)} questions, optional, scored only in your browser</span>"
-            f" <span class='qscore' id='qscore-{w.n}'></span></summary>"
-            f"<div id='quiz-{w.n}'></div></details>"
+            rep_html = f"<details><summary>{title} (last run)</summary>{body}</details>"
+    check = (
+        f"<li class='{cls('Check')}'><div class='k'>Check<small>as often as you like</small></div><div>"
+        f"<code class='cmd'>make check WEEK={w.n}</code>"
+        f"<div class='gates'>{gates or '<span>gate not run yet</span>'}</div>"
+        + (
+            f"<details><summary>This week's checks</summary><ul class='checks'>{tests}</ul>"
+            f"<div class='doc'>{w.checks_html}</div></details>"
+            if tests or w.checks_html
+            else ""
         )
-    checks = (
-        f"<h3 style='margin-top:8px'>This week's checks</h3><ul class='checks'>{tests}</ul>"
-        if tests
+        + rep_html
+        + "</div></li>"
+    )
+    # Submit
+    pr_line = (
+        f'<a href="{esc(w.pr.get("url", "#"))}">PR #{esc(w.pr.get("number", "?"))}</a> &middot; '
+        f"{esc(w.pr.get('state', ''))} &middot; {esc(w.pr.get('review_comments', 0))} mentor comments"
+        if w.pr
+        else f"No pull request yet. Branch <code>week-{w.n}</code> &rarr; PR to <code>main</code>."
+    )
+    refl = (
+        f"<blockquote class='refl'>{esc(w.reflection_q1)}</blockquote>"
+        if w.reflection_q1
+        else f"<span class='muted'>reflections/week-{w.n}.md not written yet</span>"
+    )
+    submit = (
+        f"<li class='{cls('Submit')}'><div class='k'>Submit<small>24 h before the session</small></div><div>"
+        f"<p>{pr_line}</p><h3>Your reflection, Q1</h3>{refl}"
+        f"<p class='muted' style='margin-top:8px'>Then the session: demo, probes on the diff, held-out inputs, next week's sentence.</p>"
+        f"</div></li>"
+    )
+    quiz = (
+        f"<li><div class='k'>Self-test<small>optional</small></div><div>"
+        f"<details class='quiz' data-week='{w.n}'><summary>{len(w.quiz)} questions <span class='qscore' id='qscore-{w.n}'></span></summary>"
+        f"<div id='quiz-{w.n}'></div></details></div></li>"
+        if w.quiz
         else ""
     )
-    review = f"<h3 style='margin-top:10px'>Review</h3><div>{pr}</div>" if pr else ""
-    return f"""
-<section class="card" id="week-{w.n}">
-  <h2><span class="dot {w.state}"></span>Week {w.n} &mdash; {esc(w.title)}
-      <span class="gates">{gates or "<span>gate not run yet</span>"}</span></h2>
-  <p class="concept">{esc(CONCEPTS.get(w.n, ""))} <span class="muted">&middot; areas {esc(areas) or "&mdash;"}</span></p>
-  <div class="grid">
-    <div>{checks or "<h3>This week's checks</h3><div class='muted'>run make check WEEK=" + str(w.n) + " to see them here</div>"}{review}</div>
-    <div>{refl or no_refl}</div>
-  </div>
-  {panels}
-</section>"""
-
-
-def material_links(weeks: list[Week], repo: str) -> str:
-    items = []
-    for w in weeks:
-        base = f"https://github.com/{esc(repo)}/blob/main/weeks/{w.n}"
-        parts = [f'<a href="{base}/README.md">exercise</a>']
-        if (ROOT / "weeks" / str(w.n) / "CONCEPT.md").exists():
-            parts.insert(0, f'<a href="{base}/CONCEPT.md">concept</a>')
-        if (ROOT / "weeks" / str(w.n) / "CHECKS.md").exists():
-            parts.append(f'<a href="{base}/CHECKS.md">checks</a>')
-        items.append(f"<li>Week {w.n}: {' &middot; '.join(parts)}</li>")
-    return "".join(items)
+    try_it = (
+        f"<li><div class='k'>Try it<small>live</small></div><div>"
+        f"<a href='#pg-w{w.n}'>Call this week's endpoint from the playground</a></div></li>"
+        if 0 <= w.n <= 5
+        else ""
+    )
+    steps_html = f"<ol class='wsteps'>{read}{run}{build}{check}{submit}{quiz}{try_it}</ol>"
+    status = "done" if w.done else ("now" if current else ("red" if w.state == "red" else "ahead"))
+    title = f"<span class='dot {w.state}'></span>Week {w.n} &mdash; {esc(w.title)}"
+    if current:
+        return (
+            f"<section class='card now' id='week-{w.n}'><h2>{title}"
+            f"<span class='muted'>&middot; this week</span></h2>{steps_html}</section>"
+        )
+    label = "done" if w.done else ("started" if w.state != "not started" else "ahead")
+    return (
+        f"<details class='wk {status}' id='week-{w.n}'><summary class='wsum'>{title}"
+        f"<span class='muted'>&middot; {label}</span></summary>{steps_html}</details>"
+    )
 
 
 def _split_track() -> dict[str, str]:
@@ -640,7 +794,101 @@ def _split_track() -> dict[str, str]:
     return parts
 
 
+def material_links(weeks: list[Week], repo: str) -> str:
+    items = []
+    for w in weeks:
+        base = f"https://github.com/{esc(repo)}/blob/main/weeks/{w.n}"
+        parts = [f'<a href="{base}/README.md">exercise</a>']
+        if (ROOT / "weeks" / str(w.n) / "CONCEPT.md").exists():
+            parts.insert(0, f'<a href="{base}/CONCEPT.md">concept</a>')
+        if (ROOT / "weeks" / str(w.n) / "CHECKS.md").exists():
+            parts.append(f'<a href="{base}/CHECKS.md">checks</a>')
+        if (ROOT / "weeks" / str(w.n) / "QUIZ.md").exists():
+            parts.append(f'<a href="{base}/QUIZ.md">quiz</a>')
+        items.append(f"<li>Week {w.n}: {' &middot; '.join(parts)}</li>")
+    return "".join(items)
+
+
 def render(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
+    gh = f"https://github.com/{esc(repo)}"
+    codespace = f"https://codespaces.new/{esc(repo)}?quickstart=1"
+    fresh = all(w.report is None for w in weeks)
+    current = next((w for w in weeks if not w.done), None)
+    done_n = sum(1 for w in weeks if w.done)
+
+    # ---- 1. your next step
+    if fresh or current is None and not weeks:
+        next_html = (
+            "<div class='next'><h2>Step 0: open a Codespace</h2>"
+            "<p class='what'>Nothing is installed yet and nothing needs to be. One click builds your machine, "
+            "installs everything and runs the first check. Then <code>weeks/0/README.md</code> opens by itself.</p>"
+            f"<div class='actions'><a class='btn primary' href='{codespace}'>Open in Codespaces</a>"
+            f"<a class='btn' href='#codespace'>What happens next</a></div></div>"
+        )
+    elif current is None:
+        next_html = (
+            "<div class='next'><h2>Every week is green</h2><p class='what'>Write the one page that says what it did "
+            "for the business, then the final session.</p>"
+            "<div class='actions'><a class='btn primary' href='#week-6'>Open Week 6</a></div></div>"
+        )
+    else:
+        w = current
+        step = w.step
+        chips = "".join(
+            f"<span class='{'done' if STEPS.index(st) < STEPS.index(step) else ('now' if st == step else '')}'>{i + 1}. {st}</span>"
+            for i, st in enumerate(STEPS)
+        )
+        what = {
+            "Read": f"Read the concept, then write its sentence in your own words in <code>reflections/week-{w.n}.md</code>.",
+            "Run": "Run the elaboration scripts and read the files listed. Change nothing yet.",
+            "Build": f"Build <code>{esc(', '.join(WEEK_BUILD.get(w.n, [])) or 'the Week 0 tasks')}</code>, then <code>make check WEEK={w.n}</code> until it is green.",
+            "Submit": (
+                "Your PR is open: send the link to your mentor 24 h before the session."
+                if w.pr and not w.merged
+                else f"Gate is green. Open the PR <code>week-{w.n} &rarr; main</code> and finish your reflection."
+            ),
+        }[step]
+        primary = {
+            "Read": (f"#week-{w.n}", f"Open Week {w.n}"),
+            "Run": (f"#week-{w.n}", f"Open Week {w.n}"),
+            "Build": (
+                (_gh(repo, WEEK_BUILD[w.n][0]), f"Open {WEEK_BUILD[w.n][0].split('/')[-1]}")
+                if WEEK_BUILD.get(w.n)
+                else (f"#week-{w.n}", f"Open Week {w.n}")
+            ),
+            "Submit": (
+                (esc(w.pr["url"]), f"Open PR #{w.pr.get('number', '')}")
+                if w.pr
+                else (f"{gh}/compare/main...week-{w.n}?expand=1", "Open a pull request")
+            ),
+        }[step]
+        next_html = (
+            f"<div class='next'><h2>Week {w.n}: {esc(w.title)}</h2>"
+            f"<div class='steps'>{chips}</div><p class='what'>{what}</p>"
+            f"<div class='actions'><a class='btn primary' href='{primary[0]}'>{primary[1]}</a>"
+            f"<a class='btn' href='{codespace}'>Open in Codespaces</a></div></div>"
+        )
+
+    # ---- stepper
+    stepper = ""
+    for w in weeks:
+        c = "done" if w.done else ("now" if current is w else ("red" if w.state == "red" else ""))
+        mark = "&#10003;" if w.done else ("&#9679;" if current is w else "&#9675;")
+        stepper += f"<a class='{c}' href='#week-{w.n}'><b>{mark}</b>Week {w.n}</a>"
+
+    # ---- sidebar progress
+    prog = "".join(
+        f"<li><a class='{'done' if w.done else ('now' if current is w else '')}' href='#week-{w.n}'>"
+        f"{'&#10003;' if w.done else ('&#9679;' if current is w else '&#9675;')} Week {w.n}</a></li>"
+        for w in weeks
+    )
+
+    live_line = (
+        f'Live service: <a href="{esc(live_url)}/docs">{esc(live_url)}</a> (<a href="{esc(live_url)}/health">/health</a>)'
+        if live_url
+        else "No live service yet: the deploy step in <a href='#start'>Start here</a> gives you one."
+    )
+    track = _split_track()
     area_state: dict[int, str] = {}
     for w in weeks:
         for a in WEEK_AREAS.get(w.n, []):
@@ -649,29 +897,6 @@ def render(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
         f'<div class="{area_state.get(a, "")}" title="{a}. {esc(AREAS[a])}"></div>'
         for a in range(1, 12)
     )
-    done = [w for w in weeks if w.state == "green"]
-    current = next((w for w in weeks if w.state != "green"), None)
-    gh = f"https://github.com/{esc(repo)}"
-    codespace = f"https://codespaces.new/{esc(repo)}?quickstart=1"
-    if current is None:
-        here = "<p><b>Every released week is green.</b> Time for the write-up and the final session.</p>"
-        actions = '<a class="btn primary" href="#week-6">Open Week 6</a>'
-    else:
-        here = (
-            f"<p><b>You are on Week {current.n}: {esc(current.title)}.</b> "
-            f"{esc(CONCEPTS.get(current.n, ''))}</p>"
-        )
-        actions = (
-            f'<a class="btn primary" href="#week-{current.n}">Open Week {current.n}</a> '
-            f'<a class="btn" href="{codespace}">Open in Codespaces</a>'
-        )
-    live_line = (
-        f'Live service: <a href="{esc(live_url)}/docs">{esc(live_url)}</a> '
-        f'(<a href="{esc(live_url)}/health">/health</a>)'
-        if live_url
-        else "No live service yet. The deploy step in <a href='#start'>Start here</a> gives you one."
-    )
-    track = _split_track()
     start_html = md(ROOT / "README.md")
     reports_html = (
         "".join(
@@ -690,8 +915,19 @@ def render(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
         if w.quiz
     }
     cfg = json.dumps({"liveUrl": live_url, "repo": repo, "quiz": quiz_data})
-    cards = "".join(week_card(w, repo) for w in weeks)
-    self_test = ' <span id="qtotal"></span>'
+    cards = "".join(week_card(w, repo, current is w) for w in weeks)
+
+    term = (
+        "<div class='term'><span class='dim'>== installing uv</span>\n<span class='dim'>== installing the project</span>\n"
+        "<span class='dim'>== first check</span>\n  <span class='ok'>PASS</span>  ruff   <span class='ok'>PASS</span>  format   "
+        "<span class='ok'>PASS</span>  mypy   <span class='ok'>PASS</span>  tests[fake_a]\n\n"
+        "<span class='ok'>Ready.</span> Open weeks/0/README.md and run: make run\n\n"
+        "<span class='dim'>$</span> <span class='cmd'>make run</span>\n"
+        "INFO:     Uvicorn running on http://0.0.0.0:8000  <span class='dim'>(a port-forward notification appears: open it, add /docs)</span>\n\n"
+        "<span class='dim'>$</span> <span class='cmd'>git checkout -b week-1</span>\n"
+        "<span class='dim'>$</span> <span class='cmd'>make check WEEK=1</span>\n"
+        "  <span class='ok'>PASS</span>  ruff   ...   9 failed   <span class='dim'>(red until you build app/api/extract.py: that is the exercise)</span></div>"
+    )
 
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
@@ -703,80 +939,98 @@ def render(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
 </head>
 <body><div class="wrap">
 <aside>
-  <p class="eyebrow">Contents</p>
+  <p class="eyebrow">Your progress</p>
+  <ul class="prog">{prog}</ul>
+  <p class="eyebrow">On this page</p>
   <ol>
-    <li><a href="#track">1. The track</a></li>
-    <li><a href="#how">2. How a week works</a></li>
-    <li><a href="#start">3. Start here</a></li>
-    <li><a href="#weeks">4. The six weeks</a></li>
-    <li><a href="#sessions">5. Sessions and gates</a></li>
-    <li><a href="#playground">6. Playground</a></li>
-    <li><a href="#reports">7. Reports</a></li>
-    <li><a href="#links">8. Links</a></li>
+    <li><a href="#next">Your next step</a></li>
+    <li><a href="#loop">How you work</a></li>
+    <li><a href="#codespace">Inside your Codespace</a></li>
+    <li><a href="#weeks">The six weeks</a></li>
+    <li><a href="#playground">Playground</a></li>
+    <li><a href="#reference">Reference</a></li>
   </ol>
-  <p class="side"><a href="{gh}">{esc(repo)}</a><br>route <b>{esc(route)}</b><br>{len(done)} of {len(weeks)} weeks green{self_test}</p>
+  <p class="side"><a href="{gh}">{esc(repo)}</a><br>route <b>{esc(route)}</b><br>{done_n} of {len(weeks)} weeks done<span id="qtotal"></span></p>
 </aside>
 
 <article>
 <h1>AI Engineering track</h1>
-<p class="lead">One service that grows, week by week, into an AI product you can deploy, measure and defend. This page is built from your repository on every merge; nothing on it is typed in by hand.</p>
-<div class="here">{here}<div class="actions">{actions}</div></div>
-<p class="muted">{live_line}</p>
+<p class="lead">Six weeks. One service that grows into an AI product you can deploy, measure and defend. This page is built from your repository on every merge; nothing on it is typed in by hand.</p>
 
-<h2 id="track">1. The track</h2>
-<div class="doc">{track.get("The track", "")}</div>
-<div class="strip">{strip}</div>
-<p class="legend">The eleven areas as they stand in your repo. Green: that week's gate passed. Red: it did not yet. Grey: reached, not run.</p>
+<div id="next">{next_html}</div>
+<div class="stepper">{stepper}</div>
+<p class="legend">Done means the week's gate is green and its pull request is merged. Click a week to open it.</p>
 
-<h2 id="how">2. How a week works</h2>
+<h2 id="loop">How you work</h2>
+<p>The same loop every week. Six words you will see everywhere on this page and in the repo.</p>
+<div class="loop">
+  <span>Codespace</span><i>&rarr;</i><span>branch <code>week-N</code></span><i>&rarr;</i>
+  <span class="act">Read</span><i>&rarr;</i><span class="act">Run</span><i>&rarr;</i><span class="act">Build</span><i>&rarr;</i>
+  <span class="act">Check</span><i>&rarr;</i><span class="act">Submit</span><i>&rarr;</i><span class="act">Defend</span><i>&rarr;</i><span>merge</span>
+</div>
 <div class="doc">{track.get("How a week works", "")}</div>
+<p class="nextlink">Next: <a href="#codespace">inside your Codespace &rarr;</a></p>
 
-<h2 id="start">3. Start here</h2>
-<p class="lead">Three clicks, nothing to install. <a class="btn primary" href="{codespace}">Open in Codespaces</a></p>
-<div class="doc">{start_html}</div>
+<h2 id="codespace">Inside your Codespace</h2>
+<p>One click builds your machine. Here is what is already done when it opens, what you do, and what you should see.</p>
+<div class="cs">
+  <div class="card"><h3>Already done for you</h3>
+    <ul><li>Python 3.12, <code>uv</code>, Docker, Redis</li><li>Every dependency installed (<code>uv sync</code>)</li><li><code>.env</code> created from <code>.env.example</code></li><li>The Week 0 gate run once</li><li><code>weeks/0/README.md</code> opened</li></ul>
+    <h3 style="margin-top:12px">You do</h3>
+    <ol class="todo">
+      <li>Paste one model key: <code>MODEL_API_KEY=...</code> in <code>.env</code> (free Gemini key from <a href="https://aistudio.google.com/apikey">AI Studio</a>), or set the Codespaces secret <code>GEMINI_API_KEY</code>.</li>
+      <li><code>make run</code> and open the forwarded port at <code>/docs</code>.</li>
+      <li>Each week: <code>git checkout -b week-N</code>, then Read, Run, Build, <code>make check WEEK=N</code>, PR.</li>
+      <li>When you stop for the day: <b>Codespaces &rarr; Stop</b> (or set idle timeout to 15 min).</li>
+    </ol>
+    <div class="actions" style="margin-top:12px"><a class="btn primary" href="{codespace}">Open in Codespaces</a></div>
+  </div>
+  <div class="card"><h3>What you should see</h3>{term}
+    <p class="muted" style="margin-top:8px">If the container opens in <i>recovery mode</i>: <code>pip install uv && uv sync</code>, then Ctrl+Shift+P &rarr; <i>Codespaces: Rebuild Container</i>.</p>
+  </div>
+</div>
+<p class="nextlink">Next: <a href="#weeks">the six weeks &rarr;</a></p>
 
-<h2 id="weeks">4. The six weeks</h2>
-<p class="lead">One card per week: the gate, your pull request and your own words; then the concept with its diagrams and reading list, the exercise, what the gate checks, the week's measurement, and an optional self-test.</p>
+<h2 id="weeks">The six weeks</h2>
+<p>Your current week is open. The others fold to one line until you get there; nothing is locked.</p>
 {cards}
+<p class="nextlink">Next: <a href="#playground">try your service &rarr;</a></p>
 
-<h2 id="sessions">5. Sessions and gates</h2>
-<div class="doc">{track.get("Sessions and gates", "")}</div>
-
-<h2 id="playground">6. Playground</h2>
-<p class="lead">Call your running service from here: your Space (set the repository variable <code>LIVE_URL</code>) or a Codespace port you have made public. Only the URL is remembered, in your browser.</p>
+<h2 id="playground">Playground</h2>
+<p>Call your running service from here: your Space (set the repository variable <code>LIVE_URL</code>) or a Codespace port you have made public. Only the URL is remembered, in your browser. {live_line}</p>
 <label for="pg-base" class="status">Service URL</label>
 <input type="text" id="pg-base" placeholder="https://yourname-ai-eng-track.hf.space">
 <p id="pg-status" class="status"></p>
 <div class="play">
-  <div class="card"><h3>Week 0 &middot; health and upload</h3>
+  <div class="card" id="pg-w0"><h3>Week 0 &middot; health and upload</h3>
     <button class="btn" id="pg-health">GET /health</button>
     <div class="out" id="pg-health-out"></div>
     <label for="pg-file">Upload a .md / .txt / .csv / .pdf</label>
     <input type="file" id="pg-file"> <button class="btn" id="pg-upload">POST /documents</button>
     <div class="out" id="pg-upload-out"></div>
   </div>
-  <div class="card"><h3>Week 1 &middot; extract</h3>
+  <div class="card" id="pg-w1"><h3>Week 1 &middot; extract</h3>
     <label for="pg-docid">Document id</label>
     <input type="text" id="pg-docid" value="1">
     <button class="btn" id="pg-extract">POST /documents/{{id}}/extract</button>
     <div class="out" id="pg-extract-out"></div>
     <p class="status">Call it twice: the second answer must say <code>cached: true</code>.</p>
   </div>
-  <div class="card"><h3>Week 2 &middot; index and search</h3>
+  <div class="card" id="pg-w2"><h3>Week 2 &middot; index and search</h3>
     <button class="btn" id="pg-index">POST /index</button>
     <label for="pg-q">Query</label>
     <input type="text" id="pg-q" value="mileage rate personal car">
     <button class="btn" id="pg-search">GET /search</button>
     <div class="out" id="pg-search-out"></div>
   </div>
-  <div class="card"><h3>Week 3 &middot; ask</h3>
+  <div class="card" id="pg-w3"><h3>Week 3 &middot; ask</h3>
     <label for="pg-question">Question</label>
     <textarea id="pg-question">What is the London hotel cap in the Contoso expenses policy?</textarea>
     <button class="btn" id="pg-ask">POST /ask</button>
     <div class="out" id="pg-ask-out"></div>
     <p class="status">Try one the documents cannot answer. A good system declines.</p>
   </div>
-  <div class="card"><h3>Week 4 &middot; one task, three ways</h3>
+  <div class="card" id="pg-w4"><h3>Week 4 &middot; one task, three ways</h3>
     <label for="pg-tq">Question</label>
     <input type="text" id="pg-tq" value="Which invoice has the largest total due, and what is it?">
     <label for="pg-mode">Mode</label>
@@ -785,37 +1039,39 @@ def render(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
     <button class="btn" id="pg-task">POST /tasks/run</button>
     <div class="out" id="pg-task-out"></div>
   </div>
-  <div class="card"><h3>Week 5 &middot; traces</h3>
+  <div class="card" id="pg-w5"><h3>Week 5 &middot; traces</h3>
     <button class="btn" id="pg-traces">GET /traces</button>
     <div class="out" id="pg-traces-out"></div>
     <p class="status">Every call above returned an <code>X-Request-Id</code>; look it up here.</p>
   </div>
 </div>
 
-<h2 id="reports">7. Reports</h2>
-<p class="lead">Every measurement your repo has produced, in one place.</p>
-{reports_html}
-
-<h2 id="links">8. Links</h2>
-<div class="doc">
-  <ul>
-    <li><a href="{gh}">Repository</a> &middot; <a href="{gh}/pulls">pull requests</a> &middot; <a href="{gh}/actions">CI runs</a> &middot; <a href="{gh}/tree/main/reflections">reflections</a></li>
-    <li><a href="{codespace}">Open in Codespaces</a></li>
-    <li>{live_line}</li>
-  </ul>
-  <h3>Material on GitHub</h3>
-  <ul>{material_links(weeks, repo)}</ul>
-  <h3>Providers</h3>
-  <ul>
-    <li><a href="https://aistudio.google.com/apikey">Gemini key (free tier, default)</a></li>
-    <li><a href="https://console.groq.com/keys">Groq key (second provider)</a></li>
-    <li><a href="https://huggingface.co/new-space">Create a Hugging Face Space</a> for the live URL</li>
-  </ul>
-  <h3>For mentors</h3>
-  <p>Runbooks, held-out sets, the rubric and reference solutions live in the private mentor kit, not here.</p>
+<h2 id="reference">Reference</h2>
+<p>Everything else, folded. Open what you need.</p>
+<div class="ref">
+  <details id="track"><summary>The track: eleven areas, six weeks</summary><div class="doc">{track.get("The track", "")}</div>
+    <div class="strip">{strip}</div><p class="legend">The eleven areas as they stand in your repo. Green: that week's gate passed. Red: not yet. Grey: reached, not run.</p></details>
+  <details id="sessions"><summary>Sessions and gates: how you are assessed</summary><div class="doc">{track.get("Sessions and gates", "")}</div></details>
+  <details id="start"><summary>Start here: commands, model keys, deploying, keeping it free (the README)</summary><div class="doc">{start_html}</div></details>
+  <details id="reports"><summary>Reports: every measurement your repo has produced</summary>{reports_html}</details>
+  <details id="links"><summary>Links</summary><div class="doc">
+    <ul>
+      <li><a href="{gh}">Repository</a> &middot; <a href="{gh}/pulls">pull requests</a> &middot; <a href="{gh}/actions">CI runs</a> &middot; <a href="{gh}/tree/main/reflections">reflections</a></li>
+      <li><a href="{codespace}">Open in Codespaces</a></li>
+      <li>{live_line}</li>
+    </ul>
+    <h3>Material on GitHub</h3><ul>{material_links(weeks, repo)}</ul>
+    <h3>Providers</h3>
+    <ul>
+      <li><a href="https://aistudio.google.com/apikey">Gemini key (free tier, default)</a></li>
+      <li><a href="https://console.groq.com/keys">Groq key (second provider)</a></li>
+      <li><a href="https://huggingface.co/new-space">Create a Hugging Face Space</a> for the live URL</li>
+    </ul>
+    <h3>For mentors</h3><p>Runbooks, held-out sets, the rubric and reference solutions live in the private mentor kit, not here.</p>
+  </div></details>
 </div>
 
-<footer>Built by <code>scripts/build_pages.py</code> on every merge to <code>main</code> from <code>docs/track.md</code>, <code>README.md</code>, <code>weeks/</code>, <code>reports/</code>, <code>reflections/</code> and the pull requests.</footer>
+<footer>Built by <code>scripts/build_pages.py</code> on every merge to <code>main</code> from <code>docs/track.md</code>, <code>README.md</code>, <code>weeks/</code>, <code>reports/</code>, <code>reflections/</code> and the pull requests. Nothing here is self-reported.</footer>
 </article>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
