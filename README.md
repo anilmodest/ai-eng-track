@@ -52,7 +52,9 @@ four steps, the routes and how sessions and gates work are in [`docs/track.md`](
 
 - Work on a branch named `week-N`. Open a PR to `main`. CI runs `make check WEEK=N`.
 - Fill `reflections/week-N.md` (copy `REFLECTION_TEMPLATE.md` there) before you send the PR link.
-- Send the link 24 hours before your session. Merge after it.
+- Four mentor sessions in total: Discovery (Week 0), Direction (end of Week 1), Observation (end of
+  Week 3), Defence (end of Week 6). Other weeks are self-directed. PRs go up every week and are
+  reviewed at the next session; send the link a day before it. Merge when the gate is green.
 
 ## Layout
 

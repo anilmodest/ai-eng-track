@@ -59,23 +59,44 @@ mentor's hours go. Set it once with `make route ROUTE=...`.
 
 ## Sessions and gates
 
+Mentor time is four sessions, and nothing else except up to two fifteen-minute unblock calls.
+That is the framework's rule, and it is what makes the route matter: the sessions are where the
+hours go, so what they are spent on depends on where you started.
+
+| Session | When | Length | What happens |
+| --- | --- | --- | --- |
+| **1. Discovery** | Week 0 | 45 min | An observed task sets your route and takes the starting measure. The finished piece is agreed |
+| **2. Direction** | end of Week 1 | 45 min | Route confirmed or corrected, in writing. The plan for the rest is set against the work you already attempted |
+| **3. Observation** | end of Week 3 | 60 min | Your mentor watches you work on a task you have not seen. Not a progress report: they see how you think, check and recover |
+| **4. Defence** | end of Week 6 | 60 min | You defend the finished piece. The starting measure is taken again |
+
+Weeks 2, 4 and 5 are self-directed: the gate, the held-out inputs your mentor left with you, the
+self-tests and this page are your feedback. Your pull requests still go up every week; your mentor
+reads them before the next session, and their review comments land in that session, not between.
+
+**Unblock calls**: up to two, fifteen minutes each, on request, after you have attempted the thing
+yourself. Send what you tried with the request.
+
+**Where the hours go**, by route:
+
+| Route | Sessions 2 and 3 concentrate on | Pace |
+| --- | --- | --- |
+| start | the basics: Weeks 1–2, getting the model layer and retrieval working at all | slow, mentor-supported; use both unblock calls early |
+| core | quality: Weeks 3–5, checking what you produce: evaluation, guardrails, traces | compressed |
+| pro | evidence: Week 6, the deployed piece, the write-up, the defence | self-directed |
+
 Three layers of evidence, from cheapest to most human. None of them is self-reported.
 
 | Layer | Who | What it measures |
 | --- | --- | --- |
 | **The gate**: `make check WEEK=N` | CI, on every pull request, with a fake model so no key is needed | Lint, strict types, that week's tests under two fake providers, and from Week 3 the evaluation gate, from Week 5 the attack gate |
-| **Held-out inputs** | Your mentor, in the session | How your service behaves on documents and questions you did not design for |
-| **Your reflection**: `reflections/week-N.md` | You write, your mentor reads | The concept in your words, what surprised you, what you would change. This is what the session is about |
+| **Held-out inputs** | Your mentor, in sessions 2 and 3, and left with you for the self-directed weeks | How your service behaves on documents and questions you did not design for |
+| **Your reflection**: `reflections/week-N.md` | You write, your mentor reads before each session | The concept in your words, what surprised you, what you would change |
 
-The session itself, every week:
+Work reaches your mentor a day early, so the session is not spent finding out what is there. You
+talk more than your mentor, because otherwise the hour drifts into them solving the problem.
 
-| Minute | What happens |
-| --- | --- |
-| before | Your mentor reads the CI result and your reflection |
-| 0–8 | You demo the running thing |
-| 8–28 | Your mentor probes the diff, typing questions as review comments on the PR |
-| 28–35 | Held-out inputs |
-| 35–40 | Next week's sentence; you say it back |
-
-Understanding shown in the session caps the outcome; nothing adds to it. The self-tests on this
-page are yours alone: their score never leaves your browser.
+Understanding sets a ceiling: at the Defence your mentor judges whether you can explain your own
+work, and that judgement caps what the programme records; it never adds to it. You are always
+shown what you produced and what it missed. You are never shown the measure that goes to the
+programme, and neither is this page. The self-tests here are yours alone.

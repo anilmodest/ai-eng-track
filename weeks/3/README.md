@@ -83,14 +83,21 @@ What your route adds:
   additions.
 - PR `week-3 → main`. CI green.
 
-## The session (35 minutes)
+## Session 3: Observation (60 minutes, end of this week)
 
-You demo: an answered question with citations, a declined one, and the eval table. Your mentor
-asks five questions of their own and watches which gate fires. Then Week 4's sentence:
-*prefer the simplest thing that works; multi-agent is a last resort.*
+Not a progress report. Your mentor watches you work, on a task you have not seen, for most of the
+hour, and says very little. The point is to see how you think, check and recover, not what you
+built. Have the service running and your evaluation ready to run.
 
-Pass line: CI green including the eval gate, abstention shown live, and you can explain from your
-own numbers where a wrong answer would have come from.
+| Min | What happens |
+| --- | --- |
+| 0–5 | Your mentor states the task (grounding or evaluation shaped; you will not have seen it) |
+| 5–45 | You work. Aloud. Your mentor watches: where you look first, what you run, how you check |
+| 45–55 | Your mentor asks three questions about what they saw, and reviews the Week 2 and 3 PRs |
+| 55–60 | Week 4's sentence: *prefer the simplest thing that works* |
+
+Pass line for the week: CI green including the eval gate, the red run linked, and from your own
+numbers where a wrong answer would have come from.
 
 ## Optional: self-test
 

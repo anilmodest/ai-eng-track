@@ -95,6 +95,13 @@ WEEK_MEASURE: dict[int, str] = {
     5: "uv run python scripts/attack.py",
     6: "uv run python scripts/smoke.py $LIVE_URL --expect-sha <sha>",
 }
+# The four mentor sessions (the PDF's cadence). Other weeks are self-directed.
+WEEK_SESSION: dict[int, str] = {
+    0: "Session 1: Discovery, 45 min",
+    1: "Session 2: Direction, 45 min",
+    3: "Session 3: Observation, 60 min",
+    6: "Session 4: Defence, 60 min",
+}
 WEEK_BUILD_NOTE: dict[int, str] = {
     0: "Nothing to build. Run the service, trace one upload aloud, build the Docker image.",
     1: "The endpoint is a stub with the build order in comments. Every test in tests/weeks/test_week1.py is a sentence from the concept.",
@@ -465,6 +472,7 @@ footer { color: var(--muted); font-size: 13px; margin-top: 40px; border-top: 1px
 .stepper { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 16px 0 6px; }
 .stepper a { display: block; text-decoration: none; color: var(--muted); font-size: 12px; text-align: center; padding: 8px 4px 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); }
 .stepper a b { display: block; font-size: 15px; color: var(--fg); }
+.stepper a small { display: block; font-size: 10.5px; color: var(--muted); margin-top: 2px; }
 .stepper a.done { border-color: var(--green); } .stepper a.done b { color: var(--green); }
 .stepper a.now { border-color: var(--accent); border-width: 2px; } .stepper a.now b { color: var(--accent); }
 .stepper a.red b { color: var(--red); }
@@ -745,10 +753,15 @@ def week_card(w: Week, repo: str, current: bool) -> str:
         if w.reflection_q1
         else f"<span class='muted'>reflections/week-{w.n}.md not written yet</span>"
     )
+    session = WEEK_SESSION.get(w.n)
+    after = (
+        f"<p class='muted' style='margin-top:8px'><b>{esc(session)}</b> follows this week: send the PR link a day before.</p>"
+        if session
+        else "<p class='muted' style='margin-top:8px'>Self-directed week: no session. The gate, the held-out inputs and the self-test are your feedback; this PR is reviewed at the next session.</p>"
+    )
     submit = (
-        f"<li class='{cls('Submit')}'><div class='k'>Submit<small>24 h before the session</small></div><div>"
-        f"<p>{pr_line}</p><h3>Your reflection, Q1</h3>{refl}"
-        f"<p class='muted' style='margin-top:8px'>Then the session: demo, probes on the diff, held-out inputs, next week's sentence.</p>"
+        f"<li class='{cls('Submit')}'><div class='k'>Submit<small>{'a day before the session' if session else 'when the gate is green'}</small></div><div>"
+        f"<p>{pr_line}</p><h3>Your reflection, Q1</h3>{refl}{after}"
         f"</div></li>"
     )
     quiz = (
@@ -874,7 +887,12 @@ def render(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
     for w in weeks:
         c = "done" if w.done else ("now" if current is w else ("red" if w.state == "red" else ""))
         mark = "&#10003;" if w.done else ("&#9679;" if current is w else "&#9675;")
-        stepper += f"<a class='{c}' href='#week-{w.n}'><b>{mark}</b>Week {w.n}</a>"
+        tag = (
+            f"<small>{esc(WEEK_SESSION[w.n].split(':')[0])}</small>"
+            if w.n in WEEK_SESSION
+            else "<small>self-directed</small>"
+        )
+        stepper += f"<a class='{c}' href='#week-{w.n}'><b>{mark}</b>Week {w.n}{tag}</a>"
 
     # ---- sidebar progress
     prog = "".join(
@@ -959,14 +977,14 @@ def render(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
 
 <div id="next">{next_html}</div>
 <div class="stepper">{stepper}</div>
-<p class="legend">Done means the week's gate is green and its pull request is merged. Click a week to open it.</p>
+<p class="legend">Done means the week's gate is green and its pull request is merged. Four mentor sessions: Discovery, Direction, Observation, Defence; the other weeks are self-directed. Click a week to open it.</p>
 
 <h2 id="loop">How you work</h2>
 <p>The same loop every week. Six words you will see everywhere on this page and in the repo.</p>
 <div class="loop">
   <span>Codespace</span><i>&rarr;</i><span>branch <code>week-N</code></span><i>&rarr;</i>
   <span class="act">Read</span><i>&rarr;</i><span class="act">Run</span><i>&rarr;</i><span class="act">Build</span><i>&rarr;</i>
-  <span class="act">Check</span><i>&rarr;</i><span class="act">Submit</span><i>&rarr;</i><span class="act">Defend</span><i>&rarr;</i><span>merge</span>
+  <span class="act">Check</span><i>&rarr;</i><span class="act">Submit</span><i>&rarr;</i><span>merge</span><i>&rarr;</i><span class="act">Defend</span> <i>at one of the four sessions</i>
 </div>
 <div class="doc">{track.get("How a week works", "")}</div>
 <p class="nextlink">Next: <a href="#codespace">inside your Codespace &rarr;</a></p>

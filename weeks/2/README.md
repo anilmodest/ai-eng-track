@@ -66,16 +66,16 @@ Run the gate as often as you like: `make check WEEK=2`.
 ## Submit (30 minutes)
 
 - `reflections/week-2.md`: Q1, Q1b, Q2, Q3, the two eval tables, the strategy you chose and why.
-- PR `week-2 → main`. CI green. Link to your mentor 24 hours before the session.
+- PR `week-2 → main`. CI green. It is reviewed at the next session.
 
-## The session (35 minutes)
+## Self-directed week
 
-You demo: index, search, and the eval table. Your mentor asks for the number that chose your
-strategy, then runs a few questions the eval set does not contain. Then Week 3's sentence:
-*a system that always answers is worse than one that sometimes declines.*
+No session this week. Your gate, the held-out questions your mentor left with you in session 2,
+the self-test and the hub page are your feedback. Open the PR when the gate is green; it is
+reviewed at session 3. An unblock call is available if you are stuck after a real attempt.
 
-Pass line: CI green, a strategy chosen with a number, and you can explain a precision/recall
-trade-off you saw in your own table.
+Pass line, checked at session 3: CI green, a strategy chosen with a number from your own table,
+and one precision/recall movement explained from that table.
 
 ## Optional: self-test
 

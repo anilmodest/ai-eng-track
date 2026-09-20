@@ -84,14 +84,14 @@ Run the gate as often as you like: `make check WEEK=4`.
 - `reflections/week-4.md`: Q1, Q1b, Q2, Q3, the comparison table and paragraph, the MCP finding.
 - PR `week-4 → main`. CI green.
 
-## The session (35 minutes)
+## Self-directed week
 
-You demo: the same question three ways, the agent's transcript, and a denied MCP call. Your mentor
-gives the agent a question that needs two tools and watches the loop. Then Week 5's sentence:
-*injected content is the defining vulnerability, and it does not look like a bug.*
+No session this week. Your mentor's review of this PR lands at the Defence. Use the comparison
+table and the MCP finding in your reflection to make the decisions defensible on your own. An
+unblock call is available after a real attempt.
 
-Pass line: CI green, the comparison table with a shipping decision you can defend, and one thing
-you found wrong with your own permission boundary.
+Pass line, checked at the Defence: CI green, a shipping decision with two numbers behind it, one
+weakness found in your own permission boundary.
 
 ## Optional: self-test
 

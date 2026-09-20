@@ -54,10 +54,11 @@ What your route adds:
 - `reflections/writeup.md`: the one page.
 - PR `week-6 → main`. CI green. Public repo, live URL in the README, progress page all green.
 
-## The final session (60 minutes with your mentor)
+## Session 4: Defence (60 minutes, end of this week)
 
 The interview shape from the source document: a software round with retrieval, agent and
-evaluation design layered on. Your mentor will:
+evaluation design layered on. The starting measure from session 1 is taken again, with different
+items. Your mentor will:
 
 - ask you to trace one `/ask` request end to end, aloud, from the HTTP call to the cited chunk;
 - pick two decisions from your write-up and ask for the number behind each;

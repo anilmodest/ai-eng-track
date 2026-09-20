@@ -80,14 +80,14 @@ What your route adds:
   (what you sent, what came back, what you changed).
 - PR `week-5 → main`. CI green, including the attack gate.
 
-## The session (35 minutes)
+## Self-directed week
 
-You demo: a trace, the dashboard, and `scripts/attack.py` holding. Your mentor plants an
-instruction in a document you have not seen and sends it to your service. Then Week 6's sentence:
-*interviewers ask what it did for the business, not what it scored.*
+No session this week. The attack you plant in a peer's project and the one that lands on yours
+are the feedback. Record both in the reflection; the Defence will ask about them. An unblock call
+is available after a real attempt.
 
-Pass line: CI green including the attack gate, one attack that got through explained, and you can
-read a cost off a trace without looking at the code.
+Pass line, checked at the Defence: CI green including the attack gate, one attack that got
+through explained with the change it caused, a cost read off a trace without opening code.
 
 ## Optional: self-test
 
