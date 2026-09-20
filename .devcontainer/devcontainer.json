@@ -1,0 +1,28 @@
+{
+  "name": "ai-eng-track",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "hostRequirements": { "cpus": 2, "memory": "4gb" },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/va-h/devcontainers-features/uv:1": {}
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "postStartCommand": "docker compose up -d redis",
+  "forwardPorts": [8000],
+  "portsAttributes": { "8000": { "label": "API", "onAutoForward": "notify" } },
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python", "charliermarsh.ruff", "ms-python.mypy-type-checker"],
+      "settings": {
+        "python.defaultInterpreterPath": ".venv/bin/python",
+        "editor.formatOnSave": true,
+        "[python]": { "editor.defaultFormatter": "charliermarsh.ruff" }
+      }
+    },
+    "codespaces": { "openFiles": ["weeks/0/README.md"] }
+  },
+  "secrets": {
+    "MODEL_API_KEY": { "description": "Optional. Key for MODEL_PROVIDER in .env. Leave unset to use GitHub Models via GITHUB_TOKEN." },
+    "GEMINI_API_KEY": { "description": "Optional. Second provider for the Week 1 switch (aistudio.google.com)." }
+  }
+}

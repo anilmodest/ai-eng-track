@@ -1,0 +1,31 @@
+name: check
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync
+      - name: Work out which week this PR is for
+        id: week
+        run: |
+          BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+          if [[ "$BRANCH" =~ ^week-([0-9]+)$ ]]; then WEEK="${BASH_REMATCH[1]}"; else WEEK=0; fi
+          echo "week=$WEEK" >> "$GITHUB_OUTPUT"
+          echo "Checking week $WEEK (branch $BRANCH)"
+      - name: make check
+        run: uv run python scripts/check.py --week ${{ steps.week.outputs.week }}
+        env:
+          MODEL_PROVIDER: fake_a
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: week-report
+          path: reports/*.json
