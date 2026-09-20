@@ -1,6 +1,6 @@
 """`make live-check`: the real provider from .env against the sample documents.
 
-Prints one row per document. Paste the table into REFLECTION.md, switch provider, run it again.
+Prints one row per document. Paste the table into reflections/week-1.md, switch, run again.
 """
 
 import asyncio

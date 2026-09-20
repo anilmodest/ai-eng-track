@@ -1,0 +1,48 @@
+name: deploy to hugging face space
+# Pushes the service to a Hugging Face Space (Docker) on every merge to main, so the mentor can
+# call a live URL at any time. Does nothing until the fellow sets:
+#   repository variable  HF_SPACE   e.g. your-hf-username/ai-eng-track
+#   repository secret    HF_TOKEN   a Hugging Face token with write access
+# See README.md, "Deploy".
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    if: ${{ vars.HF_SPACE != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assemble the Space (service only, with the front matter Spaces needs)
+        run: |
+          set -e
+          rm -rf /tmp/space && mkdir -p /tmp/space
+          cp -r app pyproject.toml uv.lock Dockerfile /tmp/space/
+          cat > /tmp/space/README.md <<'MD'
+          ---
+          title: ai-eng-track
+          emoji: 📄
+          colorFrom: gray
+          colorTo: blue
+          sdk: docker
+          app_port: 7860
+          pinned: false
+          ---
+          Live service for the AI Engineering track. API docs at `/docs`. Deployed from GitHub on every merge to main.
+          MD
+      - name: Push to the Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE: ${{ vars.HF_SPACE }}
+        run: |
+          set -e
+          cd /tmp/space
+          git init -q -b main
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add -A
+          git commit -q -m "deploy ${GITHUB_SHA::7}"
+          git push -q --force "https://user:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE}" main
+          echo "pushed to https://huggingface.co/spaces/${HF_SPACE}"

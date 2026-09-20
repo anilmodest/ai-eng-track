@@ -3,7 +3,7 @@
 > **A model is an unreliable, expensive, non-deterministic third-party dependency. Treat it like one.**
 
 Read this once (about 20 minutes). Then write the sentence above in your own words in
-`REFLECTION.md`, Q1, before you touch any code.
+`reflections/week-1.md`, Q1, before you touch any code.
 
 ## Five ways a model betrays you
 

@@ -11,4 +11,4 @@
 
 ## Reflection
 
-Filled in `REFLECTION.md`: [ ] Q1 concept in my words  [ ] Q2 what surprised me  [ ] Q3 what I would change
+Filled in `reflections/week-N.md`: [ ] Q1 concept in my words  [ ] Q2 what surprised me  [ ] Q3 what I would change

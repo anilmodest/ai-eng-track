@@ -30,7 +30,7 @@ next six weeks stand on is solid, and your mentor uses what they see to place yo
    docker run -p 7860:7860 ai-eng-track
    ```
    Then `curl localhost:7860/health`.
-6. Fill `REFLECTION.md` (copy `REFLECTION_TEMPLATE.md`), Q1 only: trace one upload request from
+6. Fill `reflections/week-0.md` (copy `REFLECTION_TEMPLATE.md` there), Q1 only: trace one upload request from
    the HTTP call to the row in SQLite, in your own words, under 150 words.
 
 ## The discovery session

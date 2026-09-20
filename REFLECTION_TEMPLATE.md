@@ -1,6 +1,6 @@
 # Reflection — Week N
 
-Copy this file to `REFLECTION.md` on your `week-N` branch. Short answers. Your own words.
+Copy this file to `reflections/week-N.md` on your `week-N` branch. Short answers. Your own words.
 Your mentor reads this before the session; it is what the session is about.
 
 ## Q1. The concept, in my words

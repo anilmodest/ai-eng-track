@@ -24,7 +24,7 @@ free tier. If it rate-limits you, switch to `groq` or `openrouter`; that switch 
 
 ## Elaboration 2 — read it (1 hour, change nothing)
 
-Read `app/llm/` in this order and answer the three questions in `REFLECTION.md`, Q1b:
+Read `app/llm/` in this order and answer the three questions in `reflections/week-1.md`, Q1b:
 
 1. `client.py` — the contract. What is the one thing a caller may branch on when a call fails?
 2. `registry.py` — where does `MODEL_PROVIDER` get read, and what does `FallbackClient` do that
@@ -79,7 +79,7 @@ Run the gate as often as you like: `make check WEEK=1`.
 ## Switch (30 minutes)
 
 With the gate green, run `make live-check` against your default provider. Paste the table into
-`REFLECTION.md`. Change `MODEL_PROVIDER` (and the key) in `.env`. Restart. Run it again. Paste
+`reflections/week-1.md`. Change `MODEL_PROVIDER` (and the key) in `.env`. Restart. Run it again. Paste
 that table too.
 
 Then: `git diff main -- app/` must contain no provider-specific code. If it does, that is the
@@ -87,7 +87,7 @@ finding of the week; fix it.
 
 ## Submit (30 minutes)
 
-- `REFLECTION.md`: Q1 (concept in your words), Q1b (three reading questions), Q2 (what
+- `reflections/week-1.md`: Q1 (concept in your words), Q1b (three reading questions), Q2 (what
   surprised you), Q3 (what you would change), both live-check tables.
 - Open a PR `week-1 → main`. CI runs the gate. Fix anything red.
 - Send the PR link to your mentor 24 hours before the session.

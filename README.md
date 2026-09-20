@@ -44,7 +44,7 @@ the code changes. That is the point of Week 1.
 Concept (1 h) → Elaboration (2 h) → Exercise (3–5 h) → Defence (10 min with your mentor).
 
 - Work on a branch named `week-N`. Open a PR to `main`. CI runs `make check WEEK=N`.
-- Fill `REFLECTION.md` (copy from `REFLECTION_TEMPLATE.md`) before you send the PR link.
+- Fill `reflections/week-N.md` (copy `REFLECTION_TEMPLATE.md` there) before you send the PR link.
 - Send the link 24 hours before your session. Merge after it.
 
 ## Layout
@@ -57,6 +57,29 @@ tests/      the gate; tests/weeks/test_weekN.py is the contract for week N
 samples/    three documents used by tests and live-check
 scripts/    check.py, live_check.py, route.py
 ```
+
+## Your progress page
+
+Every merge to `main` rebuilds a page at `https://<your-user>.github.io/ai-eng-track` from what is in
+the repo: each week's gate, your own words from `reflections/`, your PRs and how many mentor comments
+they got. Nothing on it is typed in by hand. It appears after your first merge; GitHub Pages is
+switched on for you by the workflow. Your mentor opens it before every session.
+
+## Deploy (optional, 10 minutes, do it in Week 0 if you can)
+
+Your mentor can then call your service at any time, not only while your Codespace is running.
+
+1. Create a free account at <https://huggingface.co>, then a new **Space**: Docker SDK, blank
+   template, CPU basic (free). Note its name, e.g. `yourname/ai-eng-track`.
+2. In the Space's **Settings → Variables and secrets**, add `MODEL_PROVIDER=gemini` and your
+   `GEMINI_API_KEY` (or whichever provider you use).
+3. In this GitHub repo: **Settings → Secrets and variables → Actions**. Add a secret `HF_TOKEN`
+   (from <https://huggingface.co/settings/tokens>, write access) and a variable `HF_SPACE` with the
+   Space name. Optionally a variable `LIVE_URL` with the Space's URL so it shows on your page.
+4. Merge anything to `main`. The `deploy` workflow pushes the service to the Space; it is live a
+   few minutes later at `https://yourname-ai-eng-track.hf.space/docs`.
+
+Free Spaces sleep after inactivity and wake on the first request. That is fine.
 
 ## Keeping it free
 
