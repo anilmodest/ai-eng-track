@@ -31,10 +31,29 @@ class HealthOut(BaseModel):
     prompts: dict[str, str]
     guard_enabled: bool
     kill_switch: bool
+    model_ready: bool
+    model_hint: str | None = None
+
+
+def _provider_state(settings: Settings) -> tuple[bool, str | None]:
+    """Can a model call be made at all? Checked here so nobody has to make one to find out."""
+    from app.llm.registry import ProviderConfigError, build_client
+
+    try:
+        build_client(
+            settings.model_provider,
+            model=settings.model_name,
+            api_key=settings.model_api_key,
+            settings=settings,
+        )
+    except ProviderConfigError as e:
+        return False, str(e)
+    return True, None
 
 
 @router.get("/health", response_model=HealthOut)
 def health(settings: SettingsDep) -> HealthOut:
+    ready, hint = _provider_state(settings)
     return HealthOut(
         status="ok",
         version=os.environ.get("APP_VERSION") or build_info.APP_VERSION,
@@ -47,4 +66,6 @@ def health(settings: SettingsDep) -> HealthOut:
         prompts={"extract": EXTRACT_PROMPT, "ask": ASK_PROMPT},
         guard_enabled=settings.guard_enabled,
         kill_switch=settings.kill_switch,
+        model_ready=ready,
+        model_hint=hint,
     )

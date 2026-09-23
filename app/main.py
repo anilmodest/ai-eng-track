@@ -11,6 +11,7 @@ from sqlmodel import Session
 from app.api import ask, documents, extract, health, search, tasks, traces
 from app.api.schemas import ErrorOut
 from app.db.session import get_engine
+from app.llm.registry import ProviderConfigError
 from app.settings import get_settings
 from app.trace import ErrorKind, begin_request, end_request, mark_error
 
@@ -57,6 +58,23 @@ async def _trace_requests(
         end_request(session)
     response.headers["X-Request-Id"] = rid
     return response
+
+
+@app.exception_handler(ProviderConfigError)
+async def _no_provider(_: Request, exc: ProviderConfigError) -> JSONResponse:
+    """No key yet, or an unknown provider: a typed refusal, never a stack trace.
+
+    A fellow meets this on day one, before pasting a key. It is the first example of the week's
+    rule: a dependency that is not ready is a typed error with a fix in it.
+    """
+    mark_error(ErrorKind.unsupported, str(exc))
+    return JSONResponse(
+        status_code=503,
+        content=ErrorOut(
+            error="model_not_configured",
+            detail=f"{exc} | set it in .env, or as a Codespaces secret, then restart the service",
+        ).model_dump(),
+    )
 
 
 @app.exception_handler(HTTPException)
