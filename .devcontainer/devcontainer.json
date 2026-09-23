@@ -3,7 +3,9 @@
   "build": { "dockerfile": "Dockerfile" },
   "hostRequirements": { "cpus": 2, "memory": "4gb" },
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": { "moby": false }
+    "ghcr.io/devcontainers/features/docker-in-docker:2": { "moby": false },
+    // Lets you work from your own terminal instead of the browser: gh codespace ssh -c <name>
+    "ghcr.io/devcontainers/features/sshd:1": {}
   },
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "postStartCommand": "docker compose up -d redis || true",
