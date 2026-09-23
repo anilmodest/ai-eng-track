@@ -11,3 +11,9 @@ RUN rm -f /etc/apt/sources.list.d/yarn.list \
  && apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates curl \
  && rm -rf /var/lib/apt/lists/*
+
+# uv in the image, not in a home directory: every shell finds it, interactive or not, and the
+# post-create step is then just a sync. (Installing it per-container put it in ~/.local/bin,
+# which a non-interactive shell does not have on PATH.)
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+ENV UV_LINK_MODE=copy

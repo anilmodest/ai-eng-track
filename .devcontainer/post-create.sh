@@ -3,13 +3,15 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
-echo "== installing uv"
+# uv comes from the image (.devcontainer/Dockerfile). This is a belt-and-braces fallback for
+# anyone opening the repo in a plain container that does not have it.
 if ! command -v uv >/dev/null 2>&1; then
+  echo "== uv not in the image, installing into ~/.local/bin"
   pip install --user -q uv || pip install -q uv
   export PATH="$HOME/.local/bin:$PATH"
+  grep -q '.local/bin' "$HOME/.bashrc" 2>/dev/null || echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
 fi
-grep -q '.local/bin' "$HOME/.bashrc" 2>/dev/null || echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
-uv --version
+echo "== uv $(uv --version)"
 
 echo "== installing the project"
 [ -f .env ] || cp .env.example .env
