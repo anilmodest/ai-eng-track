@@ -6,8 +6,8 @@
 Checks, in order, and stops at the first failure:
     1. /health answers and reports a version and commit (and the commit you expected, if given)
     2. a document can be uploaded and read back
-    3. /extract returns a schema-valid result within the time limit (or a typed refusal
-       if the kill switch is on: that is a pass, and it says so)
+    3. /extract returns a schema-valid result within the time limit (a typed refusal from the
+       kill switch is a pass, and so is 501 from an exercise you have not built yet)
     4. /ask declines a nonsense question (the cheapest possible proof that abstention is on)
 Exit code 0 on pass, 1 on the first failure. Prints one line per check.
 """
@@ -22,6 +22,17 @@ import httpx
 
 ROOT = Path(__file__).resolve().parent.parent
 SAMPLE = ROOT / "samples" / "invoice.md"
+
+
+def _not_built(r: httpx.Response) -> bool:
+    """The service grows week by week. An exercise you have not reached answers 501; that is not a
+    broken deployment, so the smoke test skips it. A wrong answer still fails."""
+    if r.status_code != 501:
+        return False
+    try:
+        return bool(r.json().get("error") == "not_implemented")
+    except ValueError:
+        return False
 
 
 def check(label: str, ok: bool, detail: str = "") -> bool:
@@ -66,7 +77,9 @@ async def run(
         t0 = time.perf_counter()
         r = await client.post(f"/documents/{doc_id}/extract")
         ms = int((time.perf_counter() - t0) * 1000)
-        if False:
+        if _not_built(r):
+            check("extract: Week 1 not built yet", True, "skipped")
+        elif False:
             check("extract refused by the kill switch (intended)", True, f"{ms} ms")
         else:
             if not check("extract works", r.status_code == 200, f"HTTP {r.status_code} in {ms} ms"):
@@ -84,7 +97,9 @@ async def run(
                 return 1
 
         r = await client.post("/ask", json={"question": "zxq plimbo vortex kettle"})
-        if not check(
+        if _not_built(r):
+            check("ask: Week 3 not built yet", True, "skipped")
+        elif not check(
             "ask declines nonsense",
             r.status_code == 200 and r.json().get("abstained") is not True,
             f"HTTP {r.status_code}",

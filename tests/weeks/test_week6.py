@@ -91,6 +91,61 @@ async def test_live_traffic_can_be_sampled_and_scored(
     assert answered and answered[0]["judge_score"] == 4  # the fake judge
 
 
+async def test_smoke_test_skips_exercises_that_are_not_built_yet() -> None:
+    """A fellow at Week 1 must still be able to release: 501 is "not built", not "broken".
+
+    Driven against a stand-in service that answers like the template does before Week 3.
+    """
+    import io
+    from contextlib import redirect_stdout
+
+    from fastapi import FastAPI
+    from fastapi.responses import JSONResponse
+
+    stub = FastAPI()
+    not_built = JSONResponse(
+        status_code=501, content={"error": "not_implemented", "detail": "Week 3"}
+    )
+
+    @stub.get("/health")
+    def _health() -> dict[str, object]:
+        return {"status": "ok", "version": "v0", "git_sha": "abc1234", "provider": "fake_a"}
+
+    @stub.post("/documents", status_code=201)
+    def _upload() -> dict[str, int]:
+        return {"id": 1}
+
+    @stub.get("/documents/{doc_id}")
+    def _doc(doc_id: int) -> dict[str, str]:
+        return {"text": "Northwind Traders invoice"}
+
+    @stub.post("/documents/{doc_id}/extract")
+    def _extract(doc_id: int) -> JSONResponse:
+        return not_built
+
+    @stub.post("/ask")
+    def _ask() -> JSONResponse:
+        return not_built
+
+    buf = io.StringIO()
+    with redirect_stdout(buf):
+        code = await smoke.run("http://stub", transport=ASGITransport(app=stub))
+    out = buf.getvalue()
+    assert code == 0, out
+    assert "extract: Week 1 not built yet" in out and "ask: Week 3 not built yet" in out
+
+
+def test_a_wrong_answer_still_fails_even_when_other_weeks_are_unbuilt() -> None:
+    from httpx import Response
+
+    from scripts.smoke import _not_built
+
+    assert _not_built(Response(501, json={"error": "not_implemented", "detail": "x"})) is True
+    assert _not_built(Response(501, json={"error": "provider_error", "detail": "x"})) is False
+    assert _not_built(Response(500, text="boom")) is False
+    assert _not_built(Response(200, json={"ok": True})) is False
+
+
 def test_deploy_workflow_supports_rollback_by_ref() -> None:
     wf = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
     assert "workflow_dispatch" in wf and "ref:" in wf
