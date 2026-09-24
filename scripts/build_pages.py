@@ -946,7 +946,7 @@ def render(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
     live_line = (
         f'Live service: <a href="{esc(live_url)}/docs">{esc(live_url)}</a> (<a href="{esc(live_url)}/health">/health</a>)'
         if live_url
-        else "No live service yet: the deploy step in <a href='#start'>Start here</a> gives you one."
+        else "No live URL set. Week 6 publishes a runnable image, which needs no account; a clickable URL is optional (Reference &rarr; Start here)."
     )
     track = _split_track()
     area_state: dict[int, str] = {}
@@ -1059,7 +1059,7 @@ def render(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
 <h2 id="playground">Playground</h2>
 <p>Call your running service from here: your Space (set the repository variable <code>LIVE_URL</code>) or a Codespace port you have made public. Only the URL is remembered, in your browser. {live_line}</p>
 <label for="pg-base" class="status">Service URL</label>
-<input type="text" id="pg-base" placeholder="https://yourname-ai-eng-track.hf.space">
+<input type="text" id="pg-base" placeholder="http://localhost:7860  or  https://your-service.onrender.com">
 <p id="pg-status" class="status"></p>
 <div class="play">
   <div class="card" id="pg-w0"><h3>Week 0 &middot; health and upload</h3>
@@ -1125,7 +1125,7 @@ def render(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
     <ul>
       <li><a href="https://aistudio.google.com/apikey">Gemini key (free tier, default)</a></li>
       <li><a href="https://console.groq.com/keys">Groq key (second provider)</a></li>
-      <li><a href="https://huggingface.co/new-space">Create a Hugging Face Space</a> for the live URL</li>
+      <li><a href="https://render.com">Render</a> for an optional clickable URL (the release publishes a runnable image either way)</li>
     </ul>
     <h3>For mentors</h3><p>Runbooks, held-out sets, the rubric and reference solutions live in the private mentor kit, not here.</p>
   </div></details>

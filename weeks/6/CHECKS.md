@@ -10,8 +10,9 @@ fakes, the evaluation gate and the attack gate.
 | `smoke_test_passes_against_the_service` | `scripts/smoke.py` exits 0 in-process |
 | `smoke_test_fails_on_the_wrong_commit` | `--expect-sha deadbeef` exits 1 |
 | `smoke_test_treats_the_kill_switch_as_intended` | a 503 `kill_switch` on extract is a pass, with no model call |
-| `deploy_workflow_supports_rollback_by_ref` | `workflow_dispatch` with a `ref`, build info stamped, smoke test at the end |
+| `deploy_workflow_supports_rollback_by_ref` | `workflow_dispatch` with a `ref`, the commit stamped into `build_info.py`, and the smoke test gating the publish |
 | `smoke_script_is_runnable_standalone` | `--help` works |
 
-The deploy, the break, the rollback and the write-up are not gates. They are the week, and they
-are what the final session is about.
+The release, the break, the rollback and the write-up are not gates. They are the week, and they
+are what the Defence is about. The release workflow smoke-tests the candidate image before
+publishing, so a broken build never becomes a tag someone can pull.

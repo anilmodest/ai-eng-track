@@ -12,7 +12,8 @@ A normal deployment is checked by tests that either pass or fail. This one answe
 different days, and its provider changes under it. So the disciplines shift:
 
 - **Versioning that includes the prompt and the model.** The same commit with a different model
-  is a different system. `/health` says which build, which prompts, which provider.
+  is a different system. `/health` says which build, which prompts, which provider, and the
+  release workflow stamps the commit into the image so it cannot disagree.
 - **A smoke test after every deploy**, and after every rollback. Not the whole evaluation: the
   four cheapest checks that prove the thing is up, is the version you meant, answers, and declines.
 - **Rollback as a first-class action.** Deploy an earlier tag, on purpose, in a minute, and
@@ -49,15 +50,16 @@ The document says it plainly: interviewers ask what the feature did for the busi
 
 | Idea | Where it lives | What you do this week |
 | --- | --- | --- |
-| Build identity | `app/build_info.py`, `/health` | Tag, deploy, read it back from the live URL |
-| Smoke test | `scripts/smoke.py`, the deploy workflow | Run it after your deploy and your rollback |
-| Rollback | `deploy.yml`, `workflow_dispatch` with a ref | Break it on purpose, roll back, prove it |
+| Build identity | `app/build_info.py`, `/health` | Tag, release, read it back out of the running image |
+| Publish | the release workflow, `ghcr.io/<you>/ai-eng-track` | Build, smoke test, publish; make the package public once |
+| Smoke test | `scripts/smoke.py` | It gates the publish, and you run it again after a rollback |
+| Rollback | `workflow_dispatch` with a ref | Break it on purpose, roll back, prove it with `/health` |
 | Write-up | `weeks/6/WRITEUP_TEMPLATE.md` | One page, numbers not adjectives |
 | Defence | your mentor's final session | The whole track, defended |
 
 ## What you should be able to say by Friday
 
-- Which tag is live right now and how you know without opening a shell.
+- Which tag is published right now, and how you know without reading the workflow.
 - What a rollback took, in minutes, and what the smoke test said before and after.
 - What the feature does for the business, in one sentence with a number in it.
 - What you would change before 10,000 documents a day, and what it would cost.

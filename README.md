@@ -90,21 +90,39 @@ Nothing on it is typed in by hand. Your mentor opens it before every session.
 One-time switch, 10 seconds: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 Until you do, the workflow builds the page but cannot publish it, and says so.
 
-## Deploy (optional, 10 minutes, do it in Week 0 if you can)
+## Release: publishing something other people can run
 
-Your mentor can then call your service at any time, not only while your Codespace is running.
+Every merge to `main`, and every `v*` tag, runs the **release** workflow: it builds the image,
+runs the smoke test against that image, and only then publishes it to this repository's own
+container registry. No account beyond GitHub, nothing to pay, nothing to configure.
 
-1. Create a free account at <https://huggingface.co>, then a new **Space**: Docker SDK, blank
-   template, CPU basic (free). Note its name, e.g. `yourname/ai-eng-track`.
-2. In the Space's **Settings → Variables and secrets**, add `MODEL_PROVIDER=gemini` and your
-   `GEMINI_API_KEY` (or whichever provider you use).
-3. In this GitHub repo: **Settings → Secrets and variables → Actions**. Add a secret `HF_TOKEN`
-   (from <https://huggingface.co/settings/tokens>, write access) and a variable `HF_SPACE` with the
-   Space name. Optionally a variable `LIVE_URL` with the Space's URL so it shows on your page.
-4. Merge anything to `main`. The `deploy` workflow pushes the service to the Space; it is live a
-   few minutes later at `https://yourname-ai-eng-track.hf.space/docs`.
+Anyone can then run exactly what you shipped:
 
-Free Spaces sleep after inactivity and wake on the first request. That is fine.
+```
+docker run -p 7860:7860 ghcr.io/<your-user>/ai-eng-track:v1.0.0
+```
+
+**One thing to do once**, after your first successful release: open your profile's **Packages**
+tab, pick `ai-eng-track`, and set the package visibility to **Public**. Until you do, only you
+can pull it.
+
+### A clickable URL (optional)
+
+If you want a URL your mentor can open without running anything:
+
+1. Create a free account at [render.com](https://render.com) and a **Web Service** from this
+   repository (it will find the `Dockerfile`; free instance type).
+2. In the service's settings, add the environment variables `MODEL_PROVIDER=gemini` and your
+   `GEMINI_API_KEY`, and copy its **Deploy Hook** URL.
+3. In this GitHub repo: **Settings → Secrets and variables → Actions** → secret
+   `RENDER_DEPLOY_HOOK` (the hook URL) and variable `LIVE_URL` (your service's address).
+
+The release workflow then also triggers that deploy and smoke-tests the live service. Free Render
+services sleep after 15 minutes and wake on the first request; that is fine.
+
+> Hugging Face Spaces used to be the recommended target here. As of September 2026 they charge a
+> PRO subscription for Docker Spaces, so the default moved to the registry, which costs nothing
+> and makes rollback a matter of running an earlier tag.
 
 ## Keeping it free
 

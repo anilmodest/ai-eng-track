@@ -1,7 +1,7 @@
 """Week 6: the post-deploy smoke test. Run it against every deployment, and after every rollback.
 
-    uv run python scripts/smoke.py https://yourname-ai-eng-track.hf.space
-    uv run python scripts/smoke.py http://127.0.0.1:8000 --expect-sha 4f3a9c1
+    uv run python scripts/smoke.py http://127.0.0.1:7860        # your published image, running
+    uv run python scripts/smoke.py https://your-service.onrender.com --expect-sha 4f3a9c1
 
 Checks, in order, and stops at the first failure:
     1. /health answers and reports a version and commit (and the commit you expected, if given)

@@ -1,5 +1,8 @@
 # Production image for the service. Used by the Week 0 exercise and by the Hugging Face Space.
 FROM python:3.12-slim
+
+# Links the published package to this repository, so whoever finds the image finds the source.
+LABEL org.opencontainers.image.source="https://github.com/anilmodest/ai-eng-track"
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # Spaces run containers as uid 1000; so does this image everywhere, so behaviour matches.

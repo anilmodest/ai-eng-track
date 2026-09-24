@@ -16,29 +16,37 @@ curl -s http://127.0.0.1:8000/health | python -m json.tool
 ```
 
 Read what `/health` says. Every field is something a person on call would need. Then read
-`.github/workflows/deploy.yml`: find where the commit is stamped into `app/build_info.py`, and
-where the smoke test runs.
+`.github/workflows/deploy.yml`: find where the commit is stamped into `app/build_info.py`, where
+the candidate image is smoke-tested, and why that happens *before* the publish step rather than
+after.
 
 ## Exercise — ship, break, roll back, write (5 hours)
 
-If you did not set up the Hugging Face Space in Week 0, do it now (README, "Deploy"). Set the
-repository variable `LIVE_URL` so the deploy workflow runs the smoke test for you.
+The release workflow needs nothing set up: it builds the image, smoke-tests it, and publishes it
+to `ghcr.io/<you>/ai-eng-track`. A clickable URL is optional (README, "A clickable URL").
 
-1. **Tag and deploy.** `git tag v1.0.0 && git push --tags`, merge to `main`, watch the deploy
-   workflow. Then, from your machine:
-   `uv run python scripts/smoke.py $LIVE_URL --expect-sha <the short sha of main>`.
+1. **Tag and release.** `git tag v1.0.0 && git push --tags`, then watch the **release** workflow.
+   Read its summary: it prints the exact `docker run` line for what it published. Then make the
+   package public (once), pull it, and prove it is the build you meant:
+
+   ```
+   docker run -d --rm -p 7860:7860 ghcr.io/<you>/ai-eng-track:v1.0.0
+   uv run python scripts/smoke.py http://127.0.0.1:7860 --expect-sha <the short sha>
+   ```
+
    Paste the output into `reflections/week-6.md`.
-2. **Break it on purpose.** On a branch `week-6`, change one thing that a smoke test should catch
-   but unit tests would not: set `RELEVANCE_THRESHOLD=1.5` in the Space's variables, or change
-   the `ask_v1.md` prompt to always answer. Merge. Run the smoke test. It must fail, and say why.
-3. **Roll back.** Actions → *deploy to hugging face space* → *Run workflow* → `ref: v1.0.0`.
-   Run the smoke test again with `--expect-sha` of the tag. Paste both outputs. Note the minutes.
-4. **Fix forward.** Revert the break properly, tag `v1.0.1`, deploy, smoke test.
+2. **Break it on purpose.** On a branch `week-6`, change one thing a smoke test catches and unit
+   tests do not: set `RELEVANCE_THRESHOLD=1.5` in the image's environment, or change `ask_v1.md`
+   so it always answers. Merge. Watch the release workflow **fail before it publishes** — that is
+   the point of smoke-testing the candidate image rather than the deployment.
+3. **Roll back.** Actions → *release* → *Run workflow* → `ref: v1.0.0`. Run the smoke test against
+   the rolled-back image with `--expect-sha` of that tag. Paste both outputs. Note the minutes.
+4. **Fix forward.** Revert the break properly, tag `v1.0.1`, release, smoke test.
 5. **Score what people actually ask.** After a day of real use (yours, a peer's, your mentor's),
-   run `uv run python scripts/sample_live.py --judge` against the deployed database (or your
-   local one). It reads the last twenty `/ask` requests, re-runs retrieval and scores each answer
-   with the judge. Put the lowest five in your reflection with one line each on why. This is
-   the last bullet of Area 8: sampling live traffic for continuous scoring after release.
+   run `uv run python scripts/sample_live.py --judge`. It reads the last twenty `/ask` requests,
+   re-runs retrieval and scores each answer with the judge. Put the lowest five in your reflection
+   with one line each on why. This is the last bullet of Area 8: sampling live traffic after
+   release.
 6. **Write it up.** Copy `weeks/6/WRITEUP_TEMPLATE.md` to `reflections/writeup.md` and fill it.
    Every number in it comes from `reports/`: `eval.json`, `traces.json`, `attacks.json`,
    `compare.json`. No adjectives where a number will do.
@@ -50,7 +58,8 @@ Your route changes what this week gives you: read `routes/start.md`, `routes/cor
 
 ## Submit (30 minutes)
 
-- `reflections/week-6.md`: Q1, the four smoke test outputs, the rollback timing.
+- `reflections/week-6.md`: Q1, the smoke test outputs (release, break, rollback, fix forward),
+  the rollback timing, and the `docker run` line for your published image.
 - `reflections/writeup.md`: the one page.
 - PR `week-6 → main`. CI green. Public repo, live URL in the README, progress page all green.
 
@@ -65,8 +74,9 @@ items. Your mentor will:
 - change one thing in your `.env` live and ask what will break, before it does;
 - ask what the feature did for the business, and stop you if you answer with a score.
 
-Pass line: every week's gate green on `main`, a live URL that passes the smoke test, a rollback
-you performed and can describe, and a write-up whose numbers you can defend.
+Pass line: every week's gate green on `main`, a published image that passes the smoke test
+(and a live URL if you set one up), a rollback you performed and can describe, and a write-up
+whose numbers you can defend.
 
 "Cannot defend at the final session": you complete the track. The gap is recorded honestly and
 stated plainly. That is the framework's rule, and it is the right one.

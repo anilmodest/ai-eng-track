@@ -30,6 +30,6 @@ yet; then go and read that part again. The explanations are the point, not the s
 
 ## Q5. Why does the Week 0 Docker image run as user 1000?
 - [ ] Python refuses to run as root in a container — it does not
-- [x] Hugging Face Spaces run containers as uid 1000; matching it locally means the same behaviour in both places
+- [x] Many container hosts refuse to run as root, and the release pipeline runs the image the same way everywhere; matching uid 1000 locally means the same behaviour in both places
 - [ ] It is required for SQLite — SQLite does not care
-> Why: the reason is in the Dockerfile comment. Differences between local and deployed environments are where deploy-day surprises come from; removing one on day zero is cheap.
+> Why: the reason is in the Dockerfile comment. Differences between where you run it and where it runs are the source of deploy-day surprises; removing one on day zero is cheap. Week 6 publishes this image to a registry, and whoever pulls it runs it as that user.
