@@ -102,9 +102,9 @@ Anyone can then run exactly what you shipped:
 docker run -p 7860:7860 ghcr.io/<your-user>/ai-eng-track:v1.0.0
 ```
 
-**One thing to do once**, after your first successful release: open your profile's **Packages**
-tab, pick `ai-eng-track`, and set the package visibility to **Public**. Until you do, only you
-can pull it.
+Nothing to configure: a package published by Actions from a public repository is public, so
+anyone can pull it without an account. (If you ever make your repository private, the package
+follows it, and you would have to set its visibility by hand.)
 
 ### A clickable URL (optional)
 

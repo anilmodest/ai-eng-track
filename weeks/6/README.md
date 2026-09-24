@@ -26,8 +26,8 @@ The release workflow needs nothing set up: it builds the image, smoke-tests it, 
 to `ghcr.io/<you>/ai-eng-track`. A clickable URL is optional (README, "A clickable URL").
 
 1. **Tag and release.** `git tag v1.0.0 && git push --tags`, then watch the **release** workflow.
-   Read its summary: it prints the exact `docker run` line for what it published. Then make the
-   package public (once), pull it, and prove it is the build you meant:
+   Read its summary: it prints the exact `docker run` line for what it published. Then pull it on
+   a machine that never built it, and prove it is the build you meant:
 
    ```
    docker run -d --rm -p 7860:7860 ghcr.io/<you>/ai-eng-track:v1.0.0

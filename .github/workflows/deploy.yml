@@ -6,8 +6,8 @@ name: release
 #
 #     docker run -p 7860:7860 ghcr.io/<you>/ai-eng-track:v1.0.0
 #
-# One-time, per repo: after the first successful run, open the package under your profile's
-# Packages tab and set its visibility to Public, or only you can pull it.
+# A package published from a public repository is public, so anyone can pull it with no account
+# and no login. Nothing to configure.
 #
 # Optional clickable URL: set the repository secret RENDER_DEPLOY_HOOK (Render -> your service ->
 # Settings -> Deploy Hook) and the variable LIVE_URL. The job then triggers that deploy and runs
