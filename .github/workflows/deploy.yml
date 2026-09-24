@@ -100,16 +100,29 @@ jobs:
           echo "docker run -p 7860:7860 $IMAGE:${{ steps.v.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
+      # The two steps below are no-ops until you set them up. The check is inside the script on
+      # purpose: `secrets` is not a context you may use in a step's `if`, and a workflow that
+      # tries to fails to parse, which shows up as a run with no jobs at all.
       - name: Deploy to Render, if you set one up
-        if: ${{ secrets.RENDER_DEPLOY_HOOK != '' }}
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
-          curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}" >/dev/null
-          echo "deploy triggered; Render builds from this repository's Dockerfile"
+          if [ -z "$HOOK" ]; then
+            echo "No RENDER_DEPLOY_HOOK secret: skipping. The published image is the release."
+            exit 0
+          fi
+          curl -fsS -X POST "$HOOK" >/dev/null
+          echo "Deploy triggered; Render builds from this repository's Dockerfile"
 
       - name: Smoke test the live service, if there is one
-        if: ${{ vars.LIVE_URL != '' }}
+        env:
+          LIVE_URL: ${{ vars.LIVE_URL }}
         run: |
+          if [ -z "$LIVE_URL" ]; then
+            echo "No LIVE_URL variable: skipping. The candidate image was smoke-tested above."
+            exit 0
+          fi
           for i in $(seq 1 40); do
-            curl -sf "${{ vars.LIVE_URL }}/health" >/dev/null && break || sleep 15
+            curl -sf "$LIVE_URL/health" >/dev/null && break || sleep 15
           done
-          uv run python scripts/smoke.py "${{ vars.LIVE_URL }}" --expect-sha "${{ steps.v.outputs.sha }}"
+          uv run python scripts/smoke.py "$LIVE_URL" --expect-sha "${{ steps.v.outputs.sha }}"
