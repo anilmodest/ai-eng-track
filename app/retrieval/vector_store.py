@@ -21,7 +21,7 @@ hits than you asked for, which is a quiet way to lose recall.
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, ClassVar, Protocol
+from typing import Any, Protocol
 
 import numpy as np
 from sqlmodel import Session, col, delete, select
@@ -182,19 +182,26 @@ class SqliteVecStore:
 
     name = "sqlite_vec"
 
-    # sqlite3.Connection takes no attributes of ours, so loaded connections are tracked here.
-    _loaded: ClassVar[set[int]] = set()
-
     def _conn(self, session: Session) -> Any:
+        """The raw SQLite connection, with the extension loaded on it.
+
+        An extension is loaded per connection, and SQLAlchemy hands out pooled connections we do
+        not control the lifetime of. Remembering which ones we have loaded is the obvious thing
+        and it is wrong: Python reuses object ids, so a fresh connection inherits the answer
+        "already loaded" from a dead one and the next query fails with `no such module: vec0`,
+        intermittently, which is the worst way for it to fail. Asking the connection is cheap and
+        cannot go stale.
+        """
         raw = session.connection().connection
         conn = getattr(raw, "driver_connection", raw)
-        if id(conn) not in self._loaded:
+        try:
+            conn.execute("select vec_version()")
+        except Exception:
             import sqlite_vec
 
             conn.enable_load_extension(True)
             sqlite_vec.load(conn)
             conn.enable_load_extension(False)
-            self._loaded.add(id(conn))
         return conn
 
     def _table(self, embedder: Embedder) -> str:
