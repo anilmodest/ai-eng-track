@@ -407,13 +407,8 @@ CSS = """
   --red:#b3261e; --red-soft:#fdecea;
   --radius:14px; --shadow:0 1px 2px rgba(20,20,50,.04), 0 8px 24px rgba(20,20,50,.05);
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --ink:#e9eaf2; --muted:#9aa1b4; --line:#2b2f3e; --paper:#14161d; --white:#1b1e27;
-    --indigo:#a98fd0; --indigo-dark:#c3aee4; --indigo-soft:#241e33;
-    --green-soft:#132a1d; --amber-soft:#2d2415; --red-soft:#2d1917;
-  }
-}
+/* Light by default, because the platform the fellow logs into is light and moving between
+   the two should not feel like two different products. Dark is a choice, kept in this browser. */
 :root[data-theme="dark"] {
   --ink:#e9eaf2; --muted:#9aa1b4; --line:#2b2f3e; --paper:#14161d; --white:#1b1e27;
   --indigo:#a98fd0; --indigo-dark:#c3aee4; --indigo-soft:#241e33;
@@ -515,6 +510,31 @@ code { font-size:.92em; }
 .links a:hover { border-color:var(--indigo); }
 
 .fineprint { color:var(--muted); font-size:13px; margin:28px 0 0; }
+
+.meter { height:6px; background:var(--line); border-radius:99px; overflow:hidden; margin:0 0 22px; }
+.meter i { display:block; height:100%; background:var(--indigo); border-radius:99px;
+  transition:width .3s; }
+
+.tog { background:none; border:0; color:var(--muted); font-size:15px; cursor:pointer; padding:0;
+  line-height:1; }
+.tog:hover { color:var(--ink); }
+
+.checks .sum { display:flex; align-items:center; gap:10px; font-size:14px; margin:0; }
+.checks details { border-top:1px solid var(--line); margin-top:12px; padding-top:10px; }
+.checks summary { font-size:14px; font-weight:500; }
+.checks ul { list-style:none; margin:8px 0 4px; padding:0; }
+.checks li { padding:6px 0; border-top:1px solid var(--line); font-size:13px;
+  display:flex; gap:10px; align-items:baseline; }
+.checks li:first-child { border-top:0; }
+.checks li .f { color:var(--muted); font-size:12px; margin-left:auto; white-space:nowrap; }
+.checks li b { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-weight:500; }
+.checks li.fail b { color:var(--red); }
+.checks li.pass b { color:var(--ink); }
+
+.todo { background:var(--indigo-soft); border-color:transparent; }
+.todo h3 { margin:0 0 4px; font-size:15px; }
+.todo p { margin:0 0 10px; font-size:14px; color:var(--indigo-dark); }
+.todo pre { background:var(--white); }
 .caveat { color:var(--amber); font-size:12px; }
 
 /* week detail pages */
@@ -604,7 +624,7 @@ JS = r"""
 
   // ---- diagrams --------------------------------------------------------------------------
   if (window.mermaid) {
-    const dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const dark = document.documentElement.dataset.theme === 'dark';
     mermaid.initialize({ startOnLoad: false, theme: dark ? 'dark' : 'neutral', securityLevel: 'loose' });
     // render only when a panel is opened, so hidden tabs do not get zero-width diagrams
     const rendered = new WeakSet();
@@ -720,11 +740,17 @@ def _pill(w: "Week") -> str:
 def headline(w: "Week") -> str:
     """One short sentence of evidence. Enough to decide whether to open the week."""
     if w.report:
-        tests = w.report.get("passed")
-        failed = w.report.get("failed") or 0
         bits = []
-        if tests is not None:
-            bits.append(f"{tests} checks pass" + (f", {failed} fail" if failed else ""))
+        # This week's own checks, not the running total for every week up to it: the number here
+        # has to be the number the week page lists, or one of them is a lie.
+        if w.tests:
+            passed = len([t for t in w.tests if t.get("outcome") == "passed"])
+            failed = len(w.tests) - passed
+            bits.append(
+                f"{passed} of {len(w.tests)} checks pass" if failed else f"all {passed} checks pass"
+            )
+        elif w.report.get("passed") is not None:
+            bits.append(f"{w.report['passed']} checks pass")
         extra = WEEK_HEADLINE.get(w.n)
         if extra:
             value = extra()
@@ -798,6 +824,57 @@ WEEK_PROMPT: dict[int, str] = {
 }
 
 
+def _pretty(test_id: str) -> str:
+    return test_id.removeprefix("test_").replace("_", " ")
+
+
+def checks_card(w: "Week") -> str:
+    """What the gate actually ran. The counts everywhere else open into this.
+
+    A fellow reading "19 fail" needs the names, not the number: the names say which part of the
+    week is not built yet, and they are the same names as in the test file they are working
+    against. A count alone is a verdict; the list is a map.
+    """
+    if not w.tests:
+        return (
+            '<div class="card checks" id="checks"><p class="sum">'
+            f"No checks have run for this week yet &middot; <code>make check WEEK={w.n}</code>"
+            "</p></div>"
+        )
+    failed = [t for t in w.tests if t.get("outcome") != "passed"]
+    passed = [t for t in w.tests if t.get("outcome") == "passed"]
+
+    def items(rows: list[dict[str, str]], kind: str) -> str:
+        return "".join(
+            f'<li class="{kind}"><b>{esc(_pretty(t.get("id", "")))}</b>'
+            f'<span class="f">{esc(Path(t.get("file", "")).name)}</span></li>'
+            for t in rows
+        )
+
+    head = (
+        f"{len(passed)} of {len(w.tests)} checks pass"
+        if failed
+        else f"all {len(passed)} checks pass"
+    )
+    body = ""
+    if failed:
+        body += (
+            f"<details open><summary>The {len(failed)} that do not</summary>"
+            f"<ul>{items(failed, 'fail')}</ul>"
+            '<p class="fineprint">Red is the normal state of a week you have not built yet. '
+            "Each name is a test in the file beside it.</p></details>"
+        )
+    if passed:
+        body += (
+            f"<details><summary>The {len(passed)} that do</summary>"
+            f"<ul>{items(passed, 'pass')}</ul></details>"
+        )
+    return (
+        f'<div class="card checks" id="checks">'
+        f'<p class="sum">{_pill(w)} <span>{esc(head)}</span></p>{body}</div>'
+    )
+
+
 def week_row(w: "Week", current: bool) -> str:
     return (
         f'<a class="wk{" current" if current else ""}" href="week-{w.n}.html">'
@@ -815,10 +892,20 @@ def render_week(w: "Week", weeks: list["Week"], repo: str) -> str:
         '<a class="back" href="index.html">&lsaquo; All weeks</a>',
         f'<p class="kicker">Week {w.n}</p>',
         f"<h1>{esc(w.title)}</h1>",
-        f'<div class="strip">{_pill(w)}'
-        f'<span class="chip">{esc(headline(w))}</span>'
+        f'<div class="strip"><a class="chip" href="#checks">{esc(headline(w))} &rsaquo;</a>'
         f'<a class="chip" href="{_gh(repo, f"weeks/{w.n}/README.md")}">On GitHub</a></div>',
     ]
+    if not w.done:
+        verb = {
+            "Read": "Start by reading the concept, then run what is already there.",
+            "Build": "Build this week's exercise, then run the gate.",
+            "Submit": "Fill in your reflection, then open the pull request.",
+        }[w.step]
+        parts.append(
+            f'<div class="card todo"><h3>Do this next</h3><p>{esc(verb)}</p>'
+            f"<pre>make check WEEK={w.n}</pre></div>"
+        )
+    parts.append(checks_card(w))
 
     if w.pr:
         state = str(w.pr.get("state", "")).lower()
@@ -850,19 +937,23 @@ def render_week(w: "Week", weeks: list["Week"], repo: str) -> str:
             f'<div class="card">{"".join(measured)}</div>'
         )
 
-    if w.concept_html:
-        parts.append(
-            f'<h2><span class="n">Read</span>the concept</h2>'
-            f'<div class="prose">{w.concept_html}</div>'
-        )
     if w.readme_html:
         parts.append(
             f'<h2><span class="n">Do</span>the week</h2><div class="prose">{w.readme_html}</div>'
         )
+    if w.concept_html:
+        parts.append(
+            '<h2><span class="n">Read</span>the concept</h2>'
+            '<div class="card"><details><summary>The idea behind this week</summary>'
+            '<div class="prose" style="box-shadow:none;border:0;padding:0">'
+            f"{w.concept_html}</div></details></div>"
+        )
     if w.checks_html:
         parts.append(
-            f'<h2><span class="n">Check</span>what the gate verifies</h2>'
-            f'<div class="prose">{w.checks_html}</div>'
+            '<h2><span class="n">Gate</span>what is verified</h2>'
+            f'<div class="card"><details><summary>What <code>make check WEEK={w.n}</code> runs'
+            '</summary><div class="prose" style="box-shadow:none;border:0;padding:0">'
+            f"{w.checks_html}</div></details></div>"
         )
     if w.quiz:
         parts.append(f'<h2><span class="n">Optional</span>self-test</h2>{quiz_html(w)}')
@@ -919,6 +1010,11 @@ def page(title: str, body: str, cfg: dict[str, Any] | None = None) -> str:
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
       rel="stylesheet">
 <style>{CSS}</style>
+<script>
+  /* Before first paint, so a chosen dark theme never flashes light. */
+  try {{ var t = localStorage.getItem('hub.theme');
+         if (t) document.documentElement.dataset.theme = t; }} catch (e) {{}}
+</script>
 </head><body>
 <div class="bar"><div class="wrap">
   <span class="mark">AI Engineering</span>
@@ -926,9 +1022,17 @@ def page(title: str, body: str, cfg: dict[str, Any] | None = None) -> str:
   <a href="index.html">Weeks</a>
   <a href="playground.html">Playground</a>
   <a href="progress.csv">Export</a>
+  <button class="tog" id="theme" title="Light or dark">&#9680;</button>
 </div></div>
 <div class="wrap">{body}</div>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  document.getElementById('theme').onclick = function () {{
+    var dark = document.documentElement.dataset.theme === 'dark';
+    document.documentElement.dataset.theme = dark ? 'light' : 'dark';
+    try {{ localStorage.setItem('hub.theme', dark ? 'light' : 'dark'); }} catch (e) {{}}
+  }};
+</script>
 <script>const cfg = {config};</script>
 <script>{JS}</script>
 </body></html>
@@ -1064,6 +1168,7 @@ def render_index(weeks: list[Week], route: str, live_url: str, repo: str) -> str
         f'<a href="{href}">{esc(t)}<span>{esc(sub)}</span></a>' for t, sub, href in links
     )
 
+    pct = round(100 * len(done) / len(weeks))
     body = f"""
 <p class="kicker">Discover &rarr; Build &middot; AI Engineering</p>
 <h1>One service, six weeks, numbers you can defend.</h1>
@@ -1071,6 +1176,7 @@ def render_index(weeks: list[Week], route: str, live_url: str, repo: str) -> str
 that exists in two versions worded almost identically. You build the assistant that answers from
 the right one, shows where the answer came from, and says when it does not know.</p>
 <div class="strip">{"".join(chips)}</div>
+<div class="meter"><i style="width:{pct}%"></i></div>
 {next_step(weeks, repo)}
 <h2><span class="n">How</span>you get there</h2>
 {step_html}
