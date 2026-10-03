@@ -1,0 +1,13 @@
+{
+  "_note": "The support desk's customer records, standing in for the system the real desk would call. The assistant may read one field of one record, and only for its own account. Nothing here is writable.",
+  "account": "desk-emea",
+  "customers": [
+    {"customer_id": "C-1001", "account": "desk-emea", "name": "Fabrikam Logistics", "version": "v3", "seats": 240, "contact": "ops@fabrikam.example"},
+    {"customer_id": "C-1002", "account": "desk-emea", "name": "Tailspin Freight", "version": "v2", "seats": 55, "contact": "it@tailspin.example"},
+    {"customer_id": "C-1003", "account": "desk-emea", "name": "Northwind Traders", "version": "v2", "seats": 1200, "contact": "platform@northwind.example"},
+    {"customer_id": "C-1004", "account": "desk-emea", "name": "Contoso Manufacturing", "version": "v3", "seats": 310, "contact": "support@contoso.example"},
+    {"customer_id": "C-1005", "account": "desk-emea", "name": "Woodgrove Bank", "version": "v3", "seats": 90, "contact": "integration@woodgrove.example"},
+    {"customer_id": "C-2001", "account": "desk-amer", "name": "Litware Retail", "version": "v2", "seats": 480, "contact": "ops@litware.example"},
+    {"customer_id": "C-2002", "account": "desk-amer", "name": "Proseware Health", "version": "v3", "seats": 75, "contact": "it@proseware.example"}
+  ]
+}

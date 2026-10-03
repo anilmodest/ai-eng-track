@@ -32,6 +32,7 @@ class HitOut(BaseModel):
     ordinal: int
     score: float
     text: str
+    version: str | None = None
 
 
 @router.post("/index", response_model=IndexOut)
@@ -56,6 +57,10 @@ def search_endpoint(
     q: Annotated[str, Query(min_length=1)],
     k: int | None = None,
     strategy: str | None = None,
+    version: Annotated[
+        str | None,
+        Query(description="Restrict to one version of the manual, e.g. v3. Omit to search all."),
+    ] = None,
 ) -> list[HitOut]:
     hits = search(
         session,
@@ -63,5 +68,6 @@ def search_endpoint(
         q,
         k=k or settings.search_k,
         strategy=strategy or settings.chunk_strategy,
+        version=version,
     )
     return [HitOut(**h.__dict__) for h in hits]

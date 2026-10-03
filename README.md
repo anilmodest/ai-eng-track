@@ -3,6 +3,12 @@
 One small service that grows, week by week, into an AI product you can defend in an interview.
 Six weeks, eleven areas, one repo: yours.
 
+A software company supports versions 2 and 3 of its product. The two manuals are worded almost
+identically and differ in substance, so an answer from the wrong one is worse than no answer.
+You build the assistant that gets it right, cites its source, and says when it does not know.
+The brief is `weeks/0/BRIEF.md`; what it must do is `weeks/0/REQUIREMENTS.md`; what is expected
+of you, including the rule on AI tools, is [`RULES.md`](RULES.md).
+
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/anilmodest/ai-eng-track?quickstart=1)
 
 ## Start here (three clicks, nothing to install)
@@ -21,13 +27,15 @@ terminal, you are ready.
 | `make run` | Start the API on port 8000 (docs at `/docs`) |
 | `make check WEEK=1` | This week's gate: lint, types, tests, once per fake provider. Writes `reports/week-1.json` |
 | `make live-check` | Call the real provider from `.env` with the sample documents |
-| `make route ROUTE=core` | Set your route once, after your mentor places you. `start`: worked examples; `core`: planted faults to find; `pro`: no helpers, one constraint per week |
+| `make route` | Apply the route you were placed on. It is already in `.route`; you do not choose it. `start`: worked examples; `core`: planted faults to find; `pro`: no helpers, one constraint per week |
 | `make fmt` | Format and auto-fix lint |
 
 Per-week measurement scripts (evidence for the session, not gates unless the week says so):
 `scripts/retrieval_eval.py` (Week 2), `scripts/eval.py` (Week 3, a gate from then on),
 `scripts/compare_week4.py`, `scripts/trace_report.py` and `scripts/attack.py` (Week 5, a gate),
-`scripts/smoke.py` (Week 6, runs after every deploy).
+`scripts/smoke.py` (Week 6, runs after every deploy). Two more in Week 2 before any of that:
+`scripts/baseline.py` (does the model already know the answers? it must not) and
+`scripts/version_check.py` (what similarity alone returns when the manual exists twice).
 
 ## Model access
 
@@ -42,7 +50,16 @@ MODEL_API_KEY=...        # or set GROQ_API_KEY as a Codespaces secret
 ```
 
 Known providers are listed in `app/llm/registry.py`. If one runs out of quota, switch. Nothing in
-the code changes. That is the point of Week 1.
+the code changes. That is the point of Week 1. **Get keys from two providers before you start**:
+free tiers run out, and a dead quota should not cost you an evening.
+
+## Where the vectors live
+
+`VECTOR_STORE` picks one of three, behind a single interface: `sqlite_vec` (the default, an index
+inside the same file, with the version as its partition key), `numpy` (a plain scan, no index) and
+`qdrant` (a real vector database, local folder or hosted). Changing it changes one line of
+configuration and nothing else. [`docs/vector-stores.md`](docs/vector-stores.md) compares these
+and the hosted ones, and Week 2 asks you to measure all three.
 
 ## How a week works
 
@@ -59,12 +76,15 @@ four steps, the routes and how sessions and gates work are in [`docs/track.md`](
 ## Layout
 
 ```
-app/        the service: FastAPI, SQLite, a job queue, app/llm (model layer), app/retrieval,
-            app/agents, app/guard.py, app/trace.py, app/mcp_server.py
+app/        the service: FastAPI, SQLite, a job queue, app/llm (model layer), app/retrieval
+            (chunkers, embedders, vector stores, the version filter), app/agents, app/guard.py,
+            app/trace.py, app/mcp_server.py
 weeks/N/    CONCEPT.md, README.md (the exercise), CHECKS.md (what the gate verifies)
 explore/    small scripts you run and read, one or two per week; you never edit them
 tests/      the gate; tests/weeks/test_weekN.py is the contract for week N
-corpus/     ten documents of two fictional companies: what you index, search and get attacked with
+corpus/     the product manual, every topic written for both version 2 and version 3, plus the
+            business documents the same desk gets asked about. What you index, search and get
+            attacked with. Every product, setting and default in it is invented, on purpose
 eval/       golden set, retrieval queries, tasks, attacks, thresholds
 samples/    three documents used by tests and live-check
 scripts/    check.py, live_check.py, route.py, and one measurement script per week

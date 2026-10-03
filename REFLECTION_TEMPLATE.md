@@ -23,6 +23,17 @@ Your mentor reads this before the session; it is what the session is about.
 
 <!-- One thing about the service, the exercise or your own approach. -->
 
+## Q4. What I contributed, and how I checked it
+
+<!-- Which part of this week's work is yours, and what you did to satisfy yourself it is right.
+     "The tests passed" is not an answer on its own: say what you ran, read or compared. -->
+
+## Q5. Help I used
+
+<!-- An AI coding tool, a tutorial, a friend, an answer from a forum: name it, say what it did,
+     and say what you verified yourself. Using help is expected. Not disclosing it is the one
+     thing that fails this programme (RULES.md). If you used none, write "none". -->
+
 ## Evidence
 
 <!-- Week 1: paste both `make live-check` tables here, one per provider. -->

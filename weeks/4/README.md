@@ -74,6 +74,27 @@ Your route changes what this week gives you: read `routes/start.md`, `routes/cor
 
 Run the gate as often as you like: `make check WEEK=4`.
 
+## The tool that reaches a real system (O10)
+
+`customer_version` is given, and it is worth reading before you use it. It answers one question —
+which version does customer C-1004 run — by reading **one field of one record**, and only for this
+desk's own account. `app/agents/customers.py` is the whole scope, in thirty lines, and there is no
+function in it that writes.
+
+```
+uv run python -c "from app.agents.customers import version_for; print(version_for('C-1001'))"
+uv run python -c "from app.agents.customers import version_for; print(version_for('C-2001'))"
+```
+
+The second raises. That refusal is output requirement O10 and it is tested, because a scope you
+can demonstrate is worth more than a policy you can describe. Note where it is enforced: in the
+function, not in the prompt. A prompt is a request. A model that has been talked into asking for
+another desk's customer still does not get it.
+
+This is also what closes the loop with week 2. The agent looks the version up, then passes it to
+`search_documents(version=...)`, and only then does the manual get read. Without that first call
+it is guessing, and a wrong guess is answered confidently out of the wrong version.
+
 ## Submit (30 minutes)
 
 - `reflections/week-4.md`: Q1, Q1b, Q2, Q3, the comparison table and paragraph, the MCP finding.

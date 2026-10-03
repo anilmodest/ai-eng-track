@@ -1,70 +1,28 @@
-"""Chunks and their vectors live in SQLite next to the documents. Search is a cosine scan in numpy.
+"""Indexing and search, over whichever vector store is configured.
 
-That is deliberate: for a few thousand chunks a scan is faster to reason about than a vector
-database, and the interface (index, search, Hit) is the same one you would put in front of one.
+This file is deliberately thin. Everything that differs between stores lives in
+`app/retrieval/vector_store.py`; everything above this line — the API, the evaluation, the agent —
+only ever sees `index_documents`, `search` and `Hit`. That separation is what makes
+`VECTOR_STORE=sqlite_vec` versus `VECTOR_STORE=qdrant` a measurement rather than an argument.
 """
 
-from dataclasses import dataclass
+from sqlmodel import Session, select
 
-import numpy as np
-from sqlmodel import Field, Session, SQLModel, col, delete, select
-
-from app.db.models import Document
-from app.retrieval.chunkers import chunk
+from app.retrieval.chunk_row import ChunkRow
 from app.retrieval.embed import Embedder
+from app.retrieval.vector_store import Hit, build_chunks, get_vector_store
 
-
-class ChunkRow(SQLModel, table=True):
-    __tablename__ = "chunk"
-
-    id: int | None = Field(default=None, primary_key=True)
-    document_id: int = Field(index=True, foreign_key="document.id")
-    ordinal: int
-    strategy: str = Field(index=True)
-    embedder: str = Field(index=True)
-    text: str
-    embedding: bytes
-
-
-@dataclass(frozen=True)
-class Hit:
-    chunk_id: int
-    document_id: int
-    filename: str
-    ordinal: int
-    text: str
-    score: float
+__all__ = ["ChunkRow", "Hit", "chunk_count", "get_chunk", "index_documents", "search"]
 
 
 def index_documents(session: Session, embedder: Embedder, strategy: str) -> int:
     """(Re)build the index for one strategy + embedder over every document. Returns chunk count."""
-    session.exec(
-        delete(ChunkRow).where(
-            col(ChunkRow.strategy) == strategy, col(ChunkRow.embedder) == embedder.name
-        )
-    )
-    docs = session.exec(select(Document)).all()
-    rows: list[ChunkRow] = []
-    for doc in docs:
-        assert doc.id is not None
-        pieces = chunk(doc.text, strategy)
-        if not pieces:
-            continue
-        vectors = embedder.embed(pieces)
-        for i, (text, vec) in enumerate(zip(pieces, vectors, strict=True)):
-            rows.append(
-                ChunkRow(
-                    document_id=doc.id,
-                    ordinal=i,
-                    strategy=strategy,
-                    embedder=embedder.name,
-                    text=text,
-                    embedding=np.asarray(vec, dtype=np.float32).tobytes(),
-                )
-            )
-    session.add_all(rows)
-    session.commit()
-    return len(rows)
+    store = get_vector_store()
+    store.reset(session, strategy=strategy, embedder=embedder.name)
+    pending = build_chunks(session, embedder, strategy)
+    if pending:
+        store.add(session, pending, strategy=strategy, embedder=embedder)
+    return len(pending)
 
 
 def chunk_count(session: Session, strategy: str, embedder: Embedder) -> int:
@@ -74,36 +32,25 @@ def chunk_count(session: Session, strategy: str, embedder: Embedder) -> int:
     return len(rows)
 
 
-def search(session: Session, embedder: Embedder, query: str, *, k: int, strategy: str) -> list[Hit]:
-    rows = session.exec(
-        select(ChunkRow, Document.filename)
-        .join(Document, col(Document.id) == col(ChunkRow.document_id))
-        .where(ChunkRow.strategy == strategy, ChunkRow.embedder == embedder.name)
-    ).all()
-    if not rows:
-        return []
-    matrix = np.vstack([np.frombuffer(r.embedding, dtype=np.float32) for r, _ in rows])
-    q = np.asarray(embedder.embed([query])[0], dtype=np.float32)
-    qn = float(np.linalg.norm(q))
-    if qn == 0:
-        return []
-    scores = matrix @ (q / qn)
-    order = np.argsort(-scores)[:k]
-    hits: list[Hit] = []
-    for idx in order:
-        row, filename = rows[int(idx)]
-        assert row.id is not None
-        hits.append(
-            Hit(
-                chunk_id=row.id,
-                document_id=row.document_id,
-                filename=filename,
-                ordinal=row.ordinal,
-                text=row.text,
-                score=float(scores[int(idx)]),
-            )
-        )
-    return hits
+def search(
+    session: Session,
+    embedder: Embedder,
+    query: str,
+    *,
+    k: int,
+    strategy: str,
+    version: str | None = None,
+) -> list[Hit]:
+    """Nearest k chunks.
+
+    `version` restricts the search to that version of the manual plus the pages that apply to
+    every version. Leave it out and the search sees the whole corpus, which is how a question
+    about version 3 comes back with a version 2 answer that reads perfectly.
+    """
+    query_vector = embedder.embed([query])[0]
+    return get_vector_store().search(
+        session, embedder, query_vector, k=k, strategy=strategy, version=version
+    )
 
 
 def get_chunk(session: Session, chunk_id: int) -> ChunkRow | None:

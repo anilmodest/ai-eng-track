@@ -13,6 +13,7 @@ from app.retrieval.chunkers import by_heading, by_paragraph, by_sentence, chunk,
 from app.retrieval.context import select_and_compress
 from app.retrieval.metrics import evaluate, precision_at_k, recall_at_k, reciprocal_rank
 from app.retrieval.store import Hit
+from app.retrieval.versions import version_of
 from tests.conftest import upload
 
 pytestmark = pytest.mark.week2
@@ -127,6 +128,86 @@ async def test_search_respects_k_and_strategy(api: AsyncClient) -> None:
 async def test_unknown_strategy_on_index_is_400(api: AsyncClient) -> None:
     r = await api.post("/index", params={"strategy": "magic"})
     assert r.status_code == 400
+
+
+# ---- the version filter: output requirement O1 ---------------------------------------------
+#
+# The manual exists twice over, worded almost identically. Similarity alone cannot tell the two
+# apart, so these tests are the contract: a question asked about one version may not be answered
+# out of another version's page.
+
+
+def test_the_version_is_read_from_the_filename() -> None:
+    assert version_of("manual-v3-connection-timeout.md") == "v3"
+    assert version_of("manual-v2-retries.md") == "v2"
+    assert version_of("policy-contoso-expenses.md") is None
+    assert version_of("manual-v9-nothing.md") is None  # not a version we know about
+
+
+async def test_similarity_alone_returns_the_wrong_version(api: AsyncClient) -> None:
+    """The control. Without the filter the version 2 page wins, and the answer reads perfectly."""
+    await _load_corpus(api)
+    await api.post("/index", params={"strategy": "heading"})
+    hits = (
+        await api.get(
+            "/search",
+            params={"q": "what is the default connection timeout", "k": 3, "strategy": "heading"},
+        )
+    ).json()
+    assert hits[0]["filename"] == "manual-v2-connection-timeout.md"
+    assert hits[0]["score"] > hits[1]["score"]
+    assert hits[1]["filename"] == "manual-v3-connection-timeout.md"
+
+
+async def test_a_version_3_question_returns_no_version_2_material(api: AsyncClient) -> None:
+    """O1. The requirement the whole retrieval week exists to meet."""
+    await _load_corpus(api)
+    await api.post("/index", params={"strategy": "heading"})
+    for question in (
+        "what is the default connection timeout",
+        "where is the connection timeout set",
+        "how long are logs kept",
+        "how do I authenticate to the API",
+        "how are schedules written",
+    ):
+        hits = (
+            await api.get(
+                "/search",
+                params={"q": question, "k": 5, "strategy": "heading", "version": "v3"},
+            )
+        ).json()
+        assert hits, question
+        assert not [h for h in hits if h["version"] == "v2"], (question, hits)
+        assert not [h for h in hits if "-v2-" in h["filename"]], (question, hits)
+
+
+async def test_the_filter_runs_before_ranking_not_after(api: AsyncClient) -> None:
+    """Filtering afterwards would leave fewer than k hits. Losing recall quietly is still losing."""
+    await _load_corpus(api)
+    await api.post("/index", params={"strategy": "heading"})
+    params: dict[str, str | int] = {"q": "connection timeout", "k": 5, "strategy": "heading"}
+    unfiltered = (await api.get("/search", params=params)).json()
+    filtered = (await api.get("/search", params={**params, "version": "v3"})).json()
+    assert len(filtered) == len(unfiltered) == 5
+
+
+async def test_pages_with_no_version_are_returned_for_every_version(api: AsyncClient) -> None:
+    """A page that applies to all versions must not be filtered out by a version search."""
+    await _load_corpus(api)
+    await api.post("/index", params={"strategy": "paragraph"})
+    hits = (
+        await api.get(
+            "/search",
+            params={
+                "q": "mileage rate personal car pence",
+                "k": 3,
+                "strategy": "paragraph",
+                "version": "v3",
+            },
+        )
+    ).json()
+    assert hits[0]["filename"] == "policy-contoso-expenses.md"
+    assert hits[0]["version"] is None
 
 
 # ---- context engineering: select and compress ----------------------------------------------

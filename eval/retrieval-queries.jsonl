@@ -27,4 +27,4 @@
 {"q": "How is volumetric weight calculated?", "doc": "faq-fabrikam-shipping.md", "phrase": "divided by 5,000"}
 {"q": "What is the standard liability per kilogram for damaged goods?", "doc": "faq-fabrikam-shipping.md", "phrase": "1.30 GBP per kilogram"}
 {"q": "How do I track a Fabrikam shipment by SMS?", "doc": "faq-fabrikam-shipping.md", "phrase": "60777"}
-{"q": "What was the median first response time for APAC in August?", "doc": "report-support-q3.csv", "phrase": "2026-08 | region: APAC"}
+{"q": "What was the median first response time for APAC in August?", "doc": "report-support-q3.csv", "phrase": "2026-08,APAC,275,281,44,4.3"}

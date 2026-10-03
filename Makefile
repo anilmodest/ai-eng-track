@@ -1,6 +1,6 @@
 # Fellow-facing commands. Every week's README refers to these and nothing else.
 WEEK ?= 0
-ROUTE ?= start
+ROUTE ?=
 # uv may live in ~/.local/bin (pip --user) before the shell's PATH knows it; find it anyway.
 UV ?= $(shell command -v uv 2>/dev/null || (test -x $(HOME)/.local/bin/uv && echo $(HOME)/.local/bin/uv) || echo uv)
 
@@ -35,5 +35,5 @@ worker:           ## Start the Redis job worker (needs REDIS_URL)
 live-check:       ## Hit the real provider from .env with the sample documents
 	$(UV) run python scripts/live_check.py
 
-route:            ## Set your route once, after placement: make route ROUTE=start|core|pro
+route:            ## Apply the route you were assigned (.route). Mentor re-assign: ROUTE=start|core|pro
 	$(UV) run python scripts/route.py $(ROUTE)

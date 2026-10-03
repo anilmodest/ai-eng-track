@@ -35,6 +35,10 @@ SettingsDep = Annotated[Settings, Depends(get_settings)]
 class AskIn(BaseModel):
     question: str = Field(min_length=3, max_length=2000)
     k: int | None = None
+    # Which version of the manual the customer is running. The support desk always knows this,
+    # and without it a question about version 3 is answered from the version 2 page, which reads
+    # perfectly and is wrong. Pass it through to search().
+    version: str | None = None
 
 
 class AskAnswer(BaseModel):
@@ -79,7 +83,9 @@ async def ask(
     settings: SettingsDep,
 ) -> AskOut | JSONResponse:
     # TODO Week 3 (weeks/3/README.md). Suggested order:
-    #   1. search(session, embedder, body.question, k=..., strategy=settings.chunk_strategy)
+    #   1. search(session, embedder, body.question, k=..., strategy=settings.chunk_strategy,
+    #      version=body.version)  -- the version filter is not optional: tests/weeks/test_week2.py
+    #      and weeks/2/CHECKS.md require that a v3 question returns no v2 source material.
     #   2. Gate 1: top score below settings.relevance_threshold -> AskOut(abstained=True, ...)
     #      with a reason mentioning the threshold, and NO model call.
     #   3. With the guard on (settings.guard_enabled): check_limits(); then build the messages:

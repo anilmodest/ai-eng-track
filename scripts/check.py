@@ -99,6 +99,10 @@ def main() -> int:
     report_path = ROOT / "reports" / f"week-{args.week}.json"
     report = json.loads(report_path.read_text()) if report_path.exists() else {}
     report["gates"] = results
+    # Every gate runs the fake providers and the lexical embedder on purpose: the numbers prove
+    # the pipeline holds, not that answers are good. Recorded so nothing downstream shows them
+    # as a measure of quality.
+    report["provider_mode"] = "fake"
     report["ok"] = all(results.values())
     report_path.parent.mkdir(exist_ok=True)
     report_path.write_text(json.dumps(report, indent=2))

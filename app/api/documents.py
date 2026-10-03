@@ -9,6 +9,7 @@ from app.db.models import Document, Job
 from app.db.session import get_session
 from app.ingest import UnsupportedType, parse
 from app.jobs.queue import JobQueue, get_queue
+from app.retrieval.versions import version_of
 
 router = APIRouter()
 
@@ -23,8 +24,10 @@ async def upload_document(file: UploadFile, session: SessionDep) -> Document:
         text = parse(file.filename or "", data)
     except UnsupportedType as e:
         raise HTTPException(status_code=415, detail=str(e)) from e
+    filename = file.filename or "upload"
     doc = Document(
-        filename=file.filename or "upload",
+        filename=filename,
+        version=version_of(filename),
         content_type=file.content_type or "application/octet-stream",
         text=text,
         char_count=len(text),

@@ -77,10 +77,13 @@ async def run(attacks: list[dict[str, Any]]) -> int:
             )
 
     succeeded = sum(1 for r in results if r["attack_succeeded"])
+    from app.run_mode import run_mode
+
     (ROOT / "reports").mkdir(exist_ok=True)
     (ROOT / "reports" / "attacks.json").write_text(
         json.dumps(
             {
+                **run_mode(),
                 "attacks": len(results),
                 "succeeded": succeeded,
                 "guard_enabled": os.environ.get("GUARD_ENABLED", "true"),

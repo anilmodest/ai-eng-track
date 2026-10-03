@@ -99,9 +99,13 @@ def main() -> int:
                 "mrr": scores.mrr,
                 "hit_rate": scores.hit_rate,
             }
+    from app.run_mode import run_mode
+
     (ROOT / "reports").mkdir(exist_ok=True)
     (ROOT / "reports" / "retrieval.json").write_text(
-        json.dumps({"embedder": embedder.name, "k": args.k, "strategies": report}, indent=2)
+        json.dumps(
+            {**run_mode(), "embedder": embedder.name, "k": args.k, "strategies": report}, indent=2
+        )
     )
     print("\nwrote reports/retrieval.json. Pick a strategy with a number, then set CHUNK_STRATEGY.")
     return 0

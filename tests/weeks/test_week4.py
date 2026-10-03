@@ -10,7 +10,8 @@ from pathlib import Path
 import pytest
 from httpx import AsyncClient
 
-from app.agents.tools import SearchArgs, tool_schemas
+from app.agents.customers import OutOfScope, version_for
+from app.agents.tools import SearchArgs, ToolContext, run_tool, tool_schemas
 from app.llm.providers.fake import FakeClient
 from app.mcp_scopes import RateLimiter, ScopeError, check_scope, parse_tokens
 
@@ -49,6 +50,48 @@ def test_tool_schemas_are_json_schema_the_model_can_read() -> None:
     assert schemas["search_documents"]["parameters"]["properties"]["k"]["maximum"] == 10
     assert "[costs money]" in schemas["extract_document"]["description"]
     assert "[costs money]" not in schemas["search_documents"]["description"]
+
+
+# ---- O10: one tool, one record, one field, no writes ---------------------------------------
+
+
+def test_the_version_lookup_reads_one_field_of_one_record() -> None:
+    assert version_for("C-1001") == "v3"
+    assert version_for("C-1002") == "v2"
+
+
+def test_a_customer_on_another_desk_is_refused() -> None:
+    """The refusal is the requirement. A scope you cannot demonstrate is a policy, not a scope."""
+    with pytest.raises(OutOfScope) as e:
+        version_for("C-2001")
+    assert "another account" in str(e.value)
+    with pytest.raises(OutOfScope):
+        version_for("C-9999")
+
+
+def test_the_registry_offers_no_way_to_write_or_to_list() -> None:
+    """A reviewer should be able to establish the boundary by reading one small module."""
+    import app.agents.customers as customers
+
+    public = [n for n in dir(customers) if not n.startswith("_")]
+    assert "version_for" in public
+    assert not [n for n in public if n.startswith(("set_", "write_", "update_", "delete_", "all_"))]
+
+
+async def test_the_tool_returns_a_refusal_the_model_can_read(
+    api: AsyncClient, fake: FakeClient
+) -> None:
+    from app.db.session import get_session
+    from app.retrieval.embed import get_embedder
+    from app.settings import get_settings
+
+    session = next(get_session())
+    ctx = ToolContext(
+        session=session, embedder=get_embedder(), settings=get_settings(), client=fake
+    )
+    assert await run_tool(ctx, "customer_version", {"customer_id": "C-1004"}) == "v3"
+    refused = await run_tool(ctx, "customer_version", {"customer_id": "C-2001"})
+    assert refused.startswith("refused:")
 
 
 def test_tool_arguments_are_validated() -> None:

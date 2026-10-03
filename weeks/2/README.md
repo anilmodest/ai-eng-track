@@ -28,14 +28,15 @@ Read, in this order, and answer the three questions in `reflections/week-2.md`, 
    `by_sentence` split "3. Fees." from its clause?
 2. `app/retrieval/embed.py` — what does the `hash` embedder know about meaning? Why does the
    repo have it at all?
-3. `app/retrieval/store.py` — search is a numpy scan. At what corpus size would you replace it,
-   and with what property must the replacement keep the `search()` interface?
+3. `app/retrieval/store.py` and `app/retrieval/vector_store.py` — three stores behind one
+   interface. Which one are you running? What does `VECTOR_STORE=sqlite_vec` buy over `numpy`,
+   and what does the partition key change about *where* the version filter happens?
 
 Then read `tests/weeks/test_week2.py`: the contract for this week.
 
 ## Exercise — build and measure (4–5 hours)
 
-Three pieces are yours this week. The rest is given.
+Four pieces are yours this week. The rest is given.
 
 1. **`app/retrieval/metrics.py`** — implement `precision_at_k`, `recall_at_k`, `reciprocal_rank`
    and `evaluate`. The docstrings say what each means; the tests say what they return.
@@ -54,6 +55,24 @@ Three pieces are yours this week. The rest is given.
    relevance floor, a shared-term check, sentence-level trimming, a character budget. Run again.
    The repaired row should hold nearly all of the stuffed row's hits at a fraction of its tokens.
 
+4. **`app/retrieval/versions.py::applicable_versions`** — the version filter, and output
+   requirement O1. Start by seeing the problem:
+
+   ```
+   uv run python scripts/baseline.py            # does the model already know these answers?
+   uv run python scripts/version_check.py       # what similarity alone returns
+   ```
+
+   The first proves retrieval has work to do: the manual describes an invented product, so a
+   model answering from training is a signal that something is wrong with your corpus, not a
+   convenience. The second asks five version 3 questions with no filter and shows you how often
+   the **version 2** page wins — it is worded almost identically, and it scores higher.
+
+   Now build the filter. One function, called by every store before ranking. Two things are easy
+   to get wrong, and both are in the docstring: what `None` means, and what happens to the pages
+   that carry no version at all. Run `scripts/version_check.py` again; the filtered column should
+   be clean.
+
 Then measure:
 
 ```
@@ -63,6 +82,25 @@ EMBED_PROVIDER=fastembed uv run python scripts/retrieval_eval.py   # real embedd
 
 Read the two tables side by side. Pick a strategy. Set `CHUNK_STRATEGY` in `.env`. Put both tables
 and one sentence of reasoning in `reflections/week-2.md`.
+
+### Where the vectors live
+
+The service runs on **sqlite-vec** by default: the index is a virtual table inside the same SQLite
+file, and the version is its *partition key*, so a version 3 search does not scan version 2
+vectors at all. Two other stores sit behind the same interface. Run the same evaluation against
+each and put the numbers in your reflection:
+
+```
+VECTOR_STORE=numpy      uv run python scripts/retrieval_eval.py   # a cosine scan, no index
+VECTOR_STORE=sqlite_vec uv run python scripts/retrieval_eval.py   # the default
+uv sync --extra qdrant
+VECTOR_STORE=qdrant     uv run python scripts/retrieval_eval.py   # a real vector database, local
+```
+
+`docs/vector-stores.md` compares these and the hosted ones — Pinecone, Weaviate, pgvector — on
+the three things that decide the choice: where it runs, whether it can filter on metadata, and
+what it costs. Read it before the session; "why this one?" is an interview question, and the
+answer is a number plus a constraint, not a preference.
 
 Your route changes what this week gives you: read `routes/start.md`, `routes/core.md` or
 `routes/pro.md` in this folder (the hub shows yours).

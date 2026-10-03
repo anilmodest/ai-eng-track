@@ -10,6 +10,9 @@ def _now() -> datetime:
 class Document(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     filename: str
+    # Which product version this page describes, or None when it applies to every version.
+    # Read from the filename on upload: app/retrieval/versions.py says how, and why.
+    version: str | None = Field(default=None, index=True)
     content_type: str
     text: str
     char_count: int

@@ -14,7 +14,12 @@ puts it:
          retry.py, structured.py, cost.py and trace.py are signatures only; each week's
          weeks/N/routes/pro.md states one constraint the finished piece must meet
 
-Run it once. Running it again re-applies the same route; it never mixes two.
+Your route is assigned, not chosen. It is written into `.route` when your repository is created,
+and `.route` is committed, so the automated checks run the tier you were actually placed on.
+`make route` reads it and transforms the files; `.route-applied` records that it has been done.
+
+If your mentor changes your route at session 2, they change `.route`. Running `make route` again
+then re-applies from the template's version of the exercise files, which discards work on them.
 """
 
 import shutil
@@ -217,24 +222,37 @@ def apply(route: str) -> None:
             path.write_text(STUBS[rel], encoding="utf-8")
             print(f"{route}: {rel} is now signatures only")
     (ROOT / ".route").write_text(route + "\n")
-    print(f"route set to {route} (.route). Read weeks/N/routes/{route}.md each week.")
+    (ROOT / ".route-applied").write_text(route + "\n")
+    print(f"route {route} applied. Read weeks/N/routes/{route}.md each week.")
+
+
+def assigned_route() -> str:
+    """What the fellow was placed on. Committed, so CI runs the tier they are actually on."""
+    marker = ROOT / ".route"
+    if not marker.exists():
+        return "start"
+    route = marker.read_text().strip()
+    return route if route in ROUTES else "start"
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 2 or argv[1] not in ROUTES:
-        print("usage: make route ROUTE=start|core|pro")
+    if len(argv) == 1:
+        route = assigned_route()
+    elif len(argv) == 2 and argv[1] in ROUTES:
+        route = argv[1]
+    else:
+        print("usage: make route            # apply the route you were assigned in .route")
+        print("       make route ROUTE=core # mentor only: re-assign, then apply")
         return 2
-    marker = ROOT / ".route"
-    if marker.exists():
-        current = marker.read_text().strip()
-        print(
-            f"route already set to {current}. Applying a route restores the exercise files to the"
-        )
-        print("template's version, which would discard work you have done on them.")
-        print("If your mentor changed your route at session 2: delete .route, commit or stash your")
-        print("work, and run this again.")
-        return 1
-    apply(argv[1])
+
+    applied = ROOT / ".route-applied"
+    if applied.exists() and applied.read_text().strip() == route:
+        print(f"route {route} is already applied. Nothing to do.")
+        print("Re-applying restores the exercise files to the template's version, which would")
+        print("discard your work. If your mentor re-assigned you, delete .route-applied first.")
+        return 0
+
+    apply(route)
     return 0
 
 

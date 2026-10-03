@@ -3,6 +3,11 @@
 Area 1 of the track is not taught here. It is checked. This week you show that the ground the
 next six weeks stand on is solid, and your mentor uses what they see to place you on a route.
 
+**Read `BRIEF.md` in this folder first.** It is the client's own brief, and it is the reason every
+later week is shaped the way it is. Then read `REQUIREMENTS.md`: twelve things the finished system
+must do, each one checked. `../../RULES.md` says what is expected of you, including the one rule
+about using AI tools.
+
 **There is no model anywhere in the service yet.** That is deliberate.
 
 ## What the service does today

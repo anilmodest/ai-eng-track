@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     redis_url: str | None = None
 
     # Week 2+: retrieval
+    # numpy (a cosine scan, no dependencies) | sqlite_vec (default, version as partition key)
+    # | qdrant (a real vector database, local folder or hosted)
+    vector_store: str = "sqlite_vec"
+    qdrant_url: str = ""  # empty = embedded, from data/qdrant. Set it to use a hosted instance.
     embed_provider: str = "hash"  # hash (lexical, CI) | fastembed (bge-small, CPU)
     chunk_strategy: str = "sentence"  # fixed | sentence | paragraph | heading
     search_k: int = 5

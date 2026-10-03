@@ -7,7 +7,7 @@ reports/*.json
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
-.route
+.route-applied
 site/index.html
 site/prs.json
 site/preview.png

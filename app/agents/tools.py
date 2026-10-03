@@ -13,6 +13,7 @@ from typing import Any
 from pydantic import BaseModel, Field, ValidationError
 from sqlmodel import Session, select
 
+from app.agents.customers import OutOfScope, version_for
 from app.db.models import Document
 from app.llm.client import ModelClient
 from app.retrieval.embed import Embedder
@@ -24,6 +25,14 @@ from app.trace import span
 class SearchArgs(BaseModel):
     query: str = Field(min_length=1)
     k: int = Field(default=3, ge=1, le=10)
+    version: str | None = Field(
+        default=None,
+        description="Restrict to one version of the manual, e.g. v3. Look it up first.",
+    )
+
+
+class CustomerVersionArgs(BaseModel):
+    customer_id: str = Field(min_length=1, description="e.g. C-1001")
 
 
 class GetDocumentArgs(BaseModel):
@@ -75,7 +84,14 @@ async def _list_documents(ctx: ToolContext, _: BaseModel) -> str:
 
 async def _search(ctx: ToolContext, a: BaseModel) -> str:
     assert isinstance(a, SearchArgs)
-    hits = search(ctx.session, ctx.embedder, a.query, k=a.k, strategy=ctx.settings.chunk_strategy)
+    hits = search(
+        ctx.session,
+        ctx.embedder,
+        a.query,
+        k=a.k,
+        strategy=ctx.settings.chunk_strategy,
+        version=a.version,
+    )
     if not hits:
         return "no results"
     return "\n".join(
@@ -108,6 +124,16 @@ async def _extract(ctx: ToolContext, a: BaseModel) -> str:
     return json.dumps(out.extract.model_dump())
 
 
+async def _customer_version(_: ToolContext, a: BaseModel) -> str:
+    """O10: read one field of one record, for this desk's customers only. No writes exist."""
+    assert isinstance(a, CustomerVersionArgs)
+    try:
+        return version_for(a.customer_id)
+    except OutOfScope as e:
+        # The model is told plainly, so it can ask the human instead of trying another way in.
+        return f"refused: {e}"
+
+
 async def _finish(_: ToolContext, a: BaseModel) -> str:
     assert isinstance(a, FinishArgs)
     return a.answer
@@ -122,6 +148,13 @@ TOOLS: dict[str, ToolSpec] = {
         "Semantic search over document chunks. Returns document ids, files and snippets.",
         SearchArgs,
         _search,
+    ),
+    "customer_version": ToolSpec(
+        "customer_version",
+        "Which version of the product one customer runs. Read-only, this desk's customers only. "
+        "Call this before searching the manual, then pass the version to search_documents.",
+        CustomerVersionArgs,
+        _customer_version,
     ),
     "get_document": ToolSpec(
         "get_document", "Full text of one document by id.", GetDocumentArgs, _get_document

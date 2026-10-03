@@ -1,0 +1,30 @@
+{"q": "What is the default connection timeout in Kestrel v2?", "doc": "manual-v2-connection-timeout.md", "phrase": "connection_timeout_seconds = 30", "version": "v2"}
+{"q": "What does Kestrel v2 log if the connection timeout is out of range?", "doc": "manual-v2-connection-timeout.md", "phrase": "E1104: connection_timeout_seconds out of range", "version": "v2"}
+{"q": "How long does Kestrel v2 wait between retries?", "doc": "manual-v2-retries.md", "phrase": "The interval between retries is fixed at", "version": "v2"}
+{"q": "What happens to partial output when a Kestrel v2 run fails?", "doc": "manual-v2-retries.md", "phrase": "the partial output is deleted", "version": "v2"}
+{"q": "Which header authenticates a Kestrel v2 API call?", "doc": "manual-v2-authentication.md", "phrase": "X-Kestrel-Key: <your key>", "version": "v2"}
+{"q": "Do Kestrel v2 API keys expire?", "doc": "manual-v2-authentication.md", "phrase": "does not expire", "version": "v2"}
+{"q": "How are Kestrel v2 schedules written?", "doc": "manual-v2-scheduling.md", "phrase": "five-field cron expression", "version": "v2"}
+{"q": "What timezone do Kestrel v2 schedules use?", "doc": "manual-v2-scheduling.md", "phrase": "There is no timezone setting", "version": "v2"}
+{"q": "How long does Kestrel v2 keep run logs on disk?", "doc": "manual-v2-log-retention.md", "phrase": "log_retention_days = 14", "version": "v2"}
+{"q": "What encoding does a Kestrel v2 export use?", "doc": "manual-v2-export-format.md", "phrase": "with a byte-order mark", "version": "v2"}
+{"q": "What is the default connection timeout in Kestrel v3?", "doc": "manual-v3-connection-timeout.md", "phrase": "KESTREL_CONNECT_TIMEOUT=15", "version": "v3"}
+{"q": "What happens to connection_timeout_seconds after an upgrade to v3?", "doc": "manual-v3-connection-timeout.md", "phrase": "reads it, ignores it and starts normally", "version": "v3"}
+{"q": "What retry policy does Kestrel v3 use by default?", "doc": "manual-v3-retries.md", "phrase": "defaults to `exponential`", "version": "v3"}
+{"q": "Can a failed Kestrel v3 run be resumed?", "doc": "manual-v3-retries.md", "phrase": "kestrelctl resume <run-id>", "version": "v3"}
+{"q": "How do I authenticate to the Kestrel v3 API?", "doc": "manual-v3-authentication.md", "phrase": "Authorization: Bearer <token>", "version": "v3"}
+{"q": "Which error body means the old key header was removed?", "doc": "manual-v3-authentication.md", "phrase": "scheme_removed", "version": "v3"}
+{"q": "How are schedules expressed in Kestrel v3?", "doc": "manual-v3-scheduling.md", "phrase": "ISO-8601 repeating interval with an explicit timezone", "version": "v3"}
+{"q": "What happens to an overlapping scheduled run in Kestrel v3?", "doc": "manual-v3-scheduling.md", "phrase": "starts when the first finishes", "version": "v3"}
+{"q": "Where are Kestrel v3 logs archived?", "doc": "manual-v3-log-retention.md", "phrase": "logs/<date>/<run-id>.log.gz", "version": "v3"}
+{"q": "Which export formats does Kestrel v3 support?", "doc": "manual-v3-export-format.md", "phrase": "CSV or NDJSON", "version": "v3"}
+{"q": "What is the default hourly rate for a Northwind consultant who is not senior?", "doc": "contract-contoso-northwind-msa.txt", "phrase": "120 USD per hour"}
+{"q": "How long does confidentiality last after the Northwind agreement ends?", "doc": "contract-contoso-northwind-msa.txt", "phrase": "five (5) years"}
+{"q": "What service credits apply if Tailspin misses its availability target?", "doc": "contract-fabrikam-tailspin.txt", "phrase": "5 percent of the monthly fee"}
+{"q": "How quickly must Fabrikam pay a Tailspin invoice?", "doc": "contract-fabrikam-tailspin.txt", "phrase": "within 14 days of invoice"}
+{"q": "What VAT rate is included on the Tailspin September invoice?", "doc": "invoice-tailspin-2026-09.md", "phrase": "VAT at 20 percent"}
+{"q": "What is the total due on Woodgrove invoice WG-1187?", "doc": "invoice-woodgrove-1187.md", "phrase": "1,457.00 GBP"}
+{"q": "What is the Contoso meal day rate when staying away overnight?", "doc": "policy-contoso-expenses.md", "phrase": "overnight: 40 GBP"}
+{"q": "How many vehicles were in the Fabrikam fleet at the end of the half?", "doc": "report-fabrikam-fleet-h1.md", "phrase": "412 to 438 vehicles"}
+{"q": "How much does enhanced damage cover cost on a Fabrikam booking?", "doc": "faq-fabrikam-shipping.md", "phrase": "0.5 percent of that value"}
+{"q": "How many tickets did AMER open in August 2026?", "doc": "report-support-q3.csv", "phrase": "2026-08,AMER,742"}

@@ -138,10 +138,19 @@ async def run(
             answer = " ".join(str(row.get("answer")).split())[:80]
             print(f"  {row['id']}  {kind}: {row['q'][:60]}  ->  {answer}")
 
+    from app.run_mode import run_mode
+
     (ROOT / "reports").mkdir(exist_ok=True)
     (ROOT / "reports" / "eval.json").write_text(
         json.dumps(
-            {"metrics": metrics, "thresholds": thresholds, "gates": gates, "rows": rows}, indent=2
+            {
+                **run_mode(),
+                "metrics": metrics,
+                "thresholds": thresholds,
+                "gates": gates,
+                "rows": rows,
+            },
+            indent=2,
         )
     )
     ok = all(gates.values()) and metrics["errors"] == 0
