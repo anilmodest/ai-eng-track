@@ -31,5 +31,6 @@ case "$ROUTE" in
 esac
 echo "  Your mentor assigned it. Read weeks/N/routes/${ROUTE}.md each week."
 echo
-echo "Open weeks/0/BRIEF.md, then weeks/0/README.md, and run: make run"
+echo "Read weeks/0/BRIEF.md -- it is the client's brief, and the reason for everything after."
+echo "Then, any time you are unsure what to do:  make next"
 echo "(if this container was created before the uv fix, run: Codespaces: Full Rebuild Container)"

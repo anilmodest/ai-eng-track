@@ -24,6 +24,7 @@ terminal, you are ready.
 
 | Command | What it does |
 | --- | --- |
+| `make next` | **Lost? Start here.** The week you are on, the file to open, and the first thing that is not working |
 | `make run` | Start the API on port 8000 (docs at `/docs`) |
 | `make check WEEK=1` | This week's gate: lint, types, tests, once per fake provider. Writes `reports/week-1.json` |
 | `make live-check` | Call the real provider from `.env` with the sample documents |

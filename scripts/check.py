@@ -153,7 +153,7 @@ def main() -> int:
                 f"  tests/weeks/test_week{args.week}.py. That is this week's work, not a problem:"
             )
             print("  each failing test name is one behaviour you have not built yet.")
-            print(f"  Build them in the order they appear. Start: weeks/{args.week}/README.md")
+            print("  Run  make next  for the file to open and the first one to build.")
             if route == "start":
                 print(f"  On start, weeks/{args.week}/routes/worked_example.py solves a smaller")
                 print("  version of the same thing in full. Read it beside the stub.")
@@ -161,6 +161,7 @@ def main() -> int:
             print(f"  {failed} of {total} checks fail, and some are outside")
             print(f"  tests/weeks/test_week{args.week}.py: work that passed before does not now.")
             print("  Fix those first; a regression is worth more of your attention than a stub.")
+            print("  Run  make next  to see which.")
         else:
             print("  The tests pass. Something else above does not: read the first FAIL line.")
     return 0 if report["ok"] else 1

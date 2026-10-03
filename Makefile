@@ -9,6 +9,9 @@ UV ?= $(shell command -v uv 2>/dev/null || (test -x $(HOME)/.local/bin/uv && ech
 setup:            ## Install everything (Codespaces runs this for you)
 	$(UV) sync
 
+next:             ## What to do now: the week, the files to edit, the first thing not working
+	$(UV) run python scripts/next_step.py
+
 check:            ## Run this week's gate: lint + types + tests, writes reports/week-$(WEEK).json
 	$(UV) run python scripts/check.py --week $(WEEK)
 
