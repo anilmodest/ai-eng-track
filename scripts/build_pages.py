@@ -537,6 +537,12 @@ code { font-size:.92em; }
 .checks li.pass b { color:var(--ink); }
 
 .todo { background:var(--indigo-soft); border-color:transparent; }
+.todo2 p { margin:0 0 10px; font-size:14px; }
+.todo2 pre { margin:0 0 10px; }
+.arc h4 { margin:14px 0 4px; font-size:12px; letter-spacing:.07em; text-transform:uppercase;
+  color:var(--muted); font-weight:600; }
+.arc h4:first-child { margin-top:0; }
+.arc p { margin:0; font-size:14.5px; }
 .todo h3 { margin:0 0 4px; font-size:15px; }
 .todo p { margin:0 0 10px; font-size:14px; color:var(--indigo-dark); }
 .todo pre { background:var(--white); }
@@ -834,6 +840,50 @@ WEEK_HEADLINE: dict[int, Any] = {
     5: _h_attacks,
 }
 
+# The thread between the weeks. A week folder is self-contained by design, so the repository
+# cannot say why week 4 follows week 3 -- the fellow is inside one week at a time. This page can.
+WEEK_ARC: dict[int, tuple[str, str]] = {
+    0: (
+        "An API that takes documents, parses them and stores them. No model anywhere yet.",
+        "Week 1 needs somewhere to put a model call, and something worth calling it about.",
+    ),
+    1: (
+        "A model behind an interface: it survives the provider misbehaving, never pays twice, "
+        "records what it cost, and swaps provider from a setting.",
+        "Week 2 measures retrieval. That is only worth measuring if the thing consuming it "
+        "cannot fall over or quietly change underneath you.",
+    ),
+    2: (
+        "Search that finds the right passage from the right version of the manual, with a "
+        "chunking strategy you chose with a number.",
+        "Week 3 grounds answers in retrieved text. Grounding a bad retrieval just makes the "
+        "wrong answer better written.",
+    ),
+    3: (
+        "Answers that cite their source, decline when the evidence is thin, and a gate that "
+        "blocks any change making the numbers worse.",
+        "Week 4 asks whether an agent helps. You cannot answer that without a baseline you "
+        "trust and a way to tell if it moved.",
+    ),
+    4: (
+        "A tool with a scope it refuses to exceed, and the same job done three ways with the "
+        "cost of each.",
+        "Week 5 watches and defends the system. More moving parts is exactly when you need to "
+        "see where the time and money went.",
+    ),
+    5: (
+        "Cost and time attributed per step, failures sorted by kind, and a defence against a "
+        "document that tries to give your service instructions.",
+        "Week 6 puts it somewhere other people can reach. Publishing something you cannot "
+        "observe is how you find out about problems from a customer.",
+    ),
+    6: (
+        "A published build someone else can run, a rollback you performed, and one page saying "
+        "what it did for the business.",
+        "That page is what an interview actually asks about.",
+    ),
+}
+
 WEEK_PROMPT: dict[int, str] = {
     0: "open a Codespace and run the first check",
     1: "the model layer: retries, caching, cost, a provider swap",
@@ -960,23 +1010,37 @@ def render_week(w: "Week", weeks: list["Week"], repo: str) -> str:
             f'<div class="card">{"".join(measured)}</div>'
         )
 
-    if w.readme_html:
+    # The exercise is not reprinted here. It lives where you can act on it: in the editor, with
+    # `make next` beside it. This page is for the things only it can show.
+    parts.append(
+        f'<h2><span class="n">Do</span>the week</h2>'
+        f'<div class="card todo2">'
+        f"<p>The exercise is in your repository, where you can run it:</p>"
+        f"<pre>code weeks/{w.n}/README.md\nmake next</pre>"
+        f'<p class="fineprint">'
+        f'<a href="{_gh(repo, f"weeks/{w.n}/README.md")}">Read it on GitHub</a> &middot; '
+        f'<a href="{_gh(repo, f"weeks/{w.n}/CHECKS.md")}">what the gate verifies</a> &middot; '
+        f'<a href="{_gh(repo, f"tests/weeks/test_week{w.n}.py")}">the tests</a></p></div>'
+    )
+
+    before, after = WEEK_ARC.get(w.n, ("", ""))
+    if before:
+        prev = WEEK_ARC.get(w.n - 1, ("", ""))[0]
+        arc = ""
+        if prev and w.n > 0:
+            arc += f"<h4>You arrived with</h4><p>{esc(prev)}</p>"
+        arc += f"<h4>This week leaves</h4><p>{esc(before)}</p>"
+        if after:
+            label = "Which is why the next week can" if w.n < 6 else "And then"
+            arc += f"<h4>{label}</h4><p>{esc(after)}</p>"
         parts.append(
-            f'<h2><span class="n">Do</span>the week</h2><div class="prose">{w.readme_html}</div>'
+            f'<h2><span class="n">Why</span>this week is here</h2><div class="card arc">{arc}</div>'
         )
+
     if w.concept_html:
         parts.append(
             '<h2><span class="n">Read</span>the concept</h2>'
-            '<div class="card"><details><summary>The idea behind this week</summary>'
-            '<div class="prose" style="box-shadow:none;border:0;padding:0">'
-            f"{w.concept_html}</div></details></div>"
-        )
-    if w.checks_html:
-        parts.append(
-            '<h2><span class="n">Gate</span>what is verified</h2>'
-            f'<div class="card"><details><summary>What <code>make check WEEK={w.n}</code> runs'
-            '</summary><div class="prose" style="box-shadow:none;border:0;padding:0">'
-            f"{w.checks_html}</div></details></div>"
+            f'<div class="prose">{w.concept_html}</div>'
         )
     if w.quiz:
         parts.append(f'<h2><span class="n">Optional</span>self-test</h2>{quiz_html(w)}')
@@ -1211,9 +1275,11 @@ the right one, shows where the answer came from, and says when it does not know.
 <div class="weeks">{rows}</div>
 <h2><span class="n">Reference</span>when you need it</h2>
 <div class="links">{link_html}</div>
-<p class="fineprint">Nothing on this page is typed by hand: it is built from the repository on
-every merge. Numbers measured against the test model and the lexical embedder prove the pipeline
-holds, not that answers are good &mdash; each week says which it ran.
+<p class="fineprint"><b>This page is as of your last merge to <code>main</code>.</b> While you
+are working on a branch your terminal is ahead of it: <code>make next</code> and
+<code>make check</code> are the live answer, and this is the record. Nothing here is typed by
+hand. Numbers measured against the test model and the lexical embedder prove the pipeline holds,
+not that answers are good &mdash; each week says which it ran.
 <a href="progress.csv">progress.csv</a> &middot; <a href="progress.json">progress.json</a></p>
 """
     return page("AI Engineering — your build", body, quiz_cfg(weeks))
