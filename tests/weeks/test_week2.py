@@ -154,9 +154,10 @@ async def test_similarity_alone_returns_the_wrong_version(api: AsyncClient) -> N
             params={"q": "what is the default connection timeout", "k": 3, "strategy": "heading"},
         )
     ).json()
-    assert hits[0]["filename"] == "manual-v2-connection-timeout.md"
-    assert hits[0]["score"] > hits[1]["score"]
-    assert hits[1]["filename"] == "manual-v3-connection-timeout.md"
+    # Which of the two wins depends on the chunker. That it is a coin toss is the whole problem:
+    # the version 2 page is returned for a version 3 question, and reads perfectly.
+    assert [h for h in hits if h["version"] == "v2"], hits
+    assert [h for h in hits if h["version"] == "v3"], hits
 
 
 async def test_a_version_3_question_returns_no_version_2_material(api: AsyncClient) -> None:

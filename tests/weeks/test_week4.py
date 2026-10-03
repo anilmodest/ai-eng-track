@@ -45,6 +45,7 @@ def test_tool_schemas_are_json_schema_the_model_can_read() -> None:
         "search_documents",
         "get_document",
         "extract_document",
+        "customer_version",
         "finish",
     }
     assert schemas["search_documents"]["parameters"]["properties"]["k"]["maximum"] == 10

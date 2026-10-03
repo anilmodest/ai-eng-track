@@ -54,7 +54,12 @@ async def run(
         )
 
         for g in golden:
-            resp = await api.post("/ask", json={"question": g["q"]})
+            # The support desk always knows which version the customer runs, and so does the
+            # test set. Leaving it out is how an evaluation quietly stops measuring O1.
+            payload: dict[str, Any] = {"question": g["q"]}
+            if g.get("version"):
+                payload["version"] = g["version"]
+            resp = await api.post("/ask", json=payload)
             if resp.status_code != 200:
                 rows.append({**g, "error": resp.json()})
                 continue
