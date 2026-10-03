@@ -32,6 +32,7 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "site" / "index.html"
 _ROUTE_FILE = ROOT / ".route"
 ROUTE = _ROUTE_FILE.read_text().strip() if _ROUTE_FILE.exists() else "start"
+REPO = os.environ.get("GITHUB_REPOSITORY", "anilmodest/ai-eng-track")
 MD = MarkdownIt("commonmark", {"html": True}).enable("table")
 
 WEEK_AREAS: dict[int, list[int]] = {
@@ -445,6 +446,8 @@ h1 { font-family:Georgia,"Times New Roman",serif; font-size:30px; line-height:1.
   border:1px solid var(--line); border-radius:999px; padding:5px 12px; font-size:13px;
   color:var(--muted); text-decoration:none; }
 .chip b { color:var(--ink); font-weight:600; }
+/* a class with its own display beats the [hidden] attribute, so say it explicitly */
+.chip[hidden] { display:none; }
 .chip.go { background:var(--indigo-soft); border-color:transparent; color:var(--indigo-dark); }
 .dot { width:7px; height:7px; border-radius:50%; background:var(--muted); }
 .dot.green { background:var(--green); } .dot.red { background:var(--red); }
@@ -517,6 +520,8 @@ code { font-size:.92em; }
 
 .tog { background:none; border:0; color:var(--muted); font-size:15px; cursor:pointer; padding:0;
   line-height:1; }
+.bar .code { padding:5px 12px; font-size:13px; }
+@media (max-width:620px) { .bar .code { padding:5px 9px; } .bar a[href="playground.html"] { display:none; } }
 .tog:hover { color:var(--ink); }
 
 .checks .sum { display:flex; align-items:center; gap:10px; font-size:14px; margin:0; }
@@ -1038,6 +1043,8 @@ def page(title: str, body: str, cfg: dict[str, Any] | None = None) -> str:
   <a href="index.html">Weeks</a>
   <a href="playground.html">Playground</a>
   <a href="progress.csv">Export</a>
+  <a class="btn primary code" href="https://codespaces.new/{REPO}?quickstart=1"
+     title="Opens a ready workspace in the browser. Nothing to install.">Open Codespace</a>
   <button class="tog" id="theme" title="Light or dark">&#9680;</button>
 </div></div>
 <div class="wrap">{body}</div>
@@ -1322,7 +1329,7 @@ def main() -> int:
     weeks = load_weeks()
     route = ROUTE
     live_url = os.environ.get("LIVE_URL", "").strip().rstrip("/")
-    repo = os.environ.get("GITHUB_REPOSITORY", "anilmodest/ai-eng-track")
+    repo = REPO
     owner, _, name = repo.partition("/")
     hub = os.environ.get("HUB_URL", "").strip().rstrip("/") or f"https://{owner}.github.io/{name}"
 
