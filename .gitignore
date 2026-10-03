@@ -8,6 +8,8 @@ reports/*.json
 .ruff_cache/
 .pytest_cache/
 .route-applied
-site/index.html
+site/*.html
 site/prs.json
 site/preview.png
+site/progress.csv
+site/progress.json

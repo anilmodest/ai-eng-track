@@ -16,11 +16,13 @@ Inputs, all optional (a missing one leaves its panel blank or explains itself):
 Run locally: uv run python scripts/build_pages.py && open site/index.html
 """
 
+import csv
 import html
 import json
 import os
 import re
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -395,153 +397,158 @@ REPORTS = {
 # ---- page --------------------------------------------------------------------------------------
 
 CSS = """
-:root { --bg:#f6f7f5; --fg:#1c2128; --muted:#5b6470; --line:#dbe0e3; --card:#ffffff; --soft:#e8eff5;
-        --green:#2e7d4f; --red:#b3261e; --grey:#9a9a9a; --accent:#1f5f8b; --accent-ink:#fff; --code:#eef1f3; }
-@media (prefers-color-scheme: dark) {
-  :root { --bg:#141719; --fg:#e7eaec; --muted:#9aa4ad; --line:#2c3339; --card:#1c2024; --soft:#22303a;
-          --green:#6fcf97; --red:#ff6b61; --grey:#777; --accent:#7db4dc; --accent-ink:#0f1a22; --code:#252b30; }
+/* The palette and the restraint come from the platform's own BUILD page, so a fellow moving
+   between the two is not changing worlds. Everything here serves one rule: this page answers
+   "where am I and what is next", and nothing else. The detail lives one click away. */
+:root {
+  --ink:#1f2430; --muted:#6b7280; --line:#e7e8f2; --paper:#f5f6fb; --white:#fff;
+  --indigo:#7654a2; --indigo-dark:#543874; --indigo-soft:#f3eef8;
+  --green:#1a9a55; --green-soft:#e7f6ec; --amber:#c8790a; --amber-soft:#fbf0da;
+  --red:#b3261e; --red-soft:#fdecea;
+  --radius:14px; --shadow:0 1px 2px rgba(20,20,50,.04), 0 8px 24px rgba(20,20,50,.05);
 }
-* { box-sizing: border-box; }
-body { margin:0; background:var(--bg); color:var(--fg);
-       font: 16px/1.55 "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
-.wrap { max-width: 1120px; margin: 0 auto; padding: 32px 20px 80px; display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 44px; }
-@media (max-width: 880px) { .wrap { grid-template-columns: minmax(0, 1fr); gap: 20px; } }
-aside { position: sticky; top: 16px; align-self: start; font-size: 14px; }
-@media (max-width: 880px) { aside { position: static; } }
-aside .eyebrow { font: 500 12px/1.4 "IBM Plex Mono", ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
-aside ol { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--line); }
-aside li a { display: block; padding: 5px 12px; color: var(--muted); text-decoration: none; border-left: 2px solid transparent; margin-left: -2px; }
-aside li a:hover, aside li a.on { color: var(--fg); border-left-color: var(--accent); }
-aside .side { margin-top: 18px; font-size: 13px; color: var(--muted); line-height: 1.5; }
-article { min-width: 0; max-width: 780px; }
-a { color: var(--accent); }
-h1 { font-size: 32px; line-height: 1.15; margin: 0 0 6px; font-weight: 600; }
-h2 { font-size: 23px; line-height: 1.25; margin: 44px 0 10px; font-weight: 600; padding-top: 10px; border-top: 1px solid var(--line); }
-h2:first-of-type { border-top: none; padding-top: 0; }
-h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 6px; }
-p { margin: 0 0 12px; }
-.lead { font-size: 17px; color: var(--muted); margin: 0 0 18px; }
-.muted { color: var(--muted); font-size: 14px; }
-code, pre { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
-code { font-size: .9em; background: var(--code); padding: 1px 5px; border-radius: 4px; }
-pre { background: var(--code); padding: 12px 14px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.5; }
-pre code { background: none; padding: 0; }
-.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0 14px; background: var(--card); }
-table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 480px; }
-th, td { text-align: left; vertical-align: top; padding: 7px 10px; border-bottom: 1px solid var(--line); }
-th { background: var(--soft); font-weight: 600; white-space: nowrap; }
-tr:last-child td { border-bottom: none; }
-.doc table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 8px 0 14px; display: block; overflow-x: auto; }
-.doc th, .doc td { text-align: left; vertical-align: top; padding: 6px 9px; border-bottom: 1px solid var(--line); }
-.doc th { background: var(--soft); }
-.doc blockquote { margin: 0 0 12px; padding: 6px 14px; border-left: 3px solid var(--accent); background: var(--soft); border-radius: 0 8px 8px 0; }
-.doc h2 { font-size: 17px; margin: 18px 0 6px; border: none; padding: 0; }
-.doc h3 { font-size: 15px; text-transform: none; letter-spacing: 0; color: var(--fg); margin: 14px 0 4px; }
-.doc p, .doc li { max-width: 72ch; }
-.doc ul, .doc ol { padding-left: 22px; }
-.here { background: var(--soft); border-left: 3px solid var(--accent); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 14px 0 6px; }
-.here p { margin: 0 0 8px; }
-.actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.btn { display: inline-block; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--fg); text-decoration: none; font-size: 14px; cursor: pointer; font-family: inherit; }
-.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.strip { display: grid; grid-template-columns: repeat(11, 1fr); gap: 4px; margin: 12px 0 4px; }
-.strip div { height: 10px; border-radius: 3px; background: var(--line); }
-.strip div.green { background: var(--green); } .strip div.red { background: var(--red); } .strip div.touched { background: var(--grey); }
-.legend { font-size: 13px; color: var(--muted); margin: 0 0 14px; }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin: 0 0 14px; }
-.card h2 { font-size: 18px; margin: 0; padding: 0; border: none; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.card h2 .gates { margin-left: auto; }
-.dot { width: 12px; height: 12px; border-radius: 50%; background: var(--grey); flex: none; }
-.dot.green { background: var(--green); } .dot.red { background: var(--red); }
-.concept { font-style: italic; color: var(--muted); margin: 6px 0 12px; }
-.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
-ul.checks { margin: 0; padding-left: 18px; } ul.checks li { margin: 2px 0; }
-li.pass::marker { color: var(--green); } li.fail::marker { color: var(--red); }
-blockquote.refl { margin: 0; padding: 0 0 0 12px; border-left: 3px solid var(--line); white-space: pre-wrap; font-size: 15px; }
-.gates span { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--line); margin: 0 4px 4px 0; font-weight: 400; }
-.gates span.pass { border-color: var(--green); color: var(--green); }
-.gates span.fail { border-color: var(--red); color: var(--red); }
-details { border-top: 1px solid var(--line); padding: 8px 0; }
-details summary { cursor: pointer; font-weight: 600; font-size: 14px; }
-details[open] summary { margin-bottom: 8px; }
-.play { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@media (max-width: 760px) { .play { grid-template-columns: 1fr; } }
-.play label { display: block; font-size: 13px; color: var(--muted); margin: 8px 0 4px; }
-.play input[type=text], .play textarea, .play select, #pg-base { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); font: inherit; }
-.play textarea { min-height: 70px; }
-.play .out { background: var(--code); border-radius: 8px; padding: 10px 12px; font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; font-size: 12.5px; white-space: pre-wrap; min-height: 60px; overflow-x: auto; margin-top: 8px; }
-.status { font-size: 13px; color: var(--muted); }
-.quiz .q { padding: 10px 0; border-bottom: 1px dashed var(--line); }
-.quiz .q:last-child { border-bottom: none; }
-.quiz .qt { font-weight: 600; margin: 0 0 6px; }
-.quiz .stretch { font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 6px; }
-.quiz label.opt { display: block; padding: 5px 8px; border-radius: 6px; cursor: pointer; }
-.quiz label.opt:hover { background: var(--soft); }
-.quiz label.opt input { margin-right: 8px; }
-.quiz .opt.right { background: rgba(46,125,79,.12); }
-.quiz .opt.wrong { background: rgba(179,38,30,.10); }
-.quiz .why { font-size: 14px; color: var(--muted); margin: 6px 0 0 8px; border-left: 3px solid var(--line); padding-left: 10px; }
-.quiz .why.ok { border-left-color: var(--green); }
-.quiz .why.no { border-left-color: var(--red); }
-.quiz .qbar { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
-.qscore { font-weight: 400; font-size: 13px; color: var(--muted); }
-pre.mermaid { background: var(--card); border: 1px solid var(--line); text-align: center; overflow-x: auto; }
-footer { color: var(--muted); font-size: 13px; margin-top: 40px; border-top: 1px solid var(--line); padding-top: 14px; }
-/* level 1: action */
-.next { border: 2px solid var(--accent); border-radius: 12px; padding: 16px 18px; margin: 18px 0 10px; background: var(--card); }
-.next h2 { border: none; padding: 0; margin: 0 0 6px; font-size: 20px; }
-.next .what { margin: 0 0 12px; }
-.steps { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 12px; }
-.steps span { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); font-size: 13px; color: var(--muted); }
-.steps span.done { border-color: var(--green); color: var(--green); }
-.steps span.now { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
-/* stepper */
-.stepper { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 16px 0 6px; }
-.stepper a { display: block; text-decoration: none; color: var(--muted); font-size: 12px; text-align: center; padding: 8px 4px 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); }
-.stepper a b { display: block; font-size: 15px; color: var(--fg); }
-.stepper a small { display: block; font-size: 10.5px; color: var(--muted); margin-top: 2px; }
-.stepper a.done { border-color: var(--green); } .stepper a.done b { color: var(--green); }
-.stepper a.now { border-color: var(--accent); border-width: 2px; } .stepper a.now b { color: var(--accent); }
-.stepper a.red b { color: var(--red); }
-@media (max-width: 640px) { .stepper { grid-template-columns: repeat(4, 1fr); } }
-/* the loop */
-.loop { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 14px; }
-.loop span { padding: 6px 10px; border-radius: 8px; background: var(--soft); font-size: 13.5px; }
-.loop span.act { background: var(--accent); color: var(--accent-ink); }
-.loop i { color: var(--muted); font-style: normal; }
-/* codespace card */
-.cs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@media (max-width: 720px) { .cs { grid-template-columns: 1fr; } }
-.term { background: #16191d; color: #d7dde3; border-radius: 8px; padding: 12px 14px; font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; font-size: 12.5px; line-height: 1.55; overflow-x: auto; white-space: pre; }
-.term .ok { color: #6fcf97; } .term .cmd { color: #8fc1ff; } .term .dim { color: #8a949e; }
-ol.todo { padding-left: 22px; margin: 0; } ol.todo li { margin: 6px 0; }
-/* week cards */
-.card.now { border: 2px solid var(--accent); }
-.card.ahead h2 { color: var(--muted); }
-.wsteps { list-style: none; padding: 0; margin: 12px 0 0; }
-.wsteps > li { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
-.wsteps > li .k { font-weight: 600; font-size: 14px; }
-.wsteps > li .k small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
-.wsteps > li.now .k { color: var(--accent); }
-.wsteps > li.done .k { color: var(--green); }
-.wsteps code.cmd { display: block; padding: 6px 10px; margin: 4px 0; background: var(--code); border-radius: 6px; white-space: pre-wrap; }
-.wsteps details { border: none; padding: 4px 0 0; }
-.wsteps details summary { font-weight: 500; color: var(--accent); }
-summary.wsum { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 600; }
-summary.wsum::-webkit-details-marker { display: none; }
-summary.wsum .muted { font-weight: 400; }
-details.wk { border: 1px solid var(--line); border-radius: 10px; padding: 12px 18px; margin: 0 0 10px; background: var(--card); }
-details.wk[open] { padding-bottom: 16px; }
-.nextlink { text-align: right; font-size: 14px; margin: 14px 0 0; }
-.ref details { border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; margin: 0 0 10px; background: var(--card); }
-.ref details summary { font-size: 16px; }
-.play .card:target { border: 2px solid var(--accent); }
-aside .prog { list-style: none; margin: 0 0 14px; padding: 0; }
-aside .prog li a { display: block; padding: 3px 0; color: var(--muted); text-decoration: none; }
-aside .prog li a.done { color: var(--green); } aside .prog li a.now { color: var(--accent); font-weight: 600; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink:#e9eaf2; --muted:#9aa1b4; --line:#2b2f3e; --paper:#14161d; --white:#1b1e27;
+    --indigo:#a98fd0; --indigo-dark:#c3aee4; --indigo-soft:#241e33;
+    --green-soft:#132a1d; --amber-soft:#2d2415; --red-soft:#2d1917;
+  }
+}
+:root[data-theme="dark"] {
+  --ink:#e9eaf2; --muted:#9aa1b4; --line:#2b2f3e; --paper:#14161d; --white:#1b1e27;
+  --indigo:#a98fd0; --indigo-dark:#c3aee4; --indigo-soft:#241e33;
+  --green-soft:#132a1d; --amber-soft:#2d2415; --red-soft:#2d1917;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0; background:var(--paper); color:var(--ink);
+  font:16px/1.6 Inter,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap { max-width:860px; margin:0 auto; padding:0 16px 72px; }
+a { color:var(--indigo-dark); }
+code, pre { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; }
+
+/* top bar */
+.bar { background:var(--white); border-bottom:1px solid var(--line); }
+.bar .wrap { display:flex; align-items:center; gap:12px; padding:14px 16px; }
+.bar .mark { font-family:Georgia,"Times New Roman",serif; font-size:17px; letter-spacing:-.01em; }
+.bar .sp { flex:1; }
+.bar a { color:var(--muted); text-decoration:none; font-size:14px; }
+.bar a:hover { color:var(--ink); }
+
+/* hero */
+.kicker { font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--indigo);
+  font-weight:600; margin:28px 0 8px; }
+h1 { font-family:Georgia,"Times New Roman",serif; font-size:30px; line-height:1.22;
+  letter-spacing:-.01em; margin:0 0 10px; font-weight:400; }
+.lede { color:var(--muted); margin:0 0 20px; max-width:60ch; }
+
+/* status strip */
+.strip { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 26px; }
+.chip { display:inline-flex; align-items:center; gap:6px; background:var(--white);
+  border:1px solid var(--line); border-radius:999px; padding:5px 12px; font-size:13px;
+  color:var(--muted); text-decoration:none; }
+.chip b { color:var(--ink); font-weight:600; }
+.chip.go { background:var(--indigo-soft); border-color:transparent; color:var(--indigo-dark); }
+.dot { width:7px; height:7px; border-radius:50%; background:var(--muted); }
+.dot.green { background:var(--green); } .dot.red { background:var(--red); }
+.dot.amber { background:var(--amber); }
+
+/* cards */
+.card { background:var(--white); border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow); padding:18px 20px; margin:0 0 14px; }
+h2 { font-size:15px; margin:34px 0 12px; letter-spacing:.01em; }
+h2 .n { color:var(--muted); font-weight:500; margin-right:8px; }
+
+/* the three steps */
+.step { display:flex; gap:16px; align-items:flex-start; }
+.step-index { flex:none; width:34px; height:34px; border-radius:10px; background:var(--indigo-soft);
+  color:var(--indigo-dark); font-size:13px; font-weight:600; display:flex; align-items:center;
+  justify-content:center; }
+.step h3 { margin:2px 0 4px; font-size:16px; font-weight:600; }
+.step p { margin:0 0 8px; color:var(--muted); font-size:14px; }
+.step .status { font-size:13px; color:var(--muted); }
+
+/* the week list: one row per week, nothing more */
+.weeks { background:var(--white); border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow); overflow:hidden; }
+.wk { display:flex; align-items:center; gap:14px; padding:14px 18px; border-top:1px solid var(--line);
+  text-decoration:none; color:inherit; }
+.wk:first-child { border-top:0; }
+.wk:hover { background:var(--indigo-soft); }
+.wk .num { flex:none; width:28px; height:28px; border-radius:8px; background:var(--paper);
+  border:1px solid var(--line); font-size:13px; color:var(--muted); display:flex;
+  align-items:center; justify-content:center; }
+.wk .body { flex:1; min-width:0; }
+.wk .t { font-weight:600; font-size:15px; }
+.wk .h { color:var(--muted); font-size:13px; white-space:nowrap; overflow:hidden;
+  text-overflow:ellipsis; }
+.wk .go { flex:none; color:var(--indigo); font-size:18px; }
+.pill { flex:none; font-size:12px; padding:3px 9px; border-radius:999px; background:var(--paper);
+  color:var(--muted); border:1px solid var(--line); }
+.pill.green { background:var(--green-soft); color:var(--green); border-color:transparent; }
+.pill.red { background:var(--red-soft); color:var(--red); border-color:transparent; }
+.pill.amber { background:var(--amber-soft); color:var(--amber); border-color:transparent; }
+.wk.current { background:var(--indigo-soft); }
+
+/* next step */
+.next { border-left:3px solid var(--indigo); }
+.next h3 { margin:0 0 6px; font-size:16px; font-weight:600; }
+.next p { margin:0 0 10px; color:var(--muted); font-size:14px; }
+
+pre { background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:12px 14px;
+  overflow:auto; font-size:13px; margin:0 0 10px; }
+code { font-size:.92em; }
+:not(pre) > code { background:var(--paper); border:1px solid var(--line); border-radius:5px;
+  padding:1px 5px; }
+
+.btn { display:inline-block; border:1px solid var(--line); background:var(--white); color:var(--ink);
+  border-radius:9px; padding:7px 14px; font-size:14px; text-decoration:none; cursor:pointer; }
+.btn.primary { background:var(--indigo); border-color:var(--indigo); color:#fff; }
+.btn:hover { border-color:var(--indigo); }
+
+.links { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:8px; }
+.links a { display:block; background:var(--white); border:1px solid var(--line); border-radius:10px;
+  padding:10px 13px; text-decoration:none; color:var(--ink); font-size:14px; }
+.links a span { display:block; color:var(--muted); font-size:12px; }
+.links a:hover { border-color:var(--indigo); }
+
+.fineprint { color:var(--muted); font-size:13px; margin:28px 0 0; }
+.caveat { color:var(--amber); font-size:12px; }
+
+/* week detail pages */
+.back { display:inline-block; margin:22px 0 0; color:var(--muted); font-size:14px;
+  text-decoration:none; }
+.back:hover { color:var(--ink); }
+.prose { background:var(--white); border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:var(--shadow); padding:4px 22px 18px; }
+.prose h2 { font-size:17px; margin:26px 0 10px; }
+.prose h3 { font-size:15px; margin:20px 0 8px; }
+.prose table { border-collapse:collapse; width:100%; font-size:14px; margin:0 0 14px; }
+.prose th { text-align:left; border-bottom:1px solid var(--line); padding:7px 9px;
+  background:var(--paper); }
+.prose td { border-bottom:1px solid var(--line); padding:7px 9px; vertical-align:top; }
+.tbl { overflow-x:auto; }
+.tbl table { border-collapse:collapse; width:100%; font-size:14px; }
+.tbl th { text-align:left; border-bottom:1px solid var(--line); padding:7px 9px;
+  background:var(--paper); }
+.tbl td { border-bottom:1px solid var(--line); padding:7px 9px; }
+details { border-top:1px solid var(--line); padding:12px 0 2px; }
+details summary { cursor:pointer; font-weight:600; font-size:15px; }
+.mermaid { background:var(--white); text-align:center; }
+.quiz .q { border-top:1px solid var(--line); padding:12px 0; }
+.quiz .opt { display:block; padding:5px 0; cursor:pointer; font-size:14px; }
+.quiz .why { color:var(--muted); font-size:13px; margin:6px 0 0; display:none; }
+.quiz .q.answered .why { display:block; }
+.quiz .opt.right { color:var(--green); } .quiz .opt.wrong { color:var(--red); }
+@media (max-width:600px) {
+  h1 { font-size:25px; }
+  .wk .h { display:none; }
+  .wrap { padding-bottom:48px; }
+}
 """
+
 
 JS = r"""
 (function () {
@@ -623,8 +630,11 @@ JS = r"""
   function paintTotals(state) {
     const t = totals(state);
     const el = document.getElementById('qtotal');
-    if (el) el.textContent = t.of ? '<br>self-test ' + t.got + '/' + t.of + ' (yours only)' : '';
-    if (el) el.innerHTML = el.textContent;
+    if (el) {
+      const any = t.of && Object.keys(state).length;
+      el.hidden = !any;
+      el.textContent = any ? 'self-test ' + t.got + '/' + t.of + ' (yours only)' : '';
+    }
     for (const w in quiz) {
       const sc = document.getElementById('qscore-' + w);
       const st = state[w];
@@ -694,144 +704,177 @@ def _cmds(cmds: list[str]) -> str:
     return "".join(f'<code class="cmd">{esc(c)}</code>' for c in cmds)
 
 
-def week_card(w: Week, repo: str, current: bool) -> str:
-    gates = "".join(
-        f'<span class="{"pass" if ok else "fail"}">{esc(k)}</span>'
-        for k, ok in ((w.report or {}).get("gates") or {}).items()
-    )
-    tests = "".join(
-        f'<li class="{"pass" if t["outcome"] == "passed" else "fail"}">'
-        f"{esc(t['id'].removeprefix('test_').replace('_', ' '))}</li>"
-        for t in w.tests
-    )
-    step = w.step
-    order = ["Read", "Run", "Build", "Check", "Submit"]
-    idx = order.index(step)
+def _pill(w: "Week") -> str:
+    """One word for where this week stands. The mentor's verdict is not ours to give."""
+    if w.state == "green" and w.merged:
+        return '<span class="pill green">merged</span>'
+    if w.pr:
+        return '<span class="pill amber">submitted</span>'
+    if w.state == "green":
+        return '<span class="pill green">checks pass</span>'
+    if w.state == "red":
+        return '<span class="pill red">checks fail</span>'
+    return '<span class="pill">not started</span>'
 
-    def cls(name: str) -> str:
-        i = order.index(name)
-        if w.done:
-            return "done"
-        return "done" if i < idx else ("now" if i == idx else "")
 
-    # Read
-    read_body = (
-        f"<details{' open' if current and step == 'Read' else ''}><summary>Concept, diagrams and reading list</summary>"
-        f"<div class='doc'>{w.concept_html}</div></details>"
-        if w.concept_html
-        else f"<div class='doc'>{w.readme_html}</div>"
-    )
-    read = (
-        f"<li class='{cls('Read')}'><div class='k'>Read<small>~1 h</small></div><div>"
-        f"<p>One sentence to be able to say back: <i>{esc(CONCEPTS.get(w.n, ''))}</i> "
-        f"Write it in your words in <code>reflections/week-{w.n}.md</code>, Q1.</p>{read_body}</div></li>"
-    )
-    # Run
-    run = (
-        f"<li class='{cls('Run')}'><div class='k'>Run<small>~2 h, change nothing</small></div><div>"
-        f"{_cmds(WEEK_RUN.get(w.n, []))}"
-        f"<details><summary>What to look for, and the reading questions</summary><div class='doc'>{w.readme_html}</div></details>"
-        f"</div></li>"
-    )
-    # Build
-    files = "".join(
-        f'<li><code>{esc(f)}</code> &middot; <a href="{_gh(repo, f)}">on GitHub</a></li>'
-        for f in WEEK_BUILD.get(w.n, [])
-    )
-    route_note = md(ROOT / "weeks" / str(w.n) / "routes" / f"{ROUTE}.md")
-    route_html = (
-        f"<details open><summary>Your route: {esc(ROUTE)}</summary><div class='doc'>{route_note}</div>"
-        + (
-            f"<p class='muted'>Worked example: <code>weeks/{w.n}/routes/worked_example.py</code> "
-            f"&middot; <a href='{_gh(repo, f'weeks/{w.n}/routes/worked_example.py')}'>on GitHub</a></p>"
-            if ROUTE == "start"
-            and (ROOT / "weeks" / str(w.n) / "routes" / "worked_example.py").exists()
-            else ""
-        )
-        + "</details>"
-        if route_note
-        else ""
-    )
-    build = (
-        f"<li class='{cls('Build')}'><div class='k'>Build<small>~4–5 h</small></div><div>"
-        f"<p>{esc(WEEK_BUILD_NOTE.get(w.n, ''))}</p>{route_html}"
-        + (f"<ul>{files}</ul>" if files else "")
-        + (
-            f"<p>Then measure: <code>{esc(WEEK_MEASURE[w.n])}</code> and paste the table into your reflection.</p>"
-            if w.n in WEEK_MEASURE
-            else ""
-        )
-        + "</div></li>"
-    )
-    # Check
-    rep_html = ""
-    for rep_key in WEEK_REPORTS.get(w.n, []):
-        title, fn = REPORTS[rep_key]
-        body = fn()
-        if body:
-            rep_html += f"<details><summary>{title} (last run)</summary>{body}</details>"
-    check = (
-        f"<li class='{cls('Check')}'><div class='k'>Check<small>as often as you like</small></div><div>"
-        f"<code class='cmd'>make check WEEK={w.n}</code>"
-        f"<div class='gates'>{gates or '<span>gate not run yet</span>'}</div>"
-        + (
-            f"<details><summary>This week's checks</summary><ul class='checks'>{tests}</ul>"
-            f"<div class='doc'>{w.checks_html}</div></details>"
-            if tests or w.checks_html
-            else ""
-        )
-        + rep_html
-        + "</div></li>"
-    )
-    # Submit
-    pr_line = (
-        f'<a href="{esc(w.pr.get("url", "#"))}">PR #{esc(w.pr.get("number", "?"))}</a> &middot; '
-        f"{esc(w.pr.get('state', ''))} &middot; {esc(w.pr.get('review_comments', 0))} mentor comments"
-        if w.pr
-        else f"No pull request yet. Branch <code>week-{w.n}</code> &rarr; PR to <code>main</code>."
-    )
-    refl = (
-        f"<blockquote class='refl'>{esc(w.reflection_q1)}</blockquote>"
-        if w.reflection_q1
-        else f"<span class='muted'>reflections/week-{w.n}.md not written yet</span>"
-    )
-    session = WEEK_SESSION.get(w.n)
-    after = (
-        f"<p class='muted' style='margin-top:8px'><b>{esc(session)}</b> follows this week: send the PR link a day before.</p>"
-        if session
-        else "<p class='muted' style='margin-top:8px'>Self-directed week: no session. The gate, the held-out inputs and the self-test are your feedback; this PR is reviewed at the next session.</p>"
-    )
-    submit = (
-        f"<li class='{cls('Submit')}'><div class='k'>Submit<small>{'a day before the session' if session else 'when the gate is green'}</small></div><div>"
-        f"<p>{pr_line}</p><h3>Your reflection, Q1</h3>{refl}{after}"
-        f"</div></li>"
-    )
-    quiz = (
-        f"<li><div class='k'>Self-test<small>optional</small></div><div>"
-        f"<details class='quiz' data-week='{w.n}'><summary>{len(w.quiz)} questions <span class='qscore' id='qscore-{w.n}'></span></summary>"
-        f"<div id='quiz-{w.n}'></div></details></div></li>"
-        if w.quiz
-        else ""
-    )
-    try_it = (
-        f"<li><div class='k'>Try it<small>live</small></div><div>"
-        f"<a href='#pg-w{w.n}'>Call this week's endpoint from the playground</a></div></li>"
-        if 0 <= w.n <= 5
-        else ""
-    )
-    steps_html = f"<ol class='wsteps'>{read}{run}{build}{check}{submit}{quiz}{try_it}</ol>"
-    status = "done" if w.done else ("now" if current else ("red" if w.state == "red" else "ahead"))
-    title = f"<span class='dot {w.state}'></span>Week {w.n} &mdash; {esc(w.title)}"
-    if current:
-        return (
-            f"<section class='card now' id='week-{w.n}'><h2>{title}"
-            f"<span class='muted'>&middot; this week</span></h2>{steps_html}</section>"
-        )
-    label = "done" if w.done else ("started" if w.state != "not started" else "ahead")
+def headline(w: "Week") -> str:
+    """One short sentence of evidence. Enough to decide whether to open the week."""
+    if w.report:
+        tests = w.report.get("passed")
+        failed = w.report.get("failed") or 0
+        bits = []
+        if tests is not None:
+            bits.append(f"{tests} checks pass" + (f", {failed} fail" if failed else ""))
+        extra = WEEK_HEADLINE.get(w.n)
+        if extra:
+            value = extra()
+            if value:
+                bits.append(value)
+        if bits:
+            return " · ".join(bits)
+    return WEEK_PROMPT.get(w.n, "not started yet")
+
+
+def _num(path: str, *keys: str) -> Any:
+    data = read_json(ROOT / "reports" / path)
+    for key in keys:
+        if not isinstance(data, dict):
+            return None
+        data = data.get(key)
+    return data
+
+
+def _h_retrieval() -> str:
+    data = read_json(ROOT / "reports" / "retrieval.json")
+    if not isinstance(data, dict) or not data.get("strategies"):
+        return ""
+    return f"{len(data['strategies'])} chunking strategies compared"
+
+
+def _h_eval() -> str:
+    value = _num("eval.json", "metrics", "citation_validity")
+    mode = _num("eval.json", "provider_mode")
+    if value is None:
+        return ""
+    note = " (fake model)" if mode == "fake" else ""
+    return f"citations {float(value):.0%} valid{note}"
+
+
+def _h_compare() -> str:
+    data = read_json(ROOT / "reports" / "compare.json")
+    return "three approaches compared" if isinstance(data, dict) and data else ""
+
+
+def _h_attacks() -> str:
+    data = read_json(ROOT / "reports" / "attacks.json")
+    if not isinstance(data, dict) or "attacks" not in data:
+        return ""
+    return f"{data['attacks'] - data.get('succeeded', 0)} of {data['attacks']} attacks blocked"
+
+
+def _h_versions() -> str:
+    data = read_json(ROOT / "reports" / "versions.json")
+    if not isinstance(data, dict) or not data.get("rows"):
+        return ""
+    leaks = sum(len(r.get("filtered_leaks", [])) for r in data["rows"])
+    return "no wrong-version material" if leaks == 0 else f"{leaks} wrong-version passages"
+
+
+WEEK_HEADLINE: dict[int, Any] = {
+    2: lambda: _h_retrieval() or _h_versions(),
+    3: _h_eval,
+    4: _h_compare,
+    5: _h_attacks,
+}
+
+WEEK_PROMPT: dict[int, str] = {
+    0: "open a Codespace and run the first check",
+    1: "the model layer: retries, caching, cost, a provider swap",
+    2: "chunking, the version filter, and numbers to choose by",
+    3: "citations, declining, and a gate that blocks regressions",
+    4: "tools, scopes, and plain code against an agent",
+    5: "tracing, cost per step, and a document that attacks you",
+    6: "publish it, break it, roll it back, write it up",
+}
+
+
+def week_row(w: "Week", current: bool) -> str:
     return (
-        f"<details class='wk {status}' id='week-{w.n}'><summary class='wsum'>{title}"
-        f"<span class='muted'>&middot; {label}</span></summary>{steps_html}</details>"
+        f'<a class="wk{" current" if current else ""}" href="week-{w.n}.html">'
+        f'<span class="num">{w.n}</span>'
+        f'<span class="body"><span class="t">{esc(w.title)}</span><br>'
+        f'<span class="h">{esc(headline(w))}</span></span>'
+        f"{_pill(w)}"
+        f'<span class="go">&rsaquo;</span></a>'
     )
+
+
+def render_week(w: "Week", weeks: list["Week"], repo: str) -> str:
+    """One week, in full. This is what a details link lands on."""
+    parts = [
+        '<a class="back" href="index.html">&lsaquo; All weeks</a>',
+        f'<p class="kicker">Week {w.n}</p>',
+        f"<h1>{esc(w.title)}</h1>",
+        f'<div class="strip">{_pill(w)}'
+        f'<span class="chip">{esc(headline(w))}</span>'
+        f'<a class="chip" href="{_gh(repo, f"weeks/{w.n}/README.md")}">On GitHub</a></div>',
+    ]
+
+    if w.pr:
+        state = str(w.pr.get("state", "")).lower()
+        parts.append(
+            f'<div class="card"><h3 style="margin:0 0 6px">Your pull request</h3>'
+            f'<p style="margin:0;color:var(--muted);font-size:14px">'
+            f'<a href="{esc(w.pr.get("url", "#"))}">#{esc(w.pr.get("number", ""))} '
+            f"{esc(w.pr.get('title', ''))}</a> &middot; {esc(state)}</p></div>"
+        )
+
+    if w.reflection_q1 or w.reflection_q2:
+        parts.append(
+            '<div class="card"><h3 style="margin:0 0 8px">In your own words</h3>'
+            f'<div class="prose" style="box-shadow:none;border:0;padding:0">'
+            f"{MD.render(w.reflection_q1)}{MD.render(w.reflection_q2)}</div></div>"
+        )
+
+    measured = []
+    for name in WEEK_REPORTS.get(w.n, []):
+        if name not in REPORTS:
+            continue
+        label, renderer = REPORTS[name]
+        body = renderer()
+        if body:
+            measured.append(f"<h3>{esc(label)}</h3>{body}")
+    if measured:
+        parts.append(
+            f'<h2><span class="n">Measured</span>this week</h2>'
+            f'<div class="card">{"".join(measured)}</div>'
+        )
+
+    if w.concept_html:
+        parts.append(
+            f'<h2><span class="n">Read</span>the concept</h2>'
+            f'<div class="prose">{w.concept_html}</div>'
+        )
+    if w.readme_html:
+        parts.append(
+            f'<h2><span class="n">Do</span>the week</h2><div class="prose">{w.readme_html}</div>'
+        )
+    if w.checks_html:
+        parts.append(
+            f'<h2><span class="n">Check</span>what the gate verifies</h2>'
+            f'<div class="prose">{w.checks_html}</div>'
+        )
+    if w.quiz:
+        parts.append(f'<h2><span class="n">Optional</span>self-test</h2>{quiz_html(w)}')
+
+    nav = []
+    if w.n > 0:
+        nav.append(f'<a class="btn" href="week-{w.n - 1}.html">&lsaquo; Week {w.n - 1}</a>')
+    if w.n < max(x.n for x in weeks):
+        nav.append(f'<a class="btn" href="week-{w.n + 1}.html">Week {w.n + 1} &rsaquo;</a>')
+    parts.append(f'<p style="margin:28px 0 0;display:flex;gap:8px">{"".join(nav)}</p>')
+
+    return "".join(parts)
 
 
 def _split_track() -> dict[str, str]:
@@ -864,280 +907,291 @@ def material_links(weeks: list[Week], repo: str) -> str:
     return "".join(items)
 
 
-def render(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
-    gh = f"https://github.com/{esc(repo)}"
-    codespace = f"https://codespaces.new/{esc(repo)}?quickstart=1"
-    fresh = all(w.report is None for w in weeks)
-    current = next((w for w in weeks if not w.done), None)
-    done_n = sum(1 for w in weeks if w.done)
-
-    # ---- 1. your next step
-    if fresh or current is None and not weeks:
-        next_html = (
-            "<div class='next'><h2>Step 0: open a Codespace</h2>"
-            "<p class='what'>Nothing is installed yet and nothing needs to be. One click builds your machine, "
-            "installs everything and runs the first check. Then <code>weeks/0/README.md</code> opens by itself.</p>"
-            f"<div class='actions'><a class='btn primary' href='{codespace}'>Open in Codespaces</a>"
-            f"<a class='btn' href='#codespace'>What happens next</a></div></div>"
-        )
-    elif current is None:
-        next_html = (
-            "<div class='next'><h2>Every week is green</h2><p class='what'>Write the one page that says what it did "
-            "for the business, then the final session.</p>"
-            "<div class='actions'><a class='btn primary' href='#week-6'>Open Week 6</a></div></div>"
-        )
-    else:
-        w = current
-        step = w.step
-        chips = "".join(
-            f"<span class='{'done' if STEPS.index(st) < STEPS.index(step) else ('now' if st == step else '')}'>{i + 1}. {st}</span>"
-            for i, st in enumerate(STEPS)
-        )
-        what = {
-            "Read": f"Read the concept, then write its sentence in your own words in <code>reflections/week-{w.n}.md</code>.",
-            "Run": "Run the elaboration scripts and read the files listed. Change nothing yet.",
-            "Build": f"Build <code>{esc(', '.join(WEEK_BUILD.get(w.n, [])) or 'the Week 0 tasks')}</code>, then <code>make check WEEK={w.n}</code> until it is green.",
-            "Submit": (
-                "Your PR is open: send the link to your mentor 24 h before the session."
-                if w.pr and not w.merged
-                else f"Gate is green. Open the PR <code>week-{w.n} &rarr; main</code> and finish your reflection."
-            ),
-        }[step]
-        primary = {
-            "Read": (f"#week-{w.n}", f"Open Week {w.n}"),
-            "Run": (f"#week-{w.n}", f"Open Week {w.n}"),
-            "Build": (
-                (_gh(repo, WEEK_BUILD[w.n][0]), f"Open {WEEK_BUILD[w.n][0].split('/')[-1]}")
-                if WEEK_BUILD.get(w.n)
-                else (f"#week-{w.n}", f"Open Week {w.n}")
-            ),
-            "Submit": (
-                (esc(w.pr["url"]), f"Open PR #{w.pr.get('number', '')}")
-                if w.pr
-                else (f"{gh}/compare/main...week-{w.n}?expand=1", "Open a pull request")
-            ),
-        }[step]
-        next_html = (
-            f"<div class='next'><h2>Week {w.n}: {esc(w.title)}</h2>"
-            f"<div class='steps'>{chips}</div><p class='what'>{what}</p>"
-            f"<div class='actions'><a class='btn primary' href='{primary[0]}'>{primary[1]}</a>"
-            f"<a class='btn' href='{codespace}'>Open in Codespaces</a></div></div>"
-        )
-
-    # ---- stepper
-    stepper = ""
-    for w in weeks:
-        c = "done" if w.done else ("now" if current is w else ("red" if w.state == "red" else ""))
-        mark = "&#10003;" if w.done else ("&#9679;" if current is w else "&#9675;")
-        tag = (
-            f"<small>{esc(WEEK_SESSION[w.n].split(':')[0])}</small>"
-            if w.n in WEEK_SESSION
-            else "<small>self-directed</small>"
-        )
-        stepper += f"<a class='{c}' href='#week-{w.n}'><b>{mark}</b>Week {w.n}{tag}</a>"
-
-    # ---- sidebar progress
-    prog = "".join(
-        f"<li><a class='{'done' if w.done else ('now' if current is w else '')}' href='#week-{w.n}'>"
-        f"{'&#10003;' if w.done else ('&#9679;' if current is w else '&#9675;')} Week {w.n}</a></li>"
-        for w in weeks
-    )
-
-    live_line = (
-        f'Live service: <a href="{esc(live_url)}/docs">{esc(live_url)}</a> (<a href="{esc(live_url)}/health">/health</a>)'
-        if live_url
-        else "No live URL set. Week 6 publishes a runnable image, which needs no account; a clickable URL is optional (Reference &rarr; Start here)."
-    )
-    track = _split_track()
-    area_state: dict[int, str] = {}
-    for w in weeks:
-        for a in WEEK_AREAS.get(w.n, []):
-            area_state[a] = w.state if w.state != "not started" else "touched"
-    strip = "".join(
-        f'<div class="{area_state.get(a, "")}" title="{a}. {esc(AREAS[a])}"></div>'
-        for a in range(1, 12)
-    )
-    start_html = md(ROOT / "README.md")
-    reports_html = (
-        "".join(
-            f"<h3 style='margin-top:14px'>{title}</h3>{body}"
-            for _key, (title, fn) in REPORTS.items()
-            if (body := fn())
-        )
-        or "<p class='muted'>No reports yet. They appear as each week's measurement script runs.</p>"
-    )
-    quiz_data = {
-        str(w.n): [
-            {"n": q.n, "text": q.text, "stretch": q.stretch, "why": q.why, "options": q.options}
-            for q in w.quiz
-        ]
-        for w in weeks
-        if w.quiz
-    }
-    cfg = json.dumps({"liveUrl": live_url, "repo": repo, "quiz": quiz_data})
-    cards = "".join(week_card(w, repo, current is w) for w in weeks)
-
-    term = (
-        "<div class='term'><span class='dim'>== installing uv</span>\n<span class='dim'>== installing the project</span>\n"
-        "<span class='dim'>== first check</span>\n  <span class='ok'>PASS</span>  ruff   <span class='ok'>PASS</span>  format   "
-        "<span class='ok'>PASS</span>  mypy   <span class='ok'>PASS</span>  tests[fake_a]\n\n"
-        "<span class='ok'>Ready.</span> Open weeks/0/README.md and run: make run\n\n"
-        "<span class='dim'>$</span> <span class='cmd'>make run</span>\n"
-        "INFO:     Uvicorn running on http://0.0.0.0:8000  <span class='dim'>(a port-forward notification appears: open it, add /docs)</span>\n\n"
-        "<span class='dim'>$</span> <span class='cmd'>git checkout -b week-1</span>\n"
-        "<span class='dim'>$</span> <span class='cmd'>make check WEEK=1</span>\n"
-        "  <span class='ok'>PASS</span>  ruff   ...   9 failed   <span class='dim'>(red until you build app/api/extract.py: that is the exercise)</span></div>"
-    )
-
+def page(title: str, body: str, cfg: dict[str, Any] | None = None) -> str:
+    """The shell. One stylesheet, one script, no framework, nothing to install."""
+    config = json.dumps(cfg or {})
     return f"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI Engineering track</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{esc(title)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet">
 <style>{CSS}</style>
-<script>window.HUB = {cfg};</script>
-</head>
-<body><div class="wrap">
-<aside>
-  <p class="eyebrow">Your progress</p>
-  <ul class="prog">{prog}</ul>
-  <p class="eyebrow">On this page</p>
-  <ol>
-    <li><a href="#next">Your next step</a></li>
-    <li><a href="#loop">How you work</a></li>
-    <li><a href="#codespace">Inside your Codespace</a></li>
-    <li><a href="#weeks">The six weeks</a></li>
-    <li><a href="#playground">Playground</a></li>
-    <li><a href="#reference">Reference</a></li>
-  </ol>
-  <p class="side"><a href="{gh}">{esc(repo)}</a><br>route <b>{esc(route)}</b><br>{done_n} of {len(weeks)} weeks done<span id="qtotal"></span></p>
-</aside>
-
-<article>
-<h1>AI Engineering track</h1>
-<p class="lead">Six weeks. One service that grows into an AI product you can deploy, measure and defend. This page is built from your repository on every merge; nothing on it is typed in by hand.</p>
-
-<div id="next">{next_html}</div>
-<div class="stepper">{stepper}</div>
-<p class="legend">Done means the week's gate is green and its pull request is merged. Four mentor sessions: Discovery, Direction, Observation, Defence; the other weeks are self-directed. Click a week to open it.</p>
-
-<h2 id="loop">How you work</h2>
-<p>The same loop every week. Six words you will see everywhere on this page and in the repo.</p>
-<div class="loop">
-  <span>Codespace</span><i>&rarr;</i><span>branch <code>week-N</code></span><i>&rarr;</i>
-  <span class="act">Read</span><i>&rarr;</i><span class="act">Run</span><i>&rarr;</i><span class="act">Build</span><i>&rarr;</i>
-  <span class="act">Check</span><i>&rarr;</i><span class="act">Submit</span><i>&rarr;</i><span>merge</span><i>&rarr;</i><span class="act">Defend</span> <i>at one of the four sessions</i>
-</div>
-<div class="doc">{track.get("How a week works", "")}</div>
-<p class="nextlink">Next: <a href="#codespace">inside your Codespace &rarr;</a></p>
-
-<h2 id="codespace">Inside your Codespace</h2>
-<p>One click builds your machine. Here is what is already done when it opens, what you do, and what you should see.</p>
-<div class="cs">
-  <div class="card"><h3>Already done for you</h3>
-    <ul><li>Python 3.12, <code>uv</code>, Docker, Redis</li><li>Every dependency installed (<code>uv sync</code>)</li><li><code>.env</code> created from <code>.env.example</code></li><li>The Week 0 gate run once</li><li><code>weeks/0/README.md</code> opened</li></ul>
-    <h3 style="margin-top:12px">You do</h3>
-    <ol class="todo">
-      <li>Paste one model key: <code>MODEL_API_KEY=...</code> in <code>.env</code> (free Gemini key from <a href="https://aistudio.google.com/apikey">AI Studio</a>), or set the Codespaces secret <code>GEMINI_API_KEY</code>.</li>
-      <li><code>make run</code> and open the forwarded port at <code>/docs</code>.</li>
-      <li>Each week: <code>git checkout -b week-N</code>, then Read, Run, Build, <code>make check WEEK=N</code>, PR.</li>
-      <li>When you stop for the day: <b>Codespaces &rarr; Stop</b> (or set idle timeout to 15 min).</li>
-    </ol>
-    <div class="actions" style="margin-top:12px"><a class="btn primary" href="{codespace}">Open in Codespaces</a></div>
-  </div>
-  <div class="card"><h3>What you should see</h3>{term}
-    <p class="muted" style="margin-top:8px">If the container opens in <i>recovery mode</i>: <code>pip install uv && uv sync</code>, then Ctrl+Shift+P &rarr; <i>Codespaces: Rebuild Container</i>.</p>
-  </div>
-</div>
-<p class="nextlink">Next: <a href="#weeks">the six weeks &rarr;</a></p>
-
-<h2 id="weeks">The six weeks</h2>
-<p>Your current week is open. The others fold to one line until you get there; nothing is locked.</p>
-{cards}
-<p class="nextlink">Next: <a href="#playground">try your service &rarr;</a></p>
-
-<h2 id="playground">Playground</h2>
-<p>Call your running service from here: your Space (set the repository variable <code>LIVE_URL</code>) or a Codespace port you have made public. Only the URL is remembered, in your browser. {live_line}</p>
-<label for="pg-base" class="status">Service URL</label>
-<input type="text" id="pg-base" placeholder="http://localhost:7860  or  https://your-service.onrender.com">
-<p id="pg-status" class="status"></p>
-<div class="play">
-  <div class="card" id="pg-w0"><h3>Week 0 &middot; health and upload</h3>
-    <button class="btn" id="pg-health">GET /health</button>
-    <div class="out" id="pg-health-out"></div>
-    <label for="pg-file">Upload a .md / .txt / .csv / .pdf</label>
-    <input type="file" id="pg-file"> <button class="btn" id="pg-upload">POST /documents</button>
-    <div class="out" id="pg-upload-out"></div>
-  </div>
-  <div class="card" id="pg-w1"><h3>Week 1 &middot; extract</h3>
-    <label for="pg-docid">Document id</label>
-    <input type="text" id="pg-docid" value="1">
-    <button class="btn" id="pg-extract">POST /documents/{{id}}/extract</button>
-    <div class="out" id="pg-extract-out"></div>
-    <p class="status">Call it twice: the second answer must say <code>cached: true</code>.</p>
-  </div>
-  <div class="card" id="pg-w2"><h3>Week 2 &middot; index and search</h3>
-    <button class="btn" id="pg-index">POST /index</button>
-    <label for="pg-q">Query</label>
-    <input type="text" id="pg-q" value="mileage rate personal car">
-    <button class="btn" id="pg-search">GET /search</button>
-    <div class="out" id="pg-search-out"></div>
-  </div>
-  <div class="card" id="pg-w3"><h3>Week 3 &middot; ask</h3>
-    <label for="pg-question">Question</label>
-    <textarea id="pg-question">What is the London hotel cap in the Contoso expenses policy?</textarea>
-    <button class="btn" id="pg-ask">POST /ask</button>
-    <div class="out" id="pg-ask-out"></div>
-    <p class="status">Try one the documents cannot answer. A good system declines.</p>
-  </div>
-  <div class="card" id="pg-w4"><h3>Week 4 &middot; one task, three ways</h3>
-    <label for="pg-tq">Question</label>
-    <input type="text" id="pg-tq" value="Which invoice has the largest total due, and what is it?">
-    <label for="pg-mode">Mode</label>
-    <select id="pg-mode"><option value="plain">plain code</option><option value="workflow">workflow</option><option value="agent" selected>agent</option></select>
-    <label><input type="checkbox" id="pg-approved"> approve tools that cost money</label>
-    <button class="btn" id="pg-task">POST /tasks/run</button>
-    <div class="out" id="pg-task-out"></div>
-  </div>
-  <div class="card" id="pg-w5"><h3>Week 5 &middot; traces</h3>
-    <button class="btn" id="pg-traces">GET /traces</button>
-    <div class="out" id="pg-traces-out"></div>
-    <p class="status">Every call above returned an <code>X-Request-Id</code>; look it up here.</p>
-  </div>
-</div>
-
-<h2 id="reference">Reference</h2>
-<p>Everything else, folded. Open what you need.</p>
-<div class="ref">
-  <details id="track"><summary>The track: eleven areas, six weeks</summary><div class="doc">{track.get("The track", "")}</div>
-    <div class="strip">{strip}</div><p class="legend">The eleven areas as they stand in your repo. Green: that week's gate passed. Red: not yet. Grey: reached, not run.</p></details>
-  <details id="sessions"><summary>Sessions and gates: how you are assessed</summary><div class="doc">{track.get("Sessions and gates", "")}</div></details>
-  <details id="start"><summary>Start here: commands, model keys, deploying, keeping it free (the README)</summary><div class="doc">{start_html}</div></details>
-  <details id="reports"><summary>Reports: every measurement your repo has produced</summary>{reports_html}</details>
-  <details id="links"><summary>Links</summary><div class="doc">
-    <ul>
-      <li><a href="{gh}">Repository</a> &middot; <a href="{gh}/pulls">pull requests</a> &middot; <a href="{gh}/actions">CI runs</a> &middot; <a href="{gh}/tree/main/reflections">reflections</a></li>
-      <li><a href="{codespace}">Open in Codespaces</a></li>
-      <li>{live_line}</li>
-    </ul>
-    <h3>Material on GitHub</h3><ul>{material_links(weeks, repo)}</ul>
-    <h3>Providers</h3>
-    <ul>
-      <li><a href="https://aistudio.google.com/apikey">Gemini key (free tier, default)</a></li>
-      <li><a href="https://console.groq.com/keys">Groq key (second provider)</a></li>
-      <li><a href="https://render.com">Render</a> for an optional clickable URL (the release publishes a runnable image either way)</li>
-    </ul>
-    <h3>For mentors</h3><p>Runbooks, held-out sets, the rubric and reference solutions live in the private mentor kit, not here.</p>
-  </div></details>
-</div>
-
-<footer>Built by <code>scripts/build_pages.py</code> on every merge to <code>main</code> from <code>docs/track.md</code>, <code>README.md</code>, <code>weeks/</code>, <code>reports/</code>, <code>reflections/</code> and the pull requests. Nothing here is self-reported.</footer>
-</article>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+</head><body>
+<div class="bar"><div class="wrap">
+  <span class="mark">AI Engineering</span>
+  <span class="sp"></span>
+  <a href="index.html">Weeks</a>
+  <a href="playground.html">Playground</a>
+  <a href="progress.csv">Export</a>
+</div></div>
+<div class="wrap">{body}</div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>const cfg = {config};</script>
 <script>{JS}</script>
 </body></html>
 """
+
+
+def quiz_html(w: Week) -> str:
+    return (
+        f'<div class="card quiz" id="quiz-{w.n}"></div>'
+        '<p class="fineprint">Scored in your browser only. It never reaches the repository, '
+        "your mentor or your route.</p>"
+    )
+
+
+def quiz_cfg(weeks: list[Week]) -> dict[str, Any]:
+    return {
+        "quiz": {
+            str(w.n): [
+                {
+                    "n": q.n,
+                    "text": q.text,
+                    "stretch": q.stretch,
+                    "options": q.options,
+                    "why": q.why,
+                }
+                for q in w.quiz
+            ]
+            for w in weeks
+            if w.quiz
+        }
+    }
+
+
+def next_step(weeks: list[Week], repo: str) -> str:
+    """The one thing to do now. Everything else on this page is reference."""
+    current = next((w for w in weeks if not w.done), None)
+    if current is None:
+        return (
+            '<div class="card next"><h3>Every week is green</h3>'
+            "<p>Write the page that says what it did for the business, then book the defence.</p>"
+            f'<a class="btn primary" href="week-{weeks[-1].n}.html">Week {weeks[-1].n}</a></div>'
+        )
+    if current.n == 0 and current.report is None:
+        return (
+            '<div class="card next"><h3>Open a Codespace</h3>'
+            "<p>Nothing to install. About 90 seconds, then week 0 opens by itself.</p>"
+            f'<a class="btn primary" href="https://codespaces.new/{esc(repo)}?quickstart=1">'
+            "Open in GitHub Codespaces</a></div>"
+        )
+    verb, cmds = {
+        "Read": (
+            "Read the concept, then run what is already there",
+            WEEK_RUN.get(current.n, [f"make check WEEK={current.n}"]),
+        ),
+        "Build": (
+            "Build this week's exercise, then run the gate",
+            [f"make check WEEK={current.n}"],
+        ),
+        "Submit": (
+            "Fill in your reflection, then open the pull request",
+            [
+                f"git add -A && git commit -m 'week {current.n}'",
+                f"git push -u origin week-{current.n}",
+                "gh pr create --fill --base main",
+            ],
+        ),
+    }[current.step]
+    return (
+        f'<div class="card next"><h3>Week {current.n}: {esc(current.title)}</h3>'
+        f"<p>{esc(verb)}.</p>"
+        f"<pre>{esc(chr(10).join(cmds))}</pre>"
+        f'<a class="btn primary" href="week-{current.n}.html">Open week {current.n}</a></div>'
+    )
+
+
+def render_index(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
+    done = [w for w in weeks if w.done]
+    milestones = [w for w in weeks if w.n > 0]
+    current = next((w for w in weeks if not w.done), None)
+
+    chips = [
+        f'<span class="chip">route <b>{esc(route)}</b></span>',
+        f'<span class="chip"><span class="dot'
+        f'{" green" if len(done) == len(weeks) else ""}"></span>'
+        f"<b>{len(done)}</b> of {len(weeks)} weeks complete</span>",
+    ]
+    if live_url:
+        chips.append(f'<a class="chip go" href="{esc(live_url)}">Live service</a>')
+    chips.append('<span class="chip" id="qtotal" hidden></span>')
+
+    steps = [
+        (
+            "01",
+            "Getting ready",
+            "Open the workspace, read the client's brief, and prove the foundations.",
+            "week-0.html",
+            "Week 0 " + ("complete" if weeks[0].done else "not finished"),
+        ),
+        (
+            "02",
+            "The six weeks",
+            "One service, improved every week, with a gate you run as often as you like.",
+            f"week-{(current or milestones[0]).n}.html",
+            f"{len([w for w in milestones if w.done])} of {len(milestones)} milestones complete",
+        ),
+        (
+            "03",
+            "Your evidence",
+            "Measurements, a published build, and one page on what it did for the business.",
+            f"week-{milestones[-1].n}.html",
+            "Ready at week 6",
+        ),
+    ]
+    step_html = "".join(
+        f'<div class="card step"><span class="step-index">{n}</span><div>'
+        f"<h3>{esc(title)}</h3><p>{esc(blurb)}</p>"
+        f'<p class="status">{esc(status)} &middot; <a href="{href}">Open</a></p>'
+        "</div></div>"
+        for n, title, blurb, href, status in steps
+    )
+
+    rows = "".join(week_row(w, current is not None and w.n == current.n) for w in weeks)
+
+    links = [
+        ("The brief", "what the client asked for", _gh(repo, "weeks/0/BRIEF.md")),
+        ("What it must do", "the twelve requirements", _gh(repo, "weeks/0/REQUIREMENTS.md")),
+        ("Your role and the rules", "including AI tools", _gh(repo, "RULES.md")),
+        ("How the track works", "routes, sessions, gates", _gh(repo, "docs/track.md")),
+        ("Where the vectors live", "choosing a store", _gh(repo, "docs/vector-stores.md")),
+        ("The repository", "everything above, as files", f"https://github.com/{esc(repo)}"),
+    ]
+    link_html = "".join(
+        f'<a href="{href}">{esc(t)}<span>{esc(sub)}</span></a>' for t, sub, href in links
+    )
+
+    body = f"""
+<p class="kicker">Discover &rarr; Build &middot; AI Engineering</p>
+<h1>One service, six weeks, numbers you can defend.</h1>
+<p class="lede">A support desk answers the same documentation questions every day, from a manual
+that exists in two versions worded almost identically. You build the assistant that answers from
+the right one, shows where the answer came from, and says when it does not know.</p>
+<div class="strip">{"".join(chips)}</div>
+{next_step(weeks, repo)}
+<h2><span class="n">How</span>you get there</h2>
+{step_html}
+<h2><span class="n">Weeks</span>where you are</h2>
+<div class="weeks">{rows}</div>
+<h2><span class="n">Reference</span>when you need it</h2>
+<div class="links">{link_html}</div>
+<p class="fineprint">Nothing on this page is typed by hand: it is built from the repository on
+every merge. Numbers measured against the test model and the lexical embedder prove the pipeline
+holds, not that answers are good &mdash; each week says which it ran.
+<a href="progress.csv">progress.csv</a> &middot; <a href="progress.json">progress.json</a></p>
+"""
+    return page("AI Engineering — your build", body, quiz_cfg(weeks))
+
+
+PLAYGROUND = """
+<a class="back" href="index.html">&lsaquo; Back</a>
+<p class="kicker">Playground</p>
+<h1>Call your running service.</h1>
+<p class="lede">Point this at your Codespace's forwarded port (make it public first) or at a
+published build. Nothing is stored here; every call goes straight to the address you give.</p>
+<div class="card">
+  <p><label>Base address<br><input id="pg-base" style="width:100%;max-width:460px;padding:8px"
+     placeholder="http://127.0.0.1:8000"></label></p>
+  <p class="status" id="pg-status"></p>
+</div>
+<div class="card"><h3>Upload and extract</h3>
+  <p><input type="file" id="pg-file"> <button class="btn" id="pg-upload">Upload</button>
+     <input id="pg-docid" placeholder="document id" style="width:110px;padding:6px">
+     <button class="btn" id="pg-extract">Extract</button></p>
+  <pre id="pg-extract-out">&nbsp;</pre></div>
+<div class="card"><h3>Index and search</h3>
+  <p><button class="btn" id="pg-index">Index</button>
+     <input id="pg-q" placeholder="connection timeout" style="padding:6px">
+     <button class="btn" id="pg-search">Search</button></p>
+  <pre id="pg-search-out">&nbsp;</pre></div>
+<div class="card"><h3>Ask</h3>
+  <p><input id="pg-question" style="width:100%;max-width:460px;padding:8px"
+     placeholder="How do I configure the connection timeout?">
+     <button class="btn primary" id="pg-ask">Ask</button></p>
+  <pre id="pg-ask-out">&nbsp;</pre></div>
+<div class="card"><h3>Run a task three ways</h3>
+  <p><input id="pg-tq" style="width:100%;max-width:420px;padding:8px" placeholder="a task">
+     <select id="pg-mode" style="padding:7px"><option>plain</option><option>workflow</option>
+     <option>agent</option></select>
+     <label style="font-size:14px"><input type="checkbox" id="pg-approved"> approved</label>
+     <button class="btn" id="pg-task">Run</button></p>
+  <pre id="pg-task-out">&nbsp;</pre></div>
+<div class="card"><h3>Traces</h3>
+  <p><button class="btn" id="pg-traces">Last ten requests</button></p>
+  <pre id="pg-traces-out">&nbsp;</pre></div>
+"""
+
+
+def export_rows(weeks: list[Week], route: str, repo: str, hub: str) -> list[dict[str, str]]:
+    """The narrow export: one row per week, status and a link. Nothing the platform must parse.
+
+    Deliberately not here: the measurements. They differ week by week, they go stale the moment
+    they are copied, and a number shown without the run that produced it is worse than no number.
+    `details_url` always shows the current evidence, with its own caveats attached.
+
+    Also deliberately not here: completion. Open and submitted are facts we can see. Complete,
+    needs clarification and incomplete are the mentor's words, recorded where the mentor works.
+    """
+    now = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    repo_url = f"https://github.com/{repo}"
+    out = []
+    for w in weeks:
+        checks = {"green": "pass", "red": "fail"}.get(w.state, "not run")
+        out.append(
+            {
+                "repo_url": repo_url,
+                "route": route,
+                "week": str(w.n),
+                "title": w.title,
+                "status": "submitted" if w.pr else "open",
+                "checks": checks,
+                "headline": headline(w),
+                "details_url": f"{hub}/week-{w.n}.html",
+                "updated_at": now,
+            }
+        )
+    return out
+
+
+def write_export(rows: list[dict[str, str]], out_dir: Path, hub: str) -> None:
+    columns = [
+        "repo_url",
+        "route",
+        "week",
+        "title",
+        "status",
+        "checks",
+        "headline",
+        "details_url",
+        "updated_at",
+    ]
+    with (out_dir / "progress.csv").open("w", encoding="utf-8", newline="") as fh:
+        writer = csv.DictWriter(fh, fieldnames=columns)
+        writer.writeheader()
+        writer.writerows(rows)
+    (out_dir / "progress.json").write_text(
+        json.dumps(
+            {
+                "schema": "talentraft.progress/1",
+                "repo_url": rows[0]["repo_url"] if rows else "",
+                "route": rows[0]["route"] if rows else "",
+                "hub_url": hub,
+                "updated_at": rows[0]["updated_at"] if rows else "",
+                "weeks": [
+                    {
+                        k: r[k]
+                        for k in ("week", "title", "status", "checks", "headline", "details_url")
+                    }
+                    for r in rows
+                ],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
 
 
 def main() -> int:
@@ -1145,9 +1199,22 @@ def main() -> int:
     route = ROUTE
     live_url = os.environ.get("LIVE_URL", "").strip().rstrip("/")
     repo = os.environ.get("GITHUB_REPOSITORY", "anilmodest/ai-eng-track")
-    OUT.parent.mkdir(exist_ok=True)
-    OUT.write_text(render(weeks, route, live_url, repo), encoding="utf-8")
-    print(f"wrote {OUT.relative_to(ROOT)} ({len(weeks)} weeks, {OUT.stat().st_size // 1024} KB)")
+    owner, _, name = repo.partition("/")
+    hub = os.environ.get("HUB_URL", "").strip().rstrip("/") or f"https://{owner}.github.io/{name}"
+
+    out_dir = OUT.parent
+    out_dir.mkdir(exist_ok=True)
+    OUT.write_text(render_index(weeks, route, live_url, repo), encoding="utf-8")
+    for w in weeks:
+        (out_dir / f"week-{w.n}.html").write_text(
+            page(f"Week {w.n} — {w.title}", render_week(w, weeks, repo), quiz_cfg([w])),
+            encoding="utf-8",
+        )
+    (out_dir / "playground.html").write_text(page("Playground", PLAYGROUND), encoding="utf-8")
+    write_export(export_rows(weeks, route, repo, hub), out_dir, hub)
+
+    size = OUT.stat().st_size // 1024
+    print(f"wrote site/index.html ({size} KB), {len(weeks)} week pages, playground, progress.*")
     return 0
 
 
