@@ -914,6 +914,8 @@ def render_week(w: "Week", weeks: list["Week"], repo: str) -> str:
         f'<p class="kicker">Week {w.n}</p>',
         f"<h1>{esc(w.title)}</h1>",
         f'<div class="strip"><a class="chip" href="#checks">{esc(headline(w))} &rsaquo;</a>'
+        f'<a class="chip" href="{_gh(repo, f"weeks/{w.n}/routes/{ROUTE}.md")}">'
+        f"route <b>{esc(ROUTE)}</b></a>"
         f'<a class="chip" href="{_gh(repo, f"weeks/{w.n}/README.md")}">On GitHub</a></div>',
     ]
     if not w.done:

@@ -21,6 +21,15 @@ mkdir -p data reports
 echo "== first check"
 uv run python scripts/check.py --week 0 || echo "(check reported a failure; open weeks/0/README.md and read the output above)"
 
+ROUTE="$(cat .route 2>/dev/null || echo start)"
 echo
-echo "Ready. Open weeks/0/README.md and run: make run"
+echo "Ready. You are on the ${ROUTE} route."
+case "$ROUTE" in
+  start) echo "  Every helper is given, and each week's routes/worked_example.py solves a smaller one." ;;
+  core)  echo "  Faults are planted in the exercise files, and you instrument the tracer yourself." ;;
+  pro)   echo "  The helpers are signatures only, and each week's routes/pro.md adds one constraint." ;;
+esac
+echo "  Your mentor assigned it. Read weeks/N/routes/${ROUTE}.md each week."
+echo
+echo "Open weeks/0/BRIEF.md, then weeks/0/README.md, and run: make run"
 echo "(if this container was created before the uv fix, run: Codespaces: Full Rebuild Container)"
