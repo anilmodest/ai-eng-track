@@ -111,6 +111,16 @@ def main() -> int:
     print(f"  {ROUTE_MEANS[r]}")
     print(f"\n  Building: {GOAL.get(week, '')}")
 
+    # Week 0 needs no key, so this is the first place a fellow can be told before they trip.
+    if week >= 1:
+        from app.llm.keys import HOW, key_ready
+
+        ready, why = key_ready()
+        if not ready:
+            print(f"\n  BLOCKED: {why}\n")
+            print("\n".join("  " + line for line in HOW.splitlines()))
+            print("\n  Everything below needs that first.")
+
     if rep is None:
         print("\n  The gate has not run for this week yet. Start with:\n")
         print(f"      make check WEEK={week}\n")

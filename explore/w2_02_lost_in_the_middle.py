@@ -76,4 +76,7 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
+    from app.llm.keys import require_key
+
+    require_key()
     asyncio.run(main())
