@@ -557,11 +557,22 @@ code { font-size:.92em; }
 details { border-top:1px solid var(--line); padding:12px 0 2px; }
 details summary { cursor:pointer; font-weight:600; font-size:15px; }
 .mermaid { background:var(--white); text-align:center; }
-.quiz .q { border-top:1px solid var(--line); padding:12px 0; }
-.quiz .opt { display:block; padding:5px 0; cursor:pointer; font-size:14px; }
-.quiz .why { color:var(--muted); font-size:13px; margin:6px 0 0; display:none; }
-.quiz .q.answered .why { display:block; }
-.quiz .opt.right { color:var(--green); } .quiz .opt.wrong { color:var(--red); }
+.quiz .q { border-top:1px solid var(--line); padding:14px 0 10px; }
+.quiz .q:first-child { border-top:0; padding-top:4px; }
+.quiz .qt { font-weight:600; font-size:15px; margin:0 0 8px; }
+.quiz .stretch { font-size:11px; color:var(--indigo-dark); background:var(--indigo-soft);
+  border-radius:99px; padding:2px 8px; margin-left:8px; font-weight:500; }
+.quiz label.opt { display:flex; gap:9px; align-items:flex-start; padding:6px 9px; margin:2px -9px;
+  cursor:pointer; font-size:14px; border-radius:8px; }
+.quiz label.opt:hover { background:var(--paper); }
+.quiz label.opt.right { color:var(--green); background:var(--green-soft); }
+.quiz label.opt.wrong { color:var(--red); background:var(--red-soft); }
+.quiz .why { color:var(--muted); font-size:13px; margin:8px 0 0; padding-left:9px;
+  border-left:2px solid var(--line); }
+.quiz .why.ok { border-color:var(--green); } .quiz .why.no { border-color:var(--amber); }
+.quiz .qbar { display:flex; gap:9px; align-items:center; margin-top:16px;
+  border-top:1px solid var(--line); padding-top:14px; }
+.quiz .qbar .status { color:var(--muted); font-size:14px; }
 @media (max-width:600px) {
   h1 { font-size:25px; }
   .wk .h { display:none; }
@@ -583,9 +594,12 @@ JS = r"""
   }
 
   // ---- playground ------------------------------------------------------------------------
+  const cfg = window.HUB || {};
   const base = document.getElementById('pg-base');
   const st = document.getElementById('pg-status');
-  const cfg = window.HUB || {};
+  // Only one page has the playground. Everything below used to run regardless, throw on the
+  // first null, and take the rest of this function with it.
+  if (base) {
   try { base.value = localStorage.getItem('hub.base') || cfg.liveUrl || ''; } catch (e) { base.value = cfg.liveUrl || ''; }
   base.addEventListener('change', () => { try { localStorage.setItem('hub.base', base.value.trim()); } catch (e) {} });
   function url(p) { return base.value.trim().replace(/\/$/, '') + p; }
@@ -621,6 +635,7 @@ JS = r"""
   on('pg-ask', () => call('pg-ask-out', '/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: document.getElementById('pg-question').value }) }));
   on('pg-task', () => call('pg-task-out', '/tasks/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: document.getElementById('pg-tq').value, mode: document.getElementById('pg-mode').value, approved: document.getElementById('pg-approved').checked }) }));
   on('pg-traces', () => call('pg-traces-out', '/traces?limit=10'));
+  }
 
   // ---- diagrams --------------------------------------------------------------------------
   if (window.mermaid) {
@@ -710,7 +725,8 @@ JS = r"""
     const st = load(); st[w] = { score, done: answered === qs.length, at: Date.now() }; save(st);
     paintTotals(st);
   }
-  document.querySelectorAll('details.quiz').forEach(d => d.addEventListener('toggle', () => { if (d.open) build(d.dataset.week); }));
+  // The self-test sits in a card on the week page, so build every one present on load.
+  Object.keys(quiz).forEach(w => { if (document.getElementById('quiz-' + w)) build(w); });
   paintTotals(load());
 })();
 """
@@ -1033,7 +1049,7 @@ def page(title: str, body: str, cfg: dict[str, Any] | None = None) -> str:
     try {{ localStorage.setItem('hub.theme', dark ? 'light' : 'dark'); }} catch (e) {{}}
   }};
 </script>
-<script>const cfg = {config};</script>
+<script>window.HUB = {config};</script>
 <script>{JS}</script>
 </body></html>
 """
@@ -1042,8 +1058,10 @@ def page(title: str, body: str, cfg: dict[str, Any] | None = None) -> str:
 def quiz_html(w: Week) -> str:
     return (
         f'<div class="card quiz" id="quiz-{w.n}"></div>'
-        '<p class="fineprint">Scored in your browser only. It never reaches the repository, '
-        "your mentor or your route.</p>"
+        '<p class="fineprint">Answers are kept in this browser only, under <code>hub.quiz</code> '
+        "in local storage. They are never sent anywhere: not to the repository, not to the "
+        "progress export, not to your mentor, and they have no effect on your route. Clearing "
+        "your browser data clears them. The explanations are the point, not the score.</p>"
     )
 
 

@@ -34,13 +34,19 @@ yet; then go and read that part again. The explanations are the point, not the s
 - [ ] Context size does not matter — it cost ten times as much for the same answer
 > Why: an experiment that does not show the effect is still an experiment. Say what you tried, what you saw, and what you would try next (`--filler 200`). That is the reflex Week 3 turns into an evaluation.
 
-## Q6. `search()` is a numpy cosine scan over every chunk. When do you replace it, and what must stay the same?
-- [x] When the scan is slower than the model call it feeds (tens of thousands of chunks); the replacement must keep returning ranked `Hit`s so nothing above it changes
-- [ ] Immediately; a vector database is always faster — for a few hundred chunks it is slower and harder to reason about
-- [ ] Never; SQLite is enough — it is enough for this corpus, not for every corpus
-> Why: the interface is the investment. `Hit` with a score, ordered, is what `/ask` and the agent tools consume. Swap the engine, keep the contract.
+## Q6. Three stores sit behind one interface and all three return the same results on this corpus. What decided the default?
+- [ ] Speed — at this size they are indistinguishable, which is the honest answer and worth writing down
+- [x] Filtering: the version is a partition key in sqlite-vec, so the index is split by version and a v3 search never looks at v2 vectors
+- [ ] Popularity — nobody is hired for sqlite-vec; the reason has to be a property, not a name
+> Why: the interface is the investment, and the property that mattered was metadata filtering, not throughput. FAISS is absent from `docs/vector-stores.md` for exactly this reason: it is a fast index with no metadata, so the version constraint would need a second structure kept in step by hand.
 
-## Q7. Hybrid search with reciprocal rank fusion improved hit rate on 4 of 30 queries and hurt none. Should you ship it? (stretch: core/pro)
+## Q7. Your `applicable_versions("v3")` returns `{"v3"}`. The O1 test passes. What breaks?
+- [ ] Nothing; that is the requirement — the requirement is the floor, not the whole behaviour
+- [x] Every page that carries no version disappears, so version-independent questions come back empty and the desk sees a system that does not know its own manual
+- [ ] Version 2 material leaks back in — it cannot; that is the one thing the set does prevent
+> Why: a filter is defined as much by what it must keep as by what it must exclude. The pages stored under `ANY_VERSION` apply to every version, and dropping them is the quiet failure: no error, no leak, just a decline where there should have been an answer.
+
+## Q8. Hybrid search with reciprocal rank fusion improved hit rate on 4 of 30 queries and hurt none. Should you ship it? (stretch: core/pro)
 - [ ] Yes, any improvement is worth it — only if its cost is worth it: two searches per query, more code, more to explain
 - [x] Probably, if the latency and complexity cost is small; say the number that decided it either way
 - [ ] No, 4 of 30 is noise — it may be; that is why you state the number and the trade-off, not a verdict
