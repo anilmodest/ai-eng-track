@@ -10,6 +10,7 @@
 | `abstains_when_the_model_says_not_grounded` | `grounded: false` from the model becomes an abstention with no answer and no citations |
 | `unanswerable_question_is_declined` | a real-looking question the corpus cannot answer is declined |
 | `citation_numbers_outside_the_context_are_dropped` | with `k=1` only `[1]` survives |
+| `valid_citations_map_to_real_chunks` | every citation number resolves to a chunk that was actually retrieved |
 | `provider_failure_is_not_an_abstention` | a 400 from the provider is a `502 provider_error` |
 | `eval_gate_passes_on_ci_thresholds` | `scripts/eval.py --thresholds eval/thresholds-ci.json` exits 0 |
 | `eval_gate_blocks_when_a_threshold_is_not_met` | the same with `--min-hit 1.01` exits 1 and prints `GATE FAIL` |

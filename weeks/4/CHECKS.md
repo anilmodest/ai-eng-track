@@ -17,6 +17,10 @@ hash embedder, and the Week 3 evaluation gate.
 | `scopes_are_least_agency` | reader denied `extract_document`; unknown token denied |
 | `rate_limiter_is_a_sliding_window` | 3 per 10 s; a fourth is refused; the window slides; tokens are independent |
 | `mcp_server_denies_out_of_scope_calls` | in-process MCP: tools listed, search allowed, extract denied with the reason |
+| `the_version_lookup_reads_one_field_of_one_record` | `version_for('C-1001')` is the version and nothing else |
+| `a_customer_on_another_desk_is_refused` | output requirement O10: another account raises, and so does an unknown id |
+| `the_registry_offers_no_way_to_write_or_to_list` | the module exposes no setter, no bulk read: the scope is readable in one file |
+| `the_tool_returns_a_refusal_the_model_can_read` | the refusal comes back as text the model can act on, not an exception |
 
 `scripts/compare_week4.py` is evidence for the session, not a gate: its numbers depend on the
 provider and on your agent.

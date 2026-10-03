@@ -21,6 +21,11 @@
 | `select_and_compress_drops_unrelated_passages` | a passage far below the best score is dropped |
 | `select_and_compress_respects_the_budget` | total characters never exceed the budget |
 | `select_and_compress_trims_inside_a_passage` | sentences sharing no term with the question go |
+| `the_version_is_read_from_the_filename` | `manual-v3-retries.md` is v3; an unversioned name is None; an unknown version is None |
+| `similarity_alone_returns_the_wrong_version` | the control: with no filter, both versions of the same page come back for a v3 question |
+| `a_version_3_question_returns_no_version_2_material` | output requirement O1, over five questions |
+| `the_filter_runs_before_ranking_not_after` | a filtered search still returns k hits; filtering afterwards would return fewer |
+| `pages_with_no_version_are_returned_for_every_version` | a page carrying no version survives a version search |
 
 `scripts/retrieval_eval.py` and `scripts/degrade_repair.py` are **not** part of the gate: it is evidence for the session, and its
 numbers depend on the embedder you ran it with. Paste its table into your reflection.

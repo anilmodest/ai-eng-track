@@ -40,7 +40,8 @@ Interviewers ask two questions: how do you know it works, and what did it do for
 Evaluation is the answer to the first.
 
 - **A golden dataset**, typically 100 to 500 examples, built from real queries, with the
-  expected outcome for each. This repo ships 42; you grow it.
+  expected outcome for each. This repo ships 100; you add to it, and the rows you add are
+  the ones nobody thought of.
 - **Three to five task-specific metrics**, not generic ones. Here: abstention rate on
   unanswerable questions, answer rate on answerable ones, hit rate on the expected fact, and
   citation validity. Not "accuracy". Not "BLEU".

@@ -12,6 +12,9 @@ fakes, the evaluation gate and the attack gate.
 | `smoke_test_treats_the_kill_switch_as_intended` | a 503 `kill_switch` on extract is a pass, with no model call |
 | `deploy_workflow_supports_rollback_by_ref` | `workflow_dispatch` with a `ref`, the commit stamped into `build_info.py`, and the smoke test gating the publish |
 | `smoke_script_is_runnable_standalone` | `--help` works |
+| `smoke_test_skips_exercises_that_are_not_built_yet` | a typed 501 counts as skipped, so a week 1 fellow can still release |
+| `a_wrong_answer_still_fails_even_when_other_weeks_are_unbuilt` | skipping the unbuilt is not the same as passing the wrong |
+| `live_traffic_can_be_sampled_and_scored` | `scripts/sample_live.py` reads the last requests and scores them |
 
 The release, the break, the rollback and the write-up are not gates. They are the week, and they
 are what the Defence is about. The release workflow smoke-tests the candidate image before
