@@ -538,6 +538,11 @@ code { font-size:.92em; }
 
 .todo { background:var(--indigo-soft); border-color:transparent; }
 .todo2 p { margin:0 0 10px; font-size:14px; }
+.qa { border-top:1px solid var(--line); padding:14px 0; }
+.qa .q { font-weight:600; margin:0 0 6px; }
+.qa p { margin:0 0 4px; font-size:14.5px; }
+.qa .muted { font-size:12px; }
+.muted { color:var(--muted); font-size:13px; }
 .todo2 pre { margin:0 0 10px; }
 .arc h4 { margin:14px 0 4px; font-size:12px; letter-spacing:.07em; text-transform:uppercase;
   color:var(--muted); font-weight:600; }
@@ -840,6 +845,52 @@ WEEK_HEADLINE: dict[int, Any] = {
     5: _h_attacks,
 }
 
+# What the twelve requirements in weeks/0/REQUIREMENTS.md sound like when somebody asks about
+# them. Kept here rather than derived, because the question is the part that is not in the repo.
+INTERVIEW: list[tuple[str, str, int]] = [
+    (
+        "How would you move off this provider?",
+        "Edit one line of configuration. Nothing in the service names a provider, a model or an "
+        "SDK, and the tests run under two of them to prove it.",
+        1,
+    ),
+    (
+        "What stops it answering a question it should not?",
+        "Two gates. Nothing retrieved clears the relevance threshold, so it declines before the "
+        "model is called; and afterwards, the model has to say the passages support the answer.",
+        3,
+    ),
+    (
+        "How do you know a change made it better?",
+        "The evaluation runs on every proposed change and fails the change if the score drops. "
+        "I can show you a seeded bad change being blocked.",
+        3,
+    ),
+    (
+        "Did you use an agent?",
+        "I built the same task three ways and measured them. The agent cost more and was no more "
+        "accurate, so it did not ship. The comparison is in the repository.",
+        4,
+    ),
+    (
+        "What happens if a document tries to give your system instructions?",
+        "It was a working attack before the defence and is not now, and the test that proves it "
+        "runs in the gate.",
+        5,
+    ),
+    (
+        "What did it cost?",
+        "Per request and per step, recorded, with a cost-per-question view over time.",
+        5,
+    ),
+    (
+        "What did the feature do for the business?",
+        "Support questions deflected, at a cost per question. The one page says the number and "
+        "where it came from.",
+        6,
+    ),
+]
+
 # The thread between the weeks. A week folder is self-contained by design, so the repository
 # cannot say why week 4 follows week 3 -- the fellow is inside one week at a time. This page can.
 WEEK_ARC: dict[int, tuple[str, str]] = {
@@ -1106,9 +1157,9 @@ def page(title: str, body: str, cfg: dict[str, Any] | None = None) -> str:
 <div class="bar"><div class="wrap">
   <span class="mark">AI Engineering</span>
   <span class="sp"></span>
+  <a href="overview.html">Programme</a>
   <a href="index.html">Weeks</a>
   <a href="playground.html">Playground</a>
-  <a href="progress.csv">Export</a>
   <a class="btn primary code" href="https://codespaces.new/{REPO}?quickstart=1"
      title="Opens a ready workspace in the browser. Nothing to install.">Open Codespace</a>
   <button class="tog" id="theme" title="Light or dark">&#9680;</button>
@@ -1197,6 +1248,110 @@ def next_step(weeks: list[Week], repo: str) -> str:
         f"<pre>{esc(chr(10).join(cmds))}</pre>"
         f'<a class="btn primary" href="week-{current.n}.html">Open week {current.n}</a></div>'
     )
+
+
+def week_hours(n: int) -> str:
+    """Read the hours out of the week's own README, so this page cannot drift from it."""
+    readme = ROOT / "weeks" / str(n) / "README.md"
+    if not readme.exists():
+        return ""
+    text = readme.read_text(encoding="utf-8")
+    # The header carries the week's total. Week 0 states no total, so fall back to the section
+    # that does, rather than leaving a blank cell on a page people read front to back.
+    for scope in (text[:400], text):
+        m = re.search(r"[Aa]bout ([\d\u2013\u2014.-]+(?: to \d+)?) hours?", scope)
+        if m:
+            return m.group(1)
+    return ""
+
+
+def render_overview(weeks: list[Week], repo: str) -> str:
+    """What the whole thing is. True for everyone, every day: nothing here is per-fellow."""
+    rows = ""
+    for w in weeks:
+        leaves = WEEK_ARC.get(w.n, ("", ""))[0]
+        areas = ", ".join(AREAS[a] for a in WEEK_AREAS.get(w.n, []) if a in AREAS)
+        hours = week_hours(w.n)
+        rows += (
+            f"<tr><td><b>{w.n}</b></td><td>{esc(w.title)}<br>"
+            f'<span class="muted">{esc(areas)}</span></td>'
+            f"<td>{esc(leaves)}</td><td>{esc(hours)}</td></tr>"
+        )
+
+    skills = "".join(
+        f"<tr><td>{n}</td><td>{esc(name)}</td><td>Week "
+        f"{', '.join(str(w) for w, a in WEEK_AREAS.items() if n in a)}</td></tr>"
+        for n, name in AREAS.items()
+    )
+
+    qa = "".join(
+        f'<div class="qa"><p class="q">{esc(q)}</p><p>{esc(a)}</p>'
+        f'<p class="muted">built in week {n}</p></div>'
+        for q, a, n in INTERVIEW
+    )
+
+    body = f"""
+<p class="kicker">The programme</p>
+<h1>Six weeks, one service, numbers you measured yourself.</h1>
+<p class="lede">A software company supports versions 2 and 3 of its product. The two manuals are
+worded almost identically and differ in substance, so an answer from the wrong one is worse than
+no answer. You build the assistant that gets it right, shows where the answer came from, and says
+when it does not know. It is built in week 1 and improved every week after, until someone else can
+run it and you can defend every number in it.</p>
+
+<h2><span class="n">Weeks</span>what each one leaves behind</h2>
+<div class="tbl"><table>
+<thead><tr><th></th><th>Week</th><th>Leaves behind</th><th>Hours</th></tr></thead>
+<tbody>{rows}</tbody></table></div>
+<p class="fineprint">Four mentor sessions in all: discovery before week 1, direction at the end of
+week 1, observation at the end of week 3, and the defence at the end of week 6. Weeks 2, 4 and 5
+are self-directed, with a pull request every week either way.</p>
+
+<h2><span class="n">Skills</span>the eleven areas, and where each lands</h2>
+<div class="tbl"><table>
+<thead><tr><th></th><th>Area</th><th>Covered in</th></tr></thead>
+<tbody>{skills}</tbody></table></div>
+
+<h2><span class="n">After</span>what you can say, and show</h2>
+{qa}
+
+<h2><span class="n">Routes</span>same exercises, different scaffolding</h2>
+<div class="tbl"><table>
+<thead><tr><th>Route</th><th>What you are given</th><th>Who it is for</th></tr></thead>
+<tbody>
+<tr><td><b>start</b></td><td>Every helper working, and a fully worked example of a smaller
+version of each exercise</td><td>You can code, but have not built this kind of system</td></tr>
+<tr><td><b>core</b></td><td>A complete implementation with mistakes planted in it, and the
+measurement layer to build yourself</td><td>The expected route for most fellows</td></tr>
+<tr><td><b>pro</b></td><td>No helpers, and one extra constraint each week</td><td>You already
+ship production code</td></tr>
+</tbody></table></div>
+<p class="fineprint">The route is assigned from the discovery conversation, not chosen. Every
+route is calibrated to the same hours: a route that cost more would penalise the people it exists
+to help. It can be corrected once, at the second session, in writing.</p>
+
+<h2><span class="n">Scope</span>what this deliberately is not</h2>
+<div class="card"><p>No model training or fine-tuning. No multi-agent systems. No production
+latency or throughput guarantees. No authentication or multi-tenancy. No paid infrastructure of
+any kind.</p>
+<p>And one the programme expects but does not ship: the three-way comparison in week 4 exists to
+produce a decision, not a feature. The recommended outcome is that no agent goes into the finished
+system. Being able to say why, with your own numbers, is worth more than having built one.</p>
+</div>
+
+<h2><span class="n">More</span>if you want the detail</h2>
+<div class="links">
+  <a href="{_gh(repo, "weeks/0/BRIEF.md")}">The client's brief<span>what was asked for</span></a>
+  <a href="{_gh(repo, "weeks/0/REQUIREMENTS.md")}">The twelve requirements<span>what it must
+    do</span></a>
+  <a href="{_gh(repo, "RULES.md")}">Your role and the rules<span>including AI tools</span></a>
+  <a href="{_gh(repo, "docs/track.md")}">How the track works<span>routes, sessions,
+    gates</span></a>
+  <a href="index.html">Your weeks<span>where you are now</span></a>
+  <a href="progress.csv">Progress export<span>csv, for the platform</span></a>
+</div>
+"""
+    return page("The programme", body)
 
 
 def render_index(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
@@ -1409,11 +1564,15 @@ def main() -> int:
             page(f"Week {w.n} — {w.title}", render_week(w, weeks, repo), quiz_cfg([w])),
             encoding="utf-8",
         )
+    (out_dir / "overview.html").write_text(render_overview(weeks, repo), encoding="utf-8")
     (out_dir / "playground.html").write_text(page("Playground", PLAYGROUND), encoding="utf-8")
     write_export(export_rows(weeks, route, repo, hub), out_dir, hub)
 
     size = OUT.stat().st_size // 1024
-    print(f"wrote site/index.html ({size} KB), {len(weeks)} week pages, playground, progress.*")
+    print(
+        f"wrote site/index.html ({size} KB), overview, {len(weeks)} week pages, "
+        "playground, progress.*"
+    )
     return 0
 
 
