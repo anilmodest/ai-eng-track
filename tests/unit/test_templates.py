@@ -65,10 +65,12 @@ def test_no_marker_survives_and_the_right_text_does(templates: dict[str, Path]) 
             text = md.read_text(encoding="utf-8")
             assert "<!-- route:" not in text and "<!-- source-only" not in text, md
     week5 = {r: (templates[r] / "weeks/5/README.md").read_text(encoding="utf-8") for r in ROUTES}
-    assert "On start, tracing is given" in week5["start"]
-    assert "On start, tracing is given" not in week5["core"]
-    assert "On core, the guard is implemented" in week5["core"]
-    assert "On pro, both files" in week5["pro"] and "On core" not in week5["pro"]
+    given = "Tracing is given and working on your route"
+    stub = "On your route `app/trace.py` is signatures only"
+    assert given in week5["start"] and stub not in week5["start"]
+    assert stub in week5["core"] and given not in week5["core"]
+    assert stub in week5["pro"] and "worked_example.py" not in week5["pro"]
+    assert "worked_example.py" in week5["start"]
 
 
 def test_template_json_lists_route_dependent_files_per_week(templates: dict[str, Path]) -> None:
