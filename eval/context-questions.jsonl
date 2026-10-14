@@ -1,0 +1,20 @@
+{"id": "c01", "q": "What is the default connection timeout in Kestrel v3?", "version": "v3", "topic": "connection-timeout", "expect": "15 seconds"}
+{"id": "c02", "q": "Which setting controls the connection timeout in Kestrel v3?", "version": "v3", "topic": "connection-timeout", "expect": "KESTREL_CONNECT_TIMEOUT"}
+{"id": "c03", "q": "What is the highest connection timeout Kestrel v3 accepts?", "version": "v3", "topic": "connection-timeout", "expect": "120"}
+{"id": "c04", "q": "What is the default connection timeout in Kestrel v2?", "version": "v2", "topic": "connection-timeout", "expect": "30 seconds"}
+{"id": "c05", "q": "How do I authenticate API calls in Kestrel v3?", "version": "v3", "topic": "authentication", "expect": "bearer token"}
+{"id": "c06", "q": "How long does a Kestrel v3 access token last?", "version": "v3", "topic": "authentication", "expect": "3600 seconds"}
+{"id": "c07", "q": "Which header carries the API key in Kestrel v2?", "version": "v2", "topic": "authentication", "expect": "X-Kestrel-Key"}
+{"id": "c08", "q": "What error does Kestrel v3 return for the old key header?", "version": "v3", "topic": "authentication", "expect": "scheme_removed"}
+{"id": "c09", "q": "Which export formats does Kestrel v3 support?", "version": "v3", "topic": "export-format", "expect": "NDJSON"}
+{"id": "c10", "q": "Does a Kestrel v2 CSV export have a byte-order mark?", "version": "v2", "topic": "export-format", "expect": "with a byte-order mark"}
+{"id": "c11", "q": "Which fields does Kestrel v3 quote in a CSV export?", "version": "v3", "topic": "export-format", "expect": "every field"}
+{"id": "c12", "q": "How many days of logs does Kestrel v3 keep on disk by default?", "version": "v3", "topic": "log-retention", "expect": "7 days"}
+{"id": "c13", "q": "How many days of logs does Kestrel v2 keep by default?", "version": "v2", "topic": "log-retention", "expect": "14 days"}
+{"id": "c14", "q": "How long are uploaded logs kept in the export bucket in Kestrel v3?", "version": "v3", "topic": "log-retention", "expect": "365 days"}
+{"id": "c15", "q": "How many retries does Kestrel v3 make by default?", "version": "v3", "topic": "retries", "expect": "6"}
+{"id": "c16", "q": "How long does Kestrel v2 wait between retries?", "version": "v2", "topic": "retries", "expect": "5 seconds"}
+{"id": "c17", "q": "Does Kestrel v3 retry a rejected credential?", "version": "v3", "topic": "retries", "expect": "fails the run immediately"}
+{"id": "c18", "q": "How are schedules written in Kestrel v3?", "version": "v3", "topic": "scheduling", "expect": "ISO-8601"}
+{"id": "c19", "q": "What happens to an overlapping scheduled run in Kestrel v2?", "version": "v2", "topic": "scheduling", "expect": "skipped"}
+{"id": "c20", "q": "Are missed scheduled runs started when a Kestrel v3 runner comes back?", "version": "v3", "topic": "scheduling", "expect": "started once"}

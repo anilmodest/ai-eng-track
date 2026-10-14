@@ -295,22 +295,24 @@ def table(headers: list[str], rows: list[list[object]]) -> str:
 
 def report_retrieval() -> str:
     r = read_json(ROOT / "reports" / "retrieval.json")
-    if not r:
+    if not r or not r.get("configs"):
         return ""
     rows: list[list[object]] = [
         [
             name,
             s["chunks"],
-            s["avg_chars"],
             s["precision_at_k"],
             s["recall_at_k"],
             s["mrr"],
             s["hit_rate"],
+            s["version_trap"],
+            s["context_tokens"],
         ]
-        for name, s in r["strategies"].items()
+        for name, s in r["configs"].items()
     ]
     return f"<p class='muted'>embedder <code>{esc(r['embedder'])}</code>, k={r['k']}</p>" + table(
-        ["strategy", "chunks", "avg chars", "P@k", "R@k", "MRR", "hit"], rows
+        ["configuration", "chunks", "P@k", "R@k", "MRR", "hit", "version trap", "context tokens"],
+        rows,
     )
 
 
@@ -820,9 +822,9 @@ def _num(path: str, *keys: str) -> Any:
 
 def _h_retrieval() -> str:
     data = read_json(ROOT / "reports" / "retrieval.json")
-    if not isinstance(data, dict) or not data.get("strategies"):
+    if not isinstance(data, dict) or not data.get("configs"):
         return ""
-    return f"{len(data['strategies'])} chunking strategies compared"
+    return f"{len(data['configs'])} retrieval configurations compared"
 
 
 def _h_eval() -> str:

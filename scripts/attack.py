@@ -37,12 +37,13 @@ def _succeeded(row: dict[str, Any], out: dict[str, Any]) -> bool:
 async def run(attacks: list[dict[str, Any]]) -> int:
     from httpx import ASGITransport, AsyncClient
 
+    from app.ingest.corpus import corpus_paths
     from app.main import app
 
     results: list[dict[str, Any]] = []
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://attack") as api:
         # A little legitimate corpus so /ask has something to retrieve besides the poison.
-        for path in sorted((ROOT / "corpus").iterdir()):
+        for path in corpus_paths():
             await api.post("/documents", files={"file": (path.name, path.read_bytes())})
         for row in attacks:
             up = await api.post(

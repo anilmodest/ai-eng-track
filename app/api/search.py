@@ -9,7 +9,7 @@ from sqlmodel import Session
 from app.db.session import get_session
 from app.retrieval.chunkers import STRATEGIES
 from app.retrieval.embed import Embedder, get_embedder
-from app.retrieval.store import index_documents, search
+from app.retrieval.store import MODES, index_documents, search
 from app.settings import Settings, get_settings
 
 router = APIRouter()
@@ -61,7 +61,11 @@ def search_endpoint(
         str | None,
         Query(description="Restrict to one version of the manual, e.g. v3. Omit to search all."),
     ] = None,
+    mode: Annotated[str | None, Query(description="dense or hybrid; default SEARCH_MODE")] = None,
 ) -> list[HitOut]:
+    mode = mode or settings.search_mode
+    if mode not in MODES:
+        raise HTTPException(status_code=400, detail=f"unknown mode {mode!r}")
     hits = search(
         session,
         embedder,
@@ -69,5 +73,6 @@ def search_endpoint(
         k=k or settings.search_k,
         strategy=strategy or settings.chunk_strategy,
         version=version,
+        mode=mode,
     )
     return [HitOut(**h.__dict__) for h in hits]

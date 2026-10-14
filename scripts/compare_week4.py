@@ -23,12 +23,13 @@ TASKS = ROOT / "eval" / "tasks.jsonl"
 async def run(modes: list[str]) -> int:
     from httpx import ASGITransport, AsyncClient
 
+    from app.ingest.corpus import corpus_paths
     from app.main import app
 
     tasks = [json.loads(ln) for ln in TASKS.read_text(encoding="utf-8").splitlines() if ln.strip()]
     report: dict[str, Any] = {}
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://cmp") as api:
-        for path in sorted((ROOT / "corpus").iterdir()):
+        for path in corpus_paths():
             r = await api.post("/documents", files={"file": (path.name, path.read_bytes())})
             assert r.status_code == 201, r.text
         assert (await api.post("/index")).status_code == 200

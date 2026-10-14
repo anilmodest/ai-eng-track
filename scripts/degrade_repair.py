@@ -33,6 +33,7 @@ async def run(budget: int) -> int:
     from app.db.models import Document
     from app.db.session import get_engine
     from app.ingest import parse
+    from app.ingest.corpus import corpus_paths
     from app.llm.registry import get_model_client
     from app.retrieval.context import answer_from_context, select_and_compress
     from app.retrieval.embed import get_embedder
@@ -45,7 +46,7 @@ async def run(budget: int) -> int:
     queries = [json.loads(ln) for ln in QUERIES.read_text(encoding="utf-8").splitlines() if ln]
     report: dict[str, Any] = {}
     with Session(get_engine()) as session:
-        for path in sorted((ROOT / "corpus").iterdir()):
+        for path in corpus_paths():
             text = parse(path.name, path.read_bytes())
             session.add(
                 Document(

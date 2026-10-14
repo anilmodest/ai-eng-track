@@ -4,21 +4,33 @@ Runs with the lexical `hash` embedder: no model download, deterministic, and it 
 about meaning, which is exactly why the tests only ask it to find words it was given.
 """
 
+import json
+import os
+import subprocess
+import sys
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 from httpx import AsyncClient
+from sqlmodel import Session
 
+from app.db.session import get_engine
 from app.retrieval.chunkers import by_heading, by_paragraph, by_sentence, chunk, fixed
 from app.retrieval.context import select_and_compress
+from app.retrieval.hybrid import bm25_scores, reciprocal_rank_fusion
 from app.retrieval.metrics import evaluate, precision_at_k, recall_at_k, reciprocal_rank
 from app.retrieval.store import Hit
 from app.retrieval.versions import version_of
+from app.settings import get_settings
+from app.tools import TOOLS, ToolContext, call
+from app.tools.base import schema
 from tests.conftest import upload
 
 pytestmark = pytest.mark.week2
 
-CORPUS = Path(__file__).parent.parent.parent / "corpus"
+ROOT = Path(__file__).parent.parent.parent
+CORPUS = ROOT / "corpus"
 
 
 # ---- chunkers ------------------------------------------------------------------------------
@@ -91,7 +103,9 @@ def test_precision_uses_k_not_the_number_of_hits() -> None:
 
 
 async def _load_corpus(api: AsyncClient) -> None:
-    for path in sorted(CORPUS.iterdir()):
+    # The hand-written pages only: the tests name them, and a generated corpus would only make
+    # every test slower. The measurement scripts load the whole corpus.
+    for path in sorted(p for p in CORPUS.iterdir() if p.is_file()):
         r = await api.post("/documents", files={"file": (path.name, path.read_bytes())})
         assert r.status_code == 201, r.text
 
@@ -249,3 +263,166 @@ def test_select_and_compress_trims_inside_a_passage() -> None:
     out = select_and_compress("What is the mileage rate for a personal car?", hits, 1200)
     assert "45 pence per mile" in out[0]
     assert "Parking and tolls" not in out[0], "a sentence sharing no term with the question stayed"
+
+
+# ---- hybrid search: app/retrieval/hybrid.py --------------------------------------------------
+
+
+def test_bm25_scores_only_documents_that_share_a_query_term() -> None:
+    docs = [
+        "set KESTREL_CONNECT_TIMEOUT to 15 seconds",
+        "the timeout is fifteen seconds by default",
+        "retries back off exponentially",
+    ]
+    scores = bm25_scores("KESTREL_CONNECT_TIMEOUT", docs)
+    assert len(scores) == 3
+    assert scores[0] > 0 and scores[1] == 0 and scores[2] == 0
+    assert bm25_scores("nothing matches this", docs) == [0.0, 0.0, 0.0]
+
+
+def test_bm25_rare_terms_count_for_more() -> None:
+    """`timeout` is on every page; `e1104` on one. The page with the rare term must win."""
+    docs = ["timeout E1104 out of range", "timeout default", "timeout and retries", "timeout"]
+    scores = bm25_scores("timeout e1104", docs)
+    assert scores[0] == max(scores) and scores[0] > scores[1]
+
+
+def test_bm25_a_long_document_does_not_win_by_being_long() -> None:
+    short = "connection timeout default fifteen seconds"
+    long = short + " " + " ".join(f"filler{i}" for i in range(200))
+    scores = bm25_scores("connection timeout", [short, long])
+    assert scores[0] > scores[1] > 0
+
+
+def test_bm25_repeats_count_for_less_each_time() -> None:
+    once, four = "timeout setting", "timeout timeout timeout timeout setting"
+    scores = bm25_scores("timeout", [once, four, "retries"])
+    assert scores[1] > scores[0]
+    assert scores[1] < 4 * scores[0]
+
+
+def test_reciprocal_rank_fusion_merges_by_rank_not_score() -> None:
+    fused = reciprocal_rank_fusion([[1, 2, 3], [3, 1, 4]], k=60)
+    assert [i for i, _ in fused] == [1, 3, 2, 4]
+    assert fused[0][1] == pytest.approx(1 / 61 + 1 / 62)
+    assert fused[-1][1] == pytest.approx(1 / 63)
+    assert reciprocal_rank_fusion([]) == []
+
+
+async def test_hybrid_search_keeps_the_version_filter_and_k(api: AsyncClient) -> None:
+    await _load_corpus(api)
+    await api.post("/index", params={"strategy": "section"})
+    params: dict[str, str | int] = {
+        "k": 5,
+        "strategy": "section",
+        "version": "v3",
+        "mode": "hybrid",
+    }
+    for q in ("connection_timeout_seconds", "where is the connection timeout set", "E1104"):
+        hits = (await api.get("/search", params={**params, "q": q})).json()
+        assert len(hits) == 5, q
+        assert not [h for h in hits if h["version"] == "v2"], (q, hits)
+        assert len({h["chunk_id"] for h in hits}) == 5, "no chunk twice"
+
+
+async def test_hybrid_search_finds_an_exact_setting_name(api: AsyncClient) -> None:
+    await _load_corpus(api)
+    await api.post("/index", params={"strategy": "section"})
+    hits = (
+        await api.get(
+            "/search",
+            params={"q": "KESTREL_RETRY_POLICY", "k": 3, "strategy": "section", "mode": "hybrid"},
+        )
+    ).json()
+    assert "KESTREL_RETRY_POLICY" in hits[0]["text"]
+
+
+async def test_unknown_search_mode_is_400(api: AsyncClient) -> None:
+    r = await api.get("/search", params={"q": "timeout", "mode": "magic"})
+    assert r.status_code == 400
+
+
+def test_section_chunker_says_where_each_chunk_sits() -> None:
+    text = (CORPUS / "manual-v3-connection-timeout.md").read_text(encoding="utf-8")
+    chunks = chunk(text, "section")
+    assert chunks and all(c.startswith("Connection timeout (Kestrel v3)") for c in chunks)
+    assert any("> Limits" in c for c in chunks)
+    assert not any(c.startswith("---") or "product: Kestrel" in c for c in chunks)
+
+
+# ---- search_docs: the agent's second tool (app/tools/search.py) ------------------------------
+
+
+def test_search_docs_is_described_and_needs_a_version() -> None:
+    s = schema(TOOLS["search_docs"])
+    assert "TODO" not in s["description"] and len(s["description"].split()) >= 12
+    props = s["parameters"]["properties"]
+    assert set(props) == {"query", "version", "k"}
+    for name, prop in props.items():
+        assert len(str(prop.get("description", "")).split()) >= 4, f"describe {name}"
+    assert "version" in s["parameters"].get("required", []), "no version is the version trap"
+
+
+@pytest.fixture
+def search_ctx(env: None, monkeypatch: pytest.MonkeyPatch) -> Iterator[ToolContext]:
+    monkeypatch.setenv("CHUNK_STRATEGY", "section")
+    get_settings.cache_clear()
+    with Session(get_engine()) as session:
+        yield ToolContext(session=session, settings=get_settings())
+
+
+async def test_search_docs_refuses_malformed_calls_before_searching(
+    search_ctx: ToolContext,
+) -> None:
+    for args in (
+        {"query": "timeout", "version": "v4"},
+        {"query": "timeout"},
+        {"query": "", "version": "v3"},
+        {"query": "timeout", "version": "v3", "k": 500},
+        {"query": "timeout", "version": "v3", "k": 0},
+    ):
+        out = await call(search_ctx, "search_docs", args)
+        assert out.startswith("error:"), (args, out)
+    assert search_ctx.calls == []
+
+
+async def test_search_docs_returns_only_that_versions_pages_with_what_a_citation_needs(
+    api: AsyncClient, search_ctx: ToolContext
+) -> None:
+    await _load_corpus(api)
+    await api.post("/index", params={"strategy": "section"})
+    out = await call(
+        search_ctx, "search_docs", {"query": "default connection timeout", "version": "v3", "k": 3}
+    )
+    assert "manual-v3-connection-timeout.md" in out
+    assert "manual-v2-" not in out
+    assert "KESTREL_CONNECT_TIMEOUT" in out or "15 seconds" in out
+    nothing = await call(
+        search_ctx, "search_docs", {"query": "zebra crossing", "version": "v2", "k": 3}
+    )
+    assert not nothing.startswith("error"), nothing
+
+
+# ---- the context experiment ------------------------------------------------------------------
+
+
+def test_context_experiment_runs_and_the_wrong_version_costs_accuracy() -> None:
+    env = {**os.environ, "MODEL_PROVIDER": os.environ.get("MODEL_PROVIDER") or "fake_a"}
+    r = subprocess.run(
+        [sys.executable, "scripts/context_experiment.py", "--limit", "6"],
+        cwd=ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    assert r.returncode == 0, r.stdout + r.stderr
+    report = json.loads((ROOT / "reports" / "context.json").read_text())
+    settings = report["settings"]
+    assert set(settings) == {"none", "wrong_version", "right_version", "too_much", "buried"}
+    assert settings["right_version"]["accuracy"] > settings["wrong_version"]["accuracy"]
+    assert settings["none"]["decline_rate"] == 1.0
+    assert (
+        settings["buried"]["tokens_in_per_question"]
+        > settings["right_version"]["tokens_in_per_question"]
+    )

@@ -32,7 +32,8 @@ class Settings(BaseSettings):
     vector_store: str = "sqlite_vec"
     qdrant_url: str = ""  # empty = embedded, from data/qdrant. Set it to use a hosted instance.
     embed_provider: str = "hash"  # hash (lexical, CI) | fastembed (bge-small, CPU)
-    chunk_strategy: str = "sentence"  # fixed | sentence | paragraph | heading
+    chunk_strategy: str = "sentence"  # fixed | sentence | paragraph | heading | section
+    search_mode: str = "dense"  # dense | hybrid (week 2: choose it with a number)
     search_k: int = 5
     relevance_threshold: float = 0.30  # below this the system abstains (Week 3)
 

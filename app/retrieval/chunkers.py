@@ -70,11 +70,60 @@ def by_heading(text: str, max_chars: int = 1200) -> list[str]:
     return by_paragraph(text, max_chars=max_chars)
 
 
+_HEADING = re.compile(r"^(#{1,6})\s+(\S.*)$")
+
+
+def by_section(text: str, max_chars: int = 900, overlap: int = 1) -> list[str]:
+    """Section-aware with overlap. Given, as the third strategy to measure against your two.
+
+    Every chunk starts with where it sits, `Title > Section`, so a chunk about "Limits" still says
+    which page and which version it belongs to. Inside a section, paragraphs are packed up to
+    `max_chars`, and each chunk repeats the last `overlap` paragraphs of the one before it, so a
+    fact that spans a paragraph break is whole in at least one chunk. The cost is duplicated text
+    in the index and in the context.
+    """
+    title = ""
+    sections: list[tuple[str, list[str]]] = []
+    heading = ""
+    body: list[str] = []
+    text = re.sub(r"\A---\n.*?\n---\n", "", text.strip().replace("\r\n", "\n"), flags=re.S)
+    for line in text.splitlines():
+        m = _HEADING.match(line)
+        if m:
+            if len(m.group(1)) == 1 and not title:
+                title = m.group(2).strip()
+            if heading or body:
+                sections.append((heading, body))
+            heading, body = m.group(2).strip(), []
+        else:
+            body.append(line)
+    if heading or body:
+        sections.append((heading, body))
+
+    chunks: list[str] = []
+    for heading, lines in sections:
+        paras = [p.strip() for p in re.split(r"\n\s*\n", "\n".join(lines)) if p.strip()]
+        if not paras:
+            continue
+        where = title if heading == title else " > ".join(x for x in (title, heading) if x)
+        prefix = f"{where}\n" if where else ""
+        window: list[str] = []
+        for p in paras:
+            if window and len(prefix) + sum(len(w) + 2 for w in window) + len(p) > max_chars:
+                chunks.append(prefix + "\n\n".join(window))
+                window = window[-overlap:] if overlap else []
+            window.append(p)
+        if window:
+            chunks.append(prefix + "\n\n".join(window))
+    return chunks
+
+
 STRATEGIES: dict[str, Callable[[str], list[str]]] = {
     "fixed": fixed,
     "sentence": by_sentence,
     "paragraph": by_paragraph,
     "heading": by_heading,
+    "section": by_section,
 }
 
 

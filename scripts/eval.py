@@ -38,12 +38,13 @@ async def run(
 ) -> int:
     from httpx import ASGITransport, AsyncClient
 
+    from app.ingest.corpus import corpus_paths
     from app.main import app
     from app.settings import get_settings
 
     rows: list[dict[str, Any]] = []
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://eval") as api:
-        for path in sorted((ROOT / "corpus").iterdir()):
+        for path in corpus_paths():
             r = await api.post("/documents", files={"file": (path.name, path.read_bytes())})
             assert r.status_code == 201, r.text
         r = await api.post("/index")

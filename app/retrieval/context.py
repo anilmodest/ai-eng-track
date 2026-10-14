@@ -1,8 +1,10 @@
 """Context engineering: what the model sees on each call is a decision, not a side effect.
 
-answer_from_context is given: numbered passages in, a grounded answer out (no gates, no
-citations; those are Week 3's). select_and_compress is the Week 2 exercise: from too many
-retrieved passages, keep what this question needs and cut the rest, within a character budget.
+Both functions here are given. answer_from_context: numbered passages in, a grounded answer out
+(no gates, no citations; those are week 3's). select_and_compress: from too many retrieved
+passages, keep what this question needs and cut the rest, within a character budget. Read it:
+scripts/context_experiment.py measures what choosing the context does to the answers, and your
+week 2 decision includes how much context to send.
 """
 
 import re
@@ -61,14 +63,33 @@ def _terms(text: str) -> set[str]:
 def select_and_compress(question: str, hits: list[Hit], budget_chars: int) -> list[str]:
     """Keep what the question needs, drop the rest, stay within the budget.
 
-    Week 2 exercise. This placeholder is the *degraded* behaviour: it returns every retrieved
-    passage in full and ignores the budget. Build:
-      select    a relevance floor relative to the best score, and at least one shared term
-                (`_terms`) with the question
-      compress  inside a kept passage, keep the first sentence plus the sentences sharing a
-                term with the question (`_SENTENCE` splits them)
-      budget    never exceed `budget_chars` in total
-    scripts/degrade_repair.py shows what your version buys; tests/weeks/test_week2.py is the
-    contract.
+    Select: hits are already ranked; keep those whose score is within reach of the best (a
+    relevance floor) and that share at least one term with the question.
+    Compress: inside a kept passage, keep the sentences that share a term with the question,
+    plus the first sentence for context.
+    Budget: never return more than `budget_chars` in total; stop adding when the next passage
+    would cross it.
     """
-    return [h.text for h in hits]
+    if not hits:
+        return []
+    q = _terms(question)
+    floor = hits[0].score * 0.6
+    out: list[str] = []
+    used = 0
+    for h in hits:
+        if h.score < floor:
+            break
+        sentences = [s.strip() for s in _SENTENCE.split(h.text) if s.strip()]
+        if not sentences:
+            continue
+        kept = [sentences[0]] + [s for s in sentences[1:] if _terms(s) & q]
+        passage = " ".join(dict.fromkeys(kept))  # keep order, drop duplicates
+        if not (_terms(passage) & q):
+            continue
+        if used + len(passage) > budget_chars:
+            if not out:
+                out.append(passage[:budget_chars])
+            break
+        out.append(passage)
+        used += len(passage)
+    return out

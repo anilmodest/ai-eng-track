@@ -33,12 +33,13 @@ VERSION = "v3"
 async def run() -> dict[str, Any]:
     from httpx import ASGITransport, AsyncClient
 
+    from app.ingest.corpus import corpus_paths
     from app.main import app
     from app.retrieval.versions import ANY_VERSION
 
     rows: list[dict[str, Any]] = []
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://v") as api:
-        for path in sorted((ROOT / "corpus").iterdir()):
+        for path in corpus_paths():
             r = await api.post("/documents", files={"file": (path.name, path.read_bytes())})
             assert r.status_code == 201, r.text
         r = await api.post("/index", params={"strategy": "heading"})
