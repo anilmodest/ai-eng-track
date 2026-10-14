@@ -1,100 +1,47 @@
-"""Way 1: plain code. No model. Exact, instant, free, and it answers only the questions it was
-written for. Add a new kind of question and someone has to write more code.
+"""Way 1: plain code. No model. Exact, instant, free, and it answers only what it was written for.
 
-That trade-off is the whole point of comparing it with the other two.
+A handful of rules over the desk's own data: which version or plan a customer is on, where a
+ticket stands, and how many tickets match a status or a priority. Anything else returns None:
+someone would have to write more code. That trade is the point of comparing it with the other
+two ways, task type by task type.
 """
 
 import re
-from dataclasses import dataclass
 
-from sqlmodel import Session, select
+from sqlmodel import Session
 
-from app.db.models import Document
+from app.support import OutOfScope, customer, desk_tickets, ticket
 
-_TOTAL = re.compile(r"\*\*Total due:\*\*\s*([\d,]+\.\d{2})\s*([A-Z]{3})")
-_FROM = re.compile(r"\*\*From:\*\*\s*([^,\n]+)")
-_TO = re.compile(r"\*\*To:\*\*\s*([^,\n]+)")
-_DUE = re.compile(r"\*\*Due:\*\*\s*([^\n(]+)")
-_NUMBER = re.compile(r"^#\s*INVOICE\s+(\S+)", re.M)
-
-
-@dataclass(frozen=True)
-class Invoice:
-    number: str
-    supplier: str
-    customer: str
-    total: float
-    currency: str
-    due: str
-    document_id: int
-
-
-def invoices(session: Session) -> list[Invoice]:
-    out: list[Invoice] = []
-    for d in session.exec(select(Document)).all():
-        if not d.text.lstrip().startswith("# INVOICE"):
-            continue
-        total = _TOTAL.search(d.text)
-        num = _NUMBER.search(d.text)
-        if not total or not num or d.id is None:
-            continue
-        frm = _FROM.search(d.text)
-        to = _TO.search(d.text)
-        due = _DUE.search(d.text)
-        out.append(
-            Invoice(
-                number=num.group(1),
-                supplier=frm.group(1).strip() if frm else "?",
-                customer=to.group(1).strip() if to else "?",
-                total=float(total.group(1).replace(",", "")),
-                currency=total.group(2),
-                due=due.group(1).strip() if due else "?",
-                document_id=d.id,
-            )
-        )
-    return out
+_CUSTOMER = re.compile(r"\bC-\d{4}\b", re.I)
+_TICKET = re.compile(r"\bT-\d{4,}\b", re.I)
+_STATUS = ("open", "pending", "closed")
+_PRIORITY = ("urgent", "high", "normal", "low")
 
 
 def answer(session: Session, question: str) -> str | None:
-    """Keyword-routed. Returns None when the question is not one this code knows."""
+    """The answer, or None when this is not a question the rules know."""
     q = question.lower()
-    inv = invoices(session)
-    if not inv:
-        return None
-    if "how many invoices" in q:
-        who = _who(q, inv, "customer")
-        n = sum(1 for i in inv if who is None or who in i.customer.lower())
-        return f"{n} invoice(s)" + (f" addressed to {who.title()}" if who else "")
-    if "largest" in q or "biggest" in q or "highest" in q:
-        top = max(inv, key=lambda i: i.total)
-        return f"{top.number}: {top.total:,.2f} {top.currency} (from {top.supplier})"
-    if "total" in q and "gbp" in q:
-        gbp = sum(i.total for i in inv if i.currency == "GBP")
-        return f"{gbp:,.2f} GBP across {sum(1 for i in inv if i.currency == 'GBP')} invoice(s)"
-    if "due date" in q or "when is" in q:
-        who = _who(q, inv, "supplier")
-        for i in inv:
-            if who and who in i.supplier.lower():
-                return f"{i.number} is due {i.due}"
-        return None
-    if "total" in q or "how much" in q:
-        who = _who(q, inv, "supplier")
-        if who:
-            picked = [i for i in inv if who in i.supplier.lower()]
-            if picked:
-                by_cur: dict[str, float] = {}
-                for i in picked:
-                    by_cur[i.currency] = by_cur.get(i.currency, 0.0) + i.total
-                return (
-                    "; ".join(f"{v:,.2f} {c}" for c, v in by_cur.items()) + f" from {who.title()}"
-                )
-    return None
-
-
-def _who(q: str, inv: list[Invoice], field: str) -> str | None:
-    for i in inv:
-        name = str(getattr(i, field)).lower()
-        first = name.split()[0]
-        if first in q:
-            return first
+    c = _CUSTOMER.search(question)
+    t = _TICKET.search(question)
+    try:
+        if c and "version" in q:
+            row = customer(session, c.group(0).upper())
+            return f"{row.customer_id} runs {row.version}"
+        if c and "plan" in q:
+            row = customer(session, c.group(0).upper())
+            return f"{row.customer_id} is on the {row.plan} plan"
+        if t and ("status" in q or "still open" in q):
+            tk = ticket(session, t.group(0).upper())
+            return f"{tk.ticket_id} is {tk.status}"
+    except OutOfScope as e:
+        return f"refused: {e}"
+    if re.search(r"\bhow many\b", q) and "ticket" in q and not re.search(r"\bby\b|\bper\b", q):
+        rows = desk_tickets(session)
+        for s in _STATUS:
+            if re.search(rf"\b{s}\b", q):
+                rows = [r for r in rows if r.status == s]
+        for p in _PRIORITY:
+            if re.search(rf"\b{p}\b", q):
+                rows = [r for r in rows if r.priority == p]
+        return f"{len(rows)} tickets"
     return None

@@ -1,32 +1,49 @@
-"""Way 3: an agent. The model decides which tool to call next, reads the result, decides again.
+"""Week 4: the agent. The model decides which tool to call next, reads the result, decides again.
 
-Flexible: it can answer questions nobody wrote code for. Unpredictable: cost, latency and the
-path it takes vary per run, and a loop needs a wall (max steps), a checkpoint on money, and a
-way to recover from its own bad calls. Most cancelled agent projects were this, applied to a
-problem a workflow would have solved.
+Flexible: it can handle requests nobody wrote code for. Unpredictable: its cost, latency and path
+vary per run, so the loop needs walls. The exercise is in weeks/4/README.md; what must hold:
+
+    a step wall        at most settings.agent_max_steps model turns, then status "max_steps"
+    a cost ceiling     stop with status "over_budget" once the run's model cost passes
+                       settings.agent_cost_ceiling_usd
+    recovery           an unknown tool or invalid arguments come back from app.tools.call as an
+                       error the model reads; the loop goes on (it costs a step)
+    approval           app.tools.call raises NeedsApproval for an action no person approved: stop
+                       with status "needs_approval" and the pending action in `pending`
+    the numbers        a "finish" whose answer states a number no tool returned is sent back with
+                       app.agents.checks.why(...), not accepted (it costs a step)
+    the record         every step, tokens, cost and latency, whatever the ending
+
+The prompt is app/llm/prompts/agent_v1.md; the tools the model is shown are the ones in
+app.tools.tool_schemas(), plus "finish", which is not a tool: it ends the run.
 """
 
 import json
 import time
 from pathlib import Path
+from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-from app.agents.tools import ToolContext, tool_schemas
+from app.tools import ToolContext, tool_schemas
 
 PROMPT_VERSION = "agent_v1"
 _PROMPT = (Path(__file__).parent.parent / "llm" / "prompts" / f"{PROMPT_VERSION}.md").read_text()
-
-
-class ToolCall(BaseModel):
-    tool: str = Field(min_length=1)
-    args: dict[str, object] = Field(default_factory=dict)
+FINISH = {
+    "name": "finish",
+    "description": "End the run with your answer to the request.",
+    "parameters": {
+        "type": "object",
+        "properties": {"answer": {"type": "string", "description": "The answer, with figures."}},
+        "required": ["answer"],
+    },
+}
 
 
 class AgentStep(BaseModel):
     n: int
     tool: str
-    args: dict[str, object]
+    args: dict[str, Any]
     result: str
     tokens_in: int
     tokens_out: int
@@ -34,32 +51,30 @@ class AgentStep(BaseModel):
 
 class AgentResult(BaseModel):
     answer: str
-    status: str  # done | needs_approval | max_steps | provider_error
+    status: str  # done | needs_approval | max_steps | over_budget | provider_error
     steps: list[AgentStep]
+    pending: dict[str, Any] | None = None  # {"tool", "args"} when stopped for approval
     tokens_in: int
     tokens_out: int
     cost_usd: float
     latency_ms: int
 
 
-def _system_prompt() -> str:
-    tools = json.dumps(tool_schemas(), indent=1)
-    return f"{_PROMPT}\n\nTools:\n{tools}"
+def system_prompt(tools: list[str] | None = None) -> str:
+    """The prompt, then every tool the model may call, as JSON. Given."""
+    schemas = [*tool_schemas(tools), FINISH]
+    return f"{_PROMPT}\n\nTools:\n{json.dumps(schemas, indent=1)}"
 
 
-async def run_agent(ctx: ToolContext, question: str) -> AgentResult:
-    # TODO Week 4 (weeks/4/README.md). The loop:
-    #   transcript = [system prompt from _system_prompt(), user "Question: ..."]
-    #   for n in 1..ctx.settings.agent_max_steps:
-    #       call, responses = await complete_structured(ctx.client, transcript, ToolCall, ...)
-    #           (ModelError, ModelTimeout, SchemaError) -> status "provider_error", stop
-    #       add tokens and estimate_cost_usd(...) to the totals
-    #       if call.tool == "finish": run_tool(...) -> status "done", answer, stop
-    #       result = await run_tool(ctx, call.tool, call.args)
-    #           NeedsApproval -> status "needs_approval", stop
-    #       record an AgentStep; append the call and "Result of <tool>: ..." to the transcript
-    #   ran out of steps -> status "max_steps"
-    #   cost_usd = model cost + ctx.spent_usd (money the tools spent)
+async def run_agent(
+    ctx: ToolContext, question: str, *, tools: list[str] | None = None
+) -> AgentResult:
+    # TODO Week 4 (weeks/4/README.md): the loop, with every wall in the docstring above.
+    #   transcript = [system_prompt(tools), "Request: <question>"]
+    #   each turn: complete_structured(ctx.client, transcript, ToolCall, ...) -> {tool, args}
+    #   finish -> check the numbers against the results so far, then done
+    #   anything else -> app.tools.call(ctx, tool, args); NeedsApproval -> stop
+    #   append the call and "Result of <tool>: ..." to the transcript, and go round
     started = time.perf_counter()
     return AgentResult(
         answer="Week 4 exercise: implement run_agent",

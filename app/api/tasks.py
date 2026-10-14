@@ -1,7 +1,13 @@
-"""Week 4: POST /tasks/run. One question, three ways: plain code, a workflow, or an agent."""
+"""Week 4: POST /tasks/run. One request, three ways: plain code, a workflow, or an agent.
+
+`approve` is the human checkpoint: the names of the tools a person has approved for this run.
+Anything that writes or spends and is not in it stops the run with status "needs_approval" and
+the pending action in `pending`; nothing has happened yet. Run it again with the tool approved to
+let it through.
+"""
 
 import time
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
@@ -9,13 +15,13 @@ from sqlmodel import Session
 
 from app.agents import plain
 from app.agents.agent import AgentStep, run_agent
-from app.agents.tools import ToolContext
 from app.agents.workflow import run_workflow
 from app.db.session import get_session
 from app.llm.client import ModelClient
 from app.llm.registry import get_model_client
 from app.retrieval.embed import Embedder, get_embedder
 from app.settings import Settings, get_settings
+from app.tools import ToolContext
 
 router = APIRouter()
 
@@ -28,17 +34,18 @@ Mode = Literal["plain", "workflow", "agent"]
 
 
 class TaskIn(BaseModel):
-    question: str = Field(min_length=3, max_length=1000)
+    question: str = Field(min_length=3, max_length=2000)
     mode: Mode = "agent"
-    approved: bool = False  # the human checkpoint for tools that cost money
+    approve: list[str] = Field(default_factory=list, description="tools a person approved")
 
 
 class TaskOut(BaseModel):
     mode: Mode
     status: str
     answer: str
-    calls: list[str]
+    calls: list[str]  # the tools that actually ran
     steps: list[AgentStep] = []
+    pending: dict[str, Any] | None = None
     tokens_in: int = 0
     tokens_out: int = 0
     cost_usd: float = 0.0
@@ -55,16 +62,24 @@ async def run_task(
 ) -> TaskOut:
     started = time.perf_counter()
     ctx = ToolContext(
-        session=session, embedder=embedder, settings=settings, client=client, approved=body.approved
+        session=session,
+        settings=settings,
+        client=client,
+        embedder=embedder,
+        approved=set(body.approve),
     )
+
+    def ms() -> int:
+        return int((time.perf_counter() - started) * 1000)
+
     if body.mode == "plain":
         ans = plain.answer(session, body.question)
         return TaskOut(
             mode="plain",
             status="done" if ans else "unsupported",
-            answer=ans or "plain code has no rule for this question",
+            answer=ans or "plain code has no rule for this request",
             calls=[],
-            latency_ms=int((time.perf_counter() - started) * 1000),
+            latency_ms=ms(),
         )
     if body.mode == "workflow":
         w = await run_workflow(ctx, body.question)
@@ -73,16 +88,18 @@ async def run_task(
             status=w.status,
             answer=w.answer,
             calls=w.calls,
+            pending=w.pending,
             cost_usd=round(ctx.spent_usd, 6),
-            latency_ms=int((time.perf_counter() - started) * 1000),
+            latency_ms=ms(),
         )
     a = await run_agent(ctx, body.question)
     return TaskOut(
         mode="agent",
         status=a.status,
         answer=a.answer,
-        calls=ctx.calls,
+        calls=list(ctx.calls),
         steps=a.steps,
+        pending=a.pending,
         tokens_in=a.tokens_in,
         tokens_out=a.tokens_out,
         cost_usd=a.cost_usd,

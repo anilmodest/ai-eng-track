@@ -37,6 +37,7 @@ NEEDS_APPROVAL = {"escalate", "issue_credit"}
 class TrajectoryTask(BaseModel):
     id: str = Field(min_length=1)
     task: str = Field(min_length=10)
+    type: str = "other"  # lookup | analysis | action | docs: how week 4 groups the results
     expect_tools: list[str] = Field(min_length=1)
     expect_args: dict[str, dict[str, Any]] = Field(default_factory=dict)
     forbid_tools: list[str] = Field(default_factory=list)

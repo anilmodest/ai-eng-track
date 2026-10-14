@@ -112,3 +112,58 @@ def desk_tickets(session: Session, *, as_account: str | None = None) -> list[Tic
     desk = as_account or desk_account()
     mine = {c.customer_id for c in session.exec(select(Customer).where(Customer.account == desk))}
     return [t for t in session.exec(select(Ticket)).all() if t.customer_id in mine]
+
+
+# ---- What the desk does about a ticket (week 4) -----------------------------------------------
+# Three kinds of action, from harmless to costly. Drafting changes nothing a customer sees;
+# escalating hands the ticket to another team; a credit is money. The last two are written here
+# only after a person approved them: app/tools/base.py run_tool is the door, and it is locked.
+
+
+def _utcnow() -> datetime:
+    from datetime import UTC
+
+    return datetime.now(UTC)
+
+
+class Draft(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    ticket_id: str = Field(index=True)
+    body: str
+    created_at: datetime = Field(default_factory=_utcnow)
+
+
+class Escalation(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    ticket_id: str = Field(index=True)
+    team: str
+    reason: str
+    created_at: datetime = Field(default_factory=_utcnow)
+
+
+class Credit(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    ticket_id: str = Field(index=True)
+    amount_usd: float
+    reason: str
+    created_at: datetime = Field(default_factory=_utcnow)
+
+
+CREDIT_CAP_PER_TICKET_USD = 500.0
+
+
+def credited_so_far(session: Session, ticket_id: str) -> float:
+    """Credits on this ticket: those already in the ticket record and those issued here."""
+    row = session.get(Ticket, ticket_id)
+    issued = sum(
+        c.amount_usd for c in session.exec(select(Credit).where(Credit.ticket_id == ticket_id))
+    )
+    return (row.credits_issued_usd if row else 0.0) + issued
+
+
+def record(session: Session, row: Draft | Escalation | Credit) -> int:
+    session.add(row)
+    session.commit()
+    session.refresh(row)
+    assert row.id is not None
+    return row.id

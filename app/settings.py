@@ -39,6 +39,7 @@ class Settings(BaseSettings):
 
     # Week 4+: agents
     agent_max_steps: int = 8
+    agent_cost_ceiling_usd: float = 0.05  # one run stops once its model calls cost more
     require_approval_for_cost: bool = True  # tools that spend money need approved=true
 
     # Week 5+: guardrails

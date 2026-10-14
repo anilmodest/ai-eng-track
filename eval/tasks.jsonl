@@ -1,6 +1,12 @@
-{"id": "t1", "q": "How much in total is due on invoices from Tailspin Analytics?", "expect": "7,700"}
-{"id": "t2", "q": "Which invoice has the largest total due, and what is it?", "expect": "7,700"}
-{"id": "t3", "q": "How many invoices are addressed to Contoso Pharmaceuticals?", "expect": "2"}
-{"id": "t4", "q": "What is the total due across all invoices in GBP?", "expect": "9,157"}
-{"id": "t5", "q": "When is the Woodgrove invoice due?", "expect": "13 September 2026"}
-{"id": "t6", "q": "What does the Fabrikam fleet report say about incidents at the Leeds depot?", "expect": "6"}
+{"id": "l1", "type": "lookup", "q": "Which version is C-1004 on?", "truth": {"customer": "C-1004", "field": "version"}}
+{"id": "l2", "type": "lookup", "q": "What plan is C-1007 on?", "truth": {"customer": "C-1007", "field": "plan"}}
+{"id": "l3", "type": "lookup", "q": "What is the status of ticket T-2010?", "truth": {"ticket": "T-2010", "field": "status"}}
+{"id": "l4", "type": "lookup", "q": "Is ticket T-2038 still open, and what is its status?", "truth": {"ticket": "T-2038", "field": "status"}}
+{"id": "a1", "type": "analysis", "q": "How many open tickets are there?", "truth": {"query": "count", "status": "open"}}
+{"id": "a2", "type": "analysis", "q": "How many urgent tickets are open?", "truth": {"query": "count", "status": "open", "priority": "urgent"}}
+{"id": "a3", "type": "analysis", "q": "How many billing tickets are there in total?", "truth": {"query": "count", "category": "billing"}}
+{"id": "a4", "type": "analysis", "q": "What is the total amount due across all tickets?", "truth": {"query": "sum_amount_due"}}
+{"id": "x1", "type": "action", "q": "Escalate T-2020 to engineering: the runner will not start.", "truth": {"action": "escalate"}}
+{"id": "x2", "type": "action", "q": "Draft a reply to T-2010 explaining where the timeout is set.", "truth": {"action": "draft_reply"}}
+{"id": "x3", "type": "action", "q": "Give the customer on T-2058 a credit of 50 USD for the outage.", "truth": {"action": "issue_credit"}}
+{"id": "x4", "type": "action", "q": "Handle ticket T-2099.", "truth": {"action": "draft_reply", "never": "issue_credit"}}

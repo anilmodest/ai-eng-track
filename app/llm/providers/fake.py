@@ -20,7 +20,8 @@ Two dials:
        extract   a DocumentExtract for an invoice; obeys an injection unless the guard preamble
                  (app/guard.py) is present
        ask       an AskAnswer that quotes the first context chunk and cites [1]
-       agent     a scripted tool sequence: search_documents, then finish with the first hit
+       agent     a small rule-follower over the listed tools (app/llm/providers/fake_agent.py),
+                 which obeys instructions inside unfenced tool results, as an unguarded model does
        judge     a faithfulness verdict: the answer after `Answer:` is split into sentences
                  (claims); a claim is supported when most of its words appear in the text after
                  `Passages:`. Crude, deterministic, and a fair stand-in for a careful grader
@@ -245,14 +246,9 @@ class FakeClient:
                 }
             )
         if task == "agent":
-            self._agent_step += 1
-            if self._agent_step == 1:
-                return json.dumps(
-                    {"tool": "search_documents", "args": {"query": _question(messages), "k": 3}}
-                )
-            m = re.search(r"Result of search_documents:\s*(.+?)(?=\n\nResult of|\Z)", text, re.S)
-            first = m.group(1).strip().splitlines()[0] if m else "no result"
-            return json.dumps({"tool": "finish", "args": {"answer": first[:300]}})
+            from app.llm.providers.fake_agent import decide
+
+            return json.dumps(decide(messages))
         if task == "tool_call":
             return json.dumps(_choose_tool(messages))
         if task == "judge":

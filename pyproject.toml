@@ -42,6 +42,8 @@ packages = ["app"]
 # A real vector database, for the week 2 comparison and the optional hosted index in week 6.
 # Not installed by default: the service runs on sqlite-vec with nothing extra.
 qdrant = ["qdrant-client>=1.9"]
+# The week 4 rebuild of the agent as a graph: core on pro, stretch on start and core.
+langgraph = ["langgraph>=0.2"]
 
 [tool.ruff]
 line-length = 100
@@ -60,7 +62,7 @@ plugins = ["pydantic.mypy"]
 files = ["app", "scripts", "explore", "tests"]
 
 [[tool.mypy.overrides]]
-module = ["arq.*", "pypdf.*", "fastembed.*", "mcp.*", "markdown_it.*", "sqlite_vec.*", "qdrant_client.*", "yaml.*"]
+module = ["arq.*", "pypdf.*", "fastembed.*", "mcp.*", "markdown_it.*", "sqlite_vec.*", "qdrant_client.*", "yaml.*", "langgraph.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

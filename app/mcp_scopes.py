@@ -1,9 +1,16 @@
-"""Who may call which tool, how often. The permission boundary for an exposed internal system.
+"""Who may call which tool, how often. The permission boundary for the tools you serve over MCP.
 
 Tokens and their scopes come from MCP_TOKENS, e.g.
-    MCP_TOKENS="reader:search_documents,get_document;analyst:search_documents,get_document,extract_document"
+    MCP_TOKENS="reader:get_customer,get_ticket;supervisor:get_customer,get_ticket,escalate"
 
-Least agency: a token gets the minimum set of tools its job needs. A reader cannot spend money.
+Least agency: a token gets the smallest set of tools its job needs. The defaults:
+
+    reader       looks things up and analyses: nothing it calls changes anything
+    agent        a reader that may also draft a reply, which a person still sends
+    supervisor   may also escalate and issue credits, and those still need a person's approval
+                 for each run (MCP_APPROVED); the scope says who may ask, approval says yes
+
+A scope is not approval, and approval is not a scope. Both are checked, in code, on every call.
 """
 
 import os
@@ -11,9 +18,9 @@ import time
 from collections import deque
 from dataclasses import dataclass, field
 
+READ = "get_customer,get_ticket,search_docs,query_tickets"
 DEFAULT_TOKENS = (
-    "reader:list_documents,search_documents,get_document;"
-    "analyst:list_documents,search_documents,get_document,extract_document"
+    f"reader:{READ};agent:{READ},draft_reply;supervisor:{READ},draft_reply,escalate,issue_credit"
 )
 
 
@@ -44,6 +51,11 @@ def check_scope(token: str, tool: str, tokens: dict[str, frozenset[str]] | None 
         raise ScopeError("unknown token")
     if tool not in allowed:
         raise ScopeError(f"token {token!r} may not call {tool}; allowed: {sorted(allowed)}")
+
+
+def approved_tools() -> set[str]:
+    """MCP_APPROVED="escalate": the actions a person has approved for this server's run."""
+    return {t.strip() for t in os.environ.get("MCP_APPROVED", "").split(",") if t.strip()}
 
 
 @dataclass

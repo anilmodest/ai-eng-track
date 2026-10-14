@@ -1,79 +1,99 @@
-"""Expose the document service to any MCP client (Claude Desktop, an IDE, another agent).
+"""Serve the desk's tools to any MCP client (Claude Desktop, an IDE, another agent).
 
     MCP_TOKEN=reader uv run python -m app.mcp_server        # stdio transport
 
-Model Context Protocol is not a REST API: the client discovers tools and their schemas at
-connect time, calls them by name, and gets text back. What it is NOT is a permission system.
-Every call here passes through check_scope and a rate limiter before it touches anything.
+The Model Context Protocol is a transport, not a permission system. A client discovers the tools
+and their schemas when it connects, calls them by name, and gets text back. Nothing in the
+protocol stops a reader from calling issue_credit; this file does. Every call passes, in order:
+
+    1. the token's scope    app/mcp_scopes.py: a reader cannot write, an agent cannot spend
+    2. a rate limit         per token
+    3. the tool's own door  app.tools.call: arguments validated, and an action that writes or
+                            spends runs only if a person approved it (MCP_APPROVED)
+
+and whatever happens, the answer is text: "denied: ...", "needs approval: ...", or the result.
 """
 
+import inspect
 import os
 from typing import Any
 
+from pydantic import BaseModel
 from sqlmodel import Session
 
-from app.agents.tools import ToolContext, run_tool
 from app.db.session import get_engine
 from app.llm.registry import get_model_client
-from app.mcp_scopes import RateLimiter, ScopeError, check_scope
+from app.mcp_scopes import RateLimiter, ScopeError, approved_tools, check_scope
 from app.retrieval.embed import get_embedder
 from app.settings import get_settings
+from app.tools import TOOLS, NeedsApproval, ToolContext
+from app.tools import call as call_registered
 
 TOKEN = os.environ.get("MCP_TOKEN", "reader")
 _limiter = RateLimiter(max_calls=int(os.environ.get("MCP_RATE_LIMIT", "30")), window_s=60)
 
 
-async def _guarded(tool: str, args: dict[str, Any]) -> str:
+async def call_tool(token: str, tool: str, args: dict[str, Any]) -> str:
+    """One MCP call, through every check, as text. What the server's handlers all call."""
+    if tool not in TOOLS:
+        return f"error: unknown tool {tool!r}"
     try:
-        check_scope(TOKEN, tool)
-        _limiter.check(TOKEN)
+        check_scope(token, tool)
+        _limiter.check(token)
     except ScopeError as e:
         return f"denied: {e}"
     with Session(get_engine()) as session:
         ctx = ToolContext(
             session=session,
-            embedder=get_embedder(),
             settings=get_settings(),
             client=get_model_client(),
-            approved=os.environ.get("MCP_APPROVED", "false").lower() == "true",
+            embedder=get_embedder(),
+            approved=approved_tools(),
         )
         try:
-            return await run_tool(ctx, tool, args)
+            return await call_registered(ctx, tool, args)
+        except NeedsApproval as e:
+            return f"needs approval: {e}"
         except Exception as e:  # a tool failing mid-call must not take the server down
             return f"error: {tool} failed: {e}"
 
 
 def build_server() -> Any:
+    """An MCP server with one handler per tool in the registry, schema and description included."""
     from mcp.server.mcpserver import MCPServer  # mcp 2.x; was mcp.server.fastmcp.FastMCP in 1.x
 
-    mcp = MCPServer("ai-eng-track")
+    server = MCPServer("ai-eng-track")
+    for spec in TOOLS.values():
+        server.add_tool(
+            _handler(spec.name, spec.args), name=spec.name, description=spec.description
+        )
+    return server
 
-    @mcp.tool()
-    async def list_documents() -> str:
-        """List every document id and filename."""
-        return await _guarded("list_documents", {})
 
-    @mcp.tool()
-    async def search_documents(query: str, k: int = 3) -> str:
-        """Semantic search over document chunks."""
-        return await _guarded("search_documents", {"query": query, "k": k})
+def _handler(name: str, args_model: type[BaseModel]) -> Any:
+    """A function whose signature is the tool's arguments, so the client sees the real schema.
+    Validation still happens in app.tools.call: the signature is for discovery, not for trust."""
 
-    @mcp.tool()
-    async def get_document(document_id: int) -> str:
-        """Full text of one document."""
-        return await _guarded("get_document", {"document_id": document_id})
+    async def handler(**kwargs: Any) -> str:
+        return await call_tool(TOKEN, name, {k: v for k, v in kwargs.items() if v is not None})
 
-    @mcp.tool()
-    async def extract_document(document_id: int) -> str:
-        """Structured facts for one document. Costs money; needs the analyst scope."""
-        return await _guarded("extract_document", {"document_id": document_id})
-
-    return mcp
+    params = [
+        inspect.Parameter(
+            field,
+            inspect.Parameter.KEYWORD_ONLY,
+            annotation=info.annotation,
+            default=inspect.Parameter.empty if info.is_required() else info.default,
+        )
+        for field, info in args_model.model_fields.items()
+    ]
+    handler.__name__ = name
+    handler.__signature__ = inspect.Signature(params, return_annotation=str)  # type: ignore[attr-defined]
+    handler.__annotations__ = {p.name: p.annotation for p in params} | {"return": str}
+    return handler
 
 
 def main() -> None:
-    server = build_server()
-    server.run(transport="stdio")
+    build_server().run(transport="stdio")
 
 
 if __name__ == "__main__":
