@@ -1,8 +1,11 @@
-# Production image for the service. Used by the Week 0 exercise and by the Hugging Face Space.
+# Production image for the service: week 0, the release workflow, and the programme's hidden
+# evaluation, which builds it from your repository and runs it with no internet.
 FROM python:3.12-slim
 
-# Links the published package to this repository, so whoever finds the image finds the source.
-LABEL org.opencontainers.image.source="https://github.com/anilmodest/ai-eng-track"
+# Links the published package to your repository, so whoever finds the image finds the source.
+# The release workflow passes it; nothing here names an owner.
+ARG SOURCE=""
+LABEL org.opencontainers.image.source=$SOURCE
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # Spaces run containers as uid 1000; so does this image everywhere, so behaviour matches.
@@ -11,6 +14,8 @@ WORKDIR /srv
 COPY --chown=app pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 COPY --chown=app app ./app
+# The desk's customers and tickets, loaded into the database at start (app/support.py).
+COPY --chown=app support ./support
 RUN mkdir -p /srv/data && chown -R app /srv
 USER app
 
