@@ -64,7 +64,8 @@ jobs:
 
       - name: Build the image
         run: |
-          docker build --build-arg SOURCE="https://github.com/${{ github.repository }}"             -t "${{ steps.v.outputs.image }}:${{ steps.v.outputs.sha }}" .
+          docker build --build-arg SOURCE="https://github.com/${{ github.repository }}" \
+            -t "${{ steps.v.outputs.image }}:${{ steps.v.outputs.sha }}" .
 
       - uses: astral-sh/setup-uv@v5
         with:
