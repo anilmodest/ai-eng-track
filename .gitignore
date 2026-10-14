@@ -10,6 +10,7 @@ reports/*.json
 build/
 site/*.html
 site/prs.json
+site/hidden.json
 site/preview.png
 site/progress.csv
 site/progress.json

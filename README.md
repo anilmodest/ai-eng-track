@@ -27,6 +27,7 @@ terminal, you are ready.
 | `make run` | Start the API on port 8000 (docs at `/docs`) |
 | `make check WEEK=1` | This week's gate: lint, types, tests, once per fake provider. Writes `reports/week-1.json` |
 | `make live-check` | Call the real provider from `.env` with the sample documents |
+| `make hub` | Your hub page built from what is on your screen right now, at port 8001: every week's checks, measurements, pull requests and hidden-evaluation totals |
 | `make fmt` | Format and auto-fix lint |
 
 Per-week measurement scripts (evidence for the session, not gates unless the week says so):
@@ -92,8 +93,9 @@ scripts/    check.py, live_check.py, next_step.py, and one measurement script pe
 
 ## Your hub page
 
-Every push rebuilds a page at `https://<your-user>.github.io/<your-repo>` from what is in the
-repo. It is the one place to start from:
+Every merge to `main`, every push to an open pull request, and every hidden-evaluation result
+rebuilds a page at `https://<your-user>.github.io/<your-repo>` from what is in the repo. `make hub`
+builds the same page from your working copy, without pushing. It is the one place to start from:
 
 - **The front page** answers one question: where are you and what is next. One line per week:
   status, one sentence of evidence, and a link.

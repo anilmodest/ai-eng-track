@@ -4,7 +4,7 @@ ROUTE ?=
 # uv may live in ~/.local/bin (pip --user) before the shell's PATH knows it; find it anyway.
 UV ?= $(shell command -v uv 2>/dev/null || (test -x $(HOME)/.local/bin/uv && echo $(HOME)/.local/bin/uv) || echo uv)
 
-.PHONY: setup next check test lint types run worker live-check fmt
+.PHONY: setup next check test lint types run worker live-check fmt hub
 
 setup:            ## Install everything (Codespaces runs this for you)
 	$(UV) sync
@@ -37,6 +37,12 @@ worker:           ## Start the Redis job worker (needs REDIS_URL)
 
 live-check:       ## Hit the real provider from .env with the sample documents
 	$(UV) run python scripts/live_check.py
+
+hub:              ## Your hub page from this checkout, now: http://localhost:8001 (Codespaces opens it)
+	$(UV) run python scripts/hub_data.py
+	for w in $$(ls weeks); do $(UV) run python scripts/check.py --week $$w --skip-static >/dev/null 2>&1 || true; done
+	$(UV) run python scripts/build_pages.py
+	$(UV) run python -m http.server 8001 --directory site
 
 # source-only:begin
 # Programme team only; never in a fellow's repository.

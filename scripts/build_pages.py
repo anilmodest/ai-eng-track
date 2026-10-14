@@ -32,7 +32,20 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "site" / "index.html"
 _ROUTE_FILE = ROOT / ".route"
 ROUTE = _ROUTE_FILE.read_text().strip() if _ROUTE_FILE.exists() else "start"
-REPO = os.environ.get("GITHUB_REPOSITORY", "anilmodest/ai-eng-track")
+
+
+def _repo_from_git() -> str:
+    """owner/name of this checkout's origin, so no owner is ever written into the code."""
+    import subprocess
+
+    r = subprocess.run(
+        ["git", "remote", "get-url", "origin"], cwd=ROOT, capture_output=True, text=True
+    )
+    m = re.search(r"github\.com[:/]([^/]+/[^/.\s]+?)(?:\.git)?\s*$", r.stdout)
+    return m.group(1) if m else "your-user/your-repo"
+
+
+REPO = os.environ.get("GITHUB_REPOSITORY", "").strip() or _repo_from_git()
 MD = MarkdownIt("commonmark", {"html": True}).enable("table")
 
 WEEK_AREAS: dict[int, list[int]] = {
@@ -203,6 +216,7 @@ class Week:
     checks_html: str = ""
     quiz: list[Question] = field(default_factory=list)
     has_reflection: bool = False
+    hidden: dict[str, Any] | None = None
 
     @property
     def merged(self) -> bool:
@@ -263,8 +277,10 @@ def load_weeks() -> list[Week]:
         w.quiz = parse_quiz(readme.parent / "QUIZ.md")
         weeks.append(w)
     prs = read_json(ROOT / "site" / "prs.json") or {}
+    hidden = read_json(ROOT / "site" / "hidden.json") or {}
     for w in weeks:
         w.pr = prs.get(str(w.n))
+        w.hidden = hidden.get(str(w.n))
     return weeks
 
 
@@ -997,6 +1013,41 @@ def checks_card(w: "Week") -> str:
     )
 
 
+HIDDEN_FROM_WEEK = 2
+
+
+def hidden_totals(summary: str) -> list[tuple[str, str]]:
+    """`answer_accuracy=0.71 n=150` -> [("answer accuracy", "0.71"), ("n", "150")]."""
+    pairs = re.findall(r"([a-z_]+)=(\S+)", summary)
+    return [(k.replace("_", " "), v) for k, v in pairs]
+
+
+def hidden_card(w: "Week") -> str:
+    """The programme's score on questions you never see. Totals only, by design."""
+    if w.n < HIDDEN_FROM_WEEK:
+        return ""
+    if not w.hidden:
+        return (
+            '<div class="card" id="hidden"><h3 style="margin:0 0 6px">Hidden evaluation</h3>'
+            '<p class="fineprint" style="margin:0">Not run on this week yet. From week '
+            f"{HIDDEN_FROM_WEEK}, the programme runs it on every pull request (the "
+            "<code>hidden-eval</code> check) and the totals appear here.</p></div>"
+        )
+    conclusion = str(w.hidden.get("conclusion") or "")
+    cls = {"success": "green", "failure": "red"}.get(conclusion, "amber")
+    rows = hidden_totals(str(w.hidden.get("summary", "")))
+    body = table(["", "hidden set"], [[k, v] for k, v in rows]) if rows else ""
+    sha = str(w.hidden.get("sha", ""))[:7]
+    return (
+        '<div class="card" id="hidden"><h3 style="margin:0 0 6px">Hidden evaluation</h3>'
+        f'<p class="sum"><span class="pill {cls}">{esc(conclusion or "pending")}</span> '
+        f"<span>on commit <code>{esc(sha)}</code></span></p>{body}"
+        '<p class="fineprint">Questions you never see, on the programme\'s reference model. If it '
+        "is well below your own set, your questions are easier than real users': that gap is the "
+        "finding, not something to chase.</p></div>"
+    )
+
+
 def week_row(w: "Week", current: bool) -> str:
     return (
         f'<a class="wk{" current" if current else ""}" href="week-{w.n}.html">'
@@ -1030,6 +1081,7 @@ def render_week(w: "Week", weeks: list["Week"], repo: str) -> str:
             f"<pre>make check WEEK={w.n}</pre></div>"
         )
     parts.append(checks_card(w))
+    parts.append(hidden_card(w))
 
     if w.pr:
         state = str(w.pr.get("state", "")).lower()
