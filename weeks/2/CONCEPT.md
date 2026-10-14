@@ -1,7 +1,7 @@
 # Week 2 — Concept
 
-> **The context window is an attention budget, not a storage limit. Retrieval decides what
-> spends it, and retrieval is where most candidates lose the offer.**
+> **The same model gives a different answer when you give it different context. Choosing the
+> context is the job, and retrieval is how you choose it.**
 
 Read this once (about 20 minutes). Write the sentence in your own words in `reflections/week-2.md`,
 Q1, before you touch code.
@@ -46,8 +46,12 @@ question, hand those to the model. Every choice in that sentence is a measurable
 - **Embeddings and the store.** Chosen with a stated reason, not a default. This repo starts with
   a lexical embedder (`hash`) so you can see the mechanics, and a real one (`fastembed`) so you can
   see the difference.
-- **Hybrid search and reranking.** Lexical and semantic search fail differently; combining them
-  and re-scoring the top few usually beats either alone. That is a Core/Pro exercise here.
+- **Hybrid search.** Keyword search (BM25) and meaning search fail on different questions.
+  Meaning search finds "how long does it wait for the source" when the page says "connection
+  timeout"; it misses `E1104` and `KESTREL_CONNECT_TIMEOUT`, which carry little meaning and must
+  match exactly, and a support desk is full of them. Keyword search is the opposite. Reciprocal
+  rank fusion merges the two lists by rank, because their scores are on different scales. You
+  build both halves this week and measure what fusing them buys.
 - **Evaluating retrieval separately from generation.** If the right chunk was never retrieved, the
   best model in the world cannot answer. So measure retrieval on its own, with its own metrics:
   precision at k, recall at k, mean reciprocal rank, and whether the context was relevant at all.
@@ -84,20 +88,42 @@ flowchart LR
 ```
 
 
+## The same model, different context
+
+The cleanest way to see this week's sentence is to hold everything still except the context.
+`scripts/context_experiment.py` asks the same twenty questions of the same model with the same
+prompt, five times each: with no passages, with the wrong version's page, with the right page,
+with the right page and forty irrelevant ones, and with the right page buried in the middle of
+eighty. On the right page the answers are mostly right. On the wrong version's page they are
+confidently wrong, and they cite it. With too much, they cost ten times as much, and on smaller
+models they start to slip. **The model did not change. The answers did.** Your decision on how
+much context to send is read off that table.
+
+## Retrieval as a tool
+
+From this week retrieval is not only an endpoint: it is `search_docs`, the agent's second tool,
+called with the version `get_customer` returned. The tool's schema makes the version required,
+so the model cannot leave it out and fall back into the version trap. That is the pattern every
+later week repeats: the boundary lives in the schema and the code, not in the prompt.
+
 ## What this looks like in the service
 
 | Idea | Where it lives | What you do this week |
 | --- | --- | --- |
-| Chunking | `app/retrieval/chunkers.py` | Compare four strategies with numbers; build the heading-aware one |
+| Chunking | `app/retrieval/chunkers.py` | Build the heading-aware one; measure it against paragraph and section-aware |
+| Hybrid search | `app/retrieval/hybrid.py`, `SEARCH_MODE` | Build BM25 and reciprocal rank fusion; measure dense against hybrid |
 | Embedding | `app/retrieval/embed.py` | Switch `EMBED_PROVIDER` and see what changes |
 | Store and search | `app/retrieval/store.py`, `/index`, `/search` | Read it; it is the interface a vector database would sit behind |
 | Metrics | `app/retrieval/metrics.py` | Build precision@k, recall@k, MRR, hit rate |
 | Attention budget | `explore/w2_02_lost_in_the_middle.py` | Bury one fact, watch cost and accuracy move |
-| Select, compress, budget | `app/retrieval/context.py`, `scripts/degrade_repair.py` | Degrade a working pipeline by stuffing it, then repair it by removing |
+| The context itself | `app/retrieval/context.py`, `scripts/context_experiment.py` | Same model, five contexts: measure what the context alone does |
+| Retrieval as a tool | `app/tools/search.py` | Design `search_docs`, version required |
 
 ## What you should be able to say by Friday
 
-- Which chunking strategy you chose for this corpus, and the number that decided it.
+- Which of your six configurations you chose, with which k, and the numbers that decided it.
+- What hybrid search fixed that meaning search alone missed, with an example question.
+- How much the answers moved in the context experiment when only the context changed.
 - Why recall@k and precision@k can move in opposite directions when you change chunk size.
 - What lost-in-the-middle is, and whether you saw it at the context sizes you tried.
 - Why measuring retrieval separately from the answer is the only way to know where a wrong
@@ -110,6 +136,7 @@ Checked September 2026.
 - [Lost in the Middle: How Language Models Use Long Contexts](https://arxiv.org/abs/2307.03172) (Liu et al., 2023) — the paper that named the failure. Read the figures; then re-run `explore/w2_02_lost_in_the_middle.py` with `--filler 200`.
 - [Anthropic: Effective context engineering for AI agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents) — select, compress, isolate, as a discipline rather than a trick.
 - [Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks](https://arxiv.org/abs/2005.11401) (Lewis et al., 2020) — where the term RAG comes from; the architecture is what `/search` plus Week 3's `/ask` reproduce in miniature.
+- [Okapi BM25 (Wikipedia)](https://en.wikipedia.org/wiki/Okapi_BM25) — the formula in `hybrid.py`, with what each of k1 and b does.
 - [Pinecone: Chunking strategies](https://www.pinecone.io/learn/chunking-strategies/) — a practical survey of the choices in `chunkers.py` and a few this repo leaves to you.
-- [Reciprocal Rank Fusion](https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf) (Cormack et al., 2009) — two pages; the hybrid-search method the `core` route uses.
+- [Reciprocal Rank Fusion](https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf) (Cormack et al., 2009) — two pages; the fusion method you build this week.
 - [BAAI/bge-small-en-v1.5](https://huggingface.co/BAAI/bge-small-en-v1.5) — the embedding model behind `EMBED_PROVIDER=fastembed`: what it was trained on, and what its similarity scores mean.

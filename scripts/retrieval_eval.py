@@ -9,11 +9,12 @@ eval/retrieval-queries.jsonl (the business documents). A manual question is sear
 version, as the agent will search; a hit is relevant when it comes from the expected document AND
 contains the expected phrase.
 
-Per configuration: precision@k, recall@k, MRR, hit rate, and two numbers for the decision:
+Per configuration: precision@k, recall@k, MRR, hit rate, and three numbers for the decision:
     version_trap   how often the TOP hit is the wrong version when the same manual question is
                    searched with NO version: what the filter is protecting you from
     context_tokens how much text k hits put in front of the model per question, roughly: the
                    cost side of choosing k and the strategy
+    p95_ms         how long one search took, 95th percentile: hybrid search does more work
 
 Writes reports/retrieval.json; `make evidence WEEK=2` keeps it.
 """
@@ -22,6 +23,7 @@ import argparse
 import json
 import os
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -82,7 +84,7 @@ def main() -> int:
         print(f"embedder={embedder.name}  k={args.k}  queries={len(queries)}  docs={len(docs)}\n")
         header = (
             f"{'configuration':<18} {'chunks':>6} {'P@k':>6} {'R@k':>6} {'MRR':>6} {'hit':>6} "
-            f"{'trap':>6} {'ctx tok':>8}"
+            f"{'trap':>6} {'ctx tok':>8} {'p95 ms':>7}"
         )
         print(header)
         print("-" * len(header))
@@ -92,11 +94,13 @@ def main() -> int:
             for mode in args.modes.split(","):
                 per_query: list[tuple[list[bool], int]] = []
                 trapped = versioned = context_chars = 0
+                timings: list[float] = []
                 for q in queries:
                     phrase = q["phrase"].lower()
                     doc = docs[q["doc"]]
                     relevant = sum(1 for c in chunk(doc.text, strategy) if phrase in c.lower())
                     version = q.get("version")
+                    started = time.perf_counter()
                     hits = search(
                         session,
                         embedder,
@@ -106,6 +110,7 @@ def main() -> int:
                         version=version,
                         mode=mode,
                     )
+                    timings.append((time.perf_counter() - started) * 1000)
                     flags = [h.filename == q["doc"] and phrase in h.text.lower() for h in hits]
                     per_query.append((flags, max(relevant, 1)))
                     context_chars += sum(len(h.text) for h in hits)
@@ -125,12 +130,13 @@ def main() -> int:
                     "hit_rate": s.hit_rate,
                     "version_trap": round(trapped / versioned, 3) if versioned else 0.0,
                     "context_tokens": int(context_chars / 4 / max(len(queries), 1)),
+                    "p95_ms": round(sorted(timings)[int(0.95 * (len(timings) - 1))], 1),
                 }
                 c = configs[name]
                 print(
                     f"{name:<18} {n:>6} {c['precision_at_k']:>6.2f} {c['recall_at_k']:>6.2f} "
                     f"{c['mrr']:>6.2f} {c['hit_rate']:>6.2f} {c['version_trap']:>6.2f} "
-                    f"{c['context_tokens']:>8}"
+                    f"{c['context_tokens']:>8} {c['p95_ms']:>7.1f}"
                 )
 
     (ROOT / "reports").mkdir(exist_ok=True)
