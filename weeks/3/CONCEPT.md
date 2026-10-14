@@ -39,14 +39,16 @@ flowchart TD
 Interviewers ask two questions: how do you know it works, and what did it do for the business.
 Evaluation is the answer to the first.
 
-- **A golden dataset**, typically 100 to 500 examples, built from real queries, with the
-  expected outcome for each. This repo ships 100; you add to it, and the rows you add are
-  the ones nobody thought of.
+- **A test set**, typically 100 to 500 examples, written from what users ask, with the
+  expected outcome for each. You write 100 this week. The programme's own 100
+  (`eval/golden.jsonl`) is what CI runs on the fake model; yours is what your evidence runs on.
 - **Three to five task-specific metrics**, not generic ones. Here: abstention rate on
   unanswerable questions, answer rate on answerable ones, hit rate on the expected fact, and
   citation validity. Not "accuracy". Not "BLEU".
 - **A model as judge**, when a string match is not enough. Useful, and biased: it rewards length,
-  confidence and plausibility. Calibrate it against your own labels before you trust it.
+  confidence and plausibility. You build one for **faithfulness** (is every claim supported by the
+  passages it cited?) and you do not trust it until you have labelled thirty answers yourself and
+  counted how often it agrees with you.
 - **In CI, blocking merges.** A versioned golden set and a threshold file. A pull request that
   drops a number below its line does not merge. That is what "we have evals" means.
 - **Sampled from live traffic** after release, scored continuously, because the questions people
@@ -72,15 +74,35 @@ flowchart LR
 ```
 
 
+## A test you cannot see
+
+Your own test set has a weakness you cannot remove: you wrote it, so your system and your
+questions share your blind spots. From this week the programme runs about 150 questions and 20
+agent tasks you never see, written for your product, on every pull request, on one reference
+model. You see the totals. If your own score is well above the hidden one, your questions are
+easier than real users' (worked example E). The gap is the finding; chasing the hidden questions is
+not the fix, rewriting your own is.
+
+## Evaluating a path, not just an answer
+
+From next week the system acts: it looks a customer up, searches, drafts, escalates. An answer can
+be right for the wrong reasons: it guessed the version instead of looking it up, it searched four
+times when once would do, or it reached for a refund nobody asked for. A **trajectory** is the
+path, and four numbers describe it: the right tool (first, and in order), the steps it took, what
+it cost, and whether anything that needs a person's approval ran without one. You write twenty
+tasks this week; the agent you build next week is measured on them, and on twenty hidden ones.
+
 ## What this looks like in the service
 
 | Idea | Where it lives | What you do this week |
 | --- | --- | --- |
 | Threshold and decline | `app/api/ask.py`, `RELEVANCE_THRESHOLD` | Build the two gates |
 | Citations | `AskOut.citations` | Map the model's `[n]` to real chunk ids and files |
-| Golden set | `eval/golden.jsonl` | Read it, then extend it from real queries |
+| Your test set | `eval/my-test-set.jsonl` | Write 100 questions from what users ask |
 | Metrics and gate | `scripts/eval.py`, `eval/thresholds.json` | Run it, read it, make CI block on it |
-| Judge | `app/eval/judge.py` | Calibrate it against your own scores (core, pro) |
+| Judge | `app/eval/judge.py`, `scripts/judge_agreement.py` | Build it, label 30 answers, measure agreement |
+| Threshold | `scripts/threshold_curve.py` | Read the threshold off a measured curve |
+| Trajectories | `eval/trajectories.jsonl`, `app/eval/trajectory.py` | Write 20 tasks; the agent meets them in week 4 |
 
 ## What you should be able to say by Friday
 
@@ -88,7 +110,8 @@ flowchart LR
 - Why an answer rate of 48 percent with a 100 percent hit rate points at retrieval, not the model.
 - Which of your four metrics would move first if someone changed the prompt, and which if someone
   changed the chunker.
-- What the judge got wrong when you compared it with your own labels.
+- What the judge got wrong when you compared it with your own labels, and in which direction.
+- The gap between your own score and the hidden score, and what it says about your questions.
 
 ## Read more
 

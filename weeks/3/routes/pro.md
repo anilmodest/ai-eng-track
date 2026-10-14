@@ -1,6 +1,7 @@
 # Week 3 on the pro route
 
-**No helpers, one real constraint.** The constraint: on the real bar with a real model, reach
-**abstention ≥ 0.95 and answer rate ≥ 0.90 at the same time**, with at least 30 rows of your own
-added to the 100 the repository ships, including the version-dependent cases it does not cover. A threshold sweep (0.2 to 0.6) with both curves is the evidence; the value you
-chose and why is the reflection.
+**No helpers, one real constraint.** On your real model, reach **a decline rate on unanswerable
+questions of at least 0.95 and an accuracy on answerable ones of at least 0.85 at the same
+threshold**, on your own hundred questions, and keep the gap to the hidden score under 0.10.
+If you cannot, say which you gave up and why, with the threshold curve as evidence. Your judge's
+agreement must be measured against two people's labels, not one.

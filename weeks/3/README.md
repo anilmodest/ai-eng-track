@@ -1,190 +1,175 @@
-# Week 3 — Grounding and evaluation
+# Week 3 — Grounding and evaluation, of answers and of paths
 
-Areas 5 and 8 of the track. About 10 hours including the session. Branch: `week-3`.
+Areas 5 and 8. 9 to 10 hours. One of the two decisive weeks. Session 3 (Observation) at the end
+of this week. Branch: `week-3`.
+
+> **The one lesson.** Without a test you cannot see, every improvement is a guess.
+
+## The gap it closes
+
+Two habits interviewers probe directly: grounding and abstention, and evaluation. If a system
+always produces an answer you cannot trust any of its answers, because a confident wrong one looks
+exactly like a confident right one. Without a fixed set of questions run on every change, every
+improvement is a guess and every regression is invisible until a customer finds it.
 
 ## What you are building
 
-An endpoint that answers a support question **only from the passages retrieved for it**, names
-the passage each answer came from, and **declines** when the passages do not hold the answer.
+An endpoint that answers **only from the passages retrieved for it**, names the passage each
+answer came from, and **declines** when the passages do not hold the answer; and the instruments
+that say how often it is right.
 
 ```
-POST /ask  { "question": "What is the personal car mileage rate?" }
-  -> { "abstained": false,
-       "answer": "45 pence per mile for a personal car.",
-       "citations": [ { "n": 1, "chunk_id": 37, "document_id": 4,
-                        "filename": "policy-contoso-expenses.md",
-                        "score": 0.71, "text": "..." } ],
-       "top_score": 0.71, "tokens_in": 812, "cost_usd": 0.0004 }
+POST /ask  { "question": "What is the default connection timeout?", "version": "v3" }
+  -> { "abstained": false, "answer": "15 seconds, set with KESTREL_CONNECT_TIMEOUT.",
+       "citations": [ { "n": 1, "filename": "manual-v3-connection-timeout.md", ... } ], ... }
 
-POST /ask  { "question": "zxq plimbo vortex kettle" }
-  -> { "abstained": true, "reason": "nothing cleared the relevance threshold",
-       "citations": [], "cost_usd": 0.0 }
+POST /ask  { "question": "can kestrel send a text message when a run fails" }
+  -> { "abstained": true, "reason": "the passages do not contain the answer", ... }
 ```
 
-Why the support desk cares: a system that always answers is worse than one that sometimes
-declines, and the desk will not adopt what it cannot audit. An answer with a citation can be
-checked by a human in five seconds. A confident answer with no source has to be trusted.
+## Read (1 hour)
 
-Two words you will use all week. **Grounding** is the set of disciplines that make the model
-answer from the passages rather than from its parameters. **Abstention** is declining on purpose,
-as a first-class outcome with a reason attached — not an error, not a timeout, not a shrug.
+`CONCEPT.md`, then worked examples [B, C, D and E](../../docs/worked-examples.md#example-b-faithfulness-week-3).
+Then, answering in `reflections/week-3.md`, Q1b:
 
-## The hard part is the measurement
+1. **`app/api/ask.py`**: there are two abstention gates. Which one costs money, and why is the
+   order they run in not negotiable?
+2. **`scripts/eval.py`**: why several metrics rather than one "accuracy"? Which would drop first if
+   the chunker regressed? Which if the prompt did?
+3. **`app/eval/trajectory.py`**: an agent's answer can be right and its path wrong. Name two ways.
 
-The source document names Retrieval (last week) and Evaluation (this week) as the two areas that
-decide most hiring outcomes. Building the gates below is an afternoon. Saying how often they are
-right is the thing most candidates cannot do.
-
-So the week's real deliverable is a number. Four numbers, in fact, computed by one command, over a
-fixed set of questions with known answers, with a floor under each one. A floor that runs on every
-proposed change is the difference between a demo and a system.
-
-This is also the week's interview answer. "How do you know it works?" is a real question, and
-"there is a command, here is the table it prints, and this pull request was blocked by it" is a
-real answer. "It seemed good when I tried it" is not.
-
-## Run it and watch (1 hour, change nothing)
+## See it (30 minutes, change nothing)
 
 ```
 uv run python explore/w3_01_ask_without_a_net.py
 ```
 
-One unanswerable question, one real passage, three rounds. Watch the model invent a penalty clause
-in round A, hedge in round B, and decline in a testable way in round C. Round C is the shape you
-are building.
+Five questions the documents cannot answer, and five confident inventions. That is the system you
+do not want.
 
-Then run the evaluation on the given service, with the fake model and the lexical embedder:
+## Build (5 to 7 hours)
+
+Core items are needed for the lesson and checked by the gate; stretch items are shown to your
+mentor and never block. Log your assistant use as you go in `ai-use/week-3.yml`.
+
+### Core 1: grounded answers that decline (`app/api/ask.py`)
+
+What must hold:
+
+- **The cheap gate first.** If nothing retrieved clears `RELEVANCE_THRESHOLD`, decline with a
+  reason and make **no** model call.
+- **Answer and cite.** Numbered passages in, an answer, citation numbers and a `grounded` flag out
+  (`complete_structured`); every valid citation maps to the real chunk; provider, model, tokens,
+  latency and cost recorded.
+- **The model's own decline.** `grounded: false`, an empty answer, or no valid citation: decline,
+  with no answer and no citations. A citation number outside the passages is dropped.
+- **Failures are not declines.** A provider error is a `502 provider_error`, never a decline: a
+  decline is a claim about the documents.
+- **The version.** A question that comes with a version is searched with it.
+
+### Core 2: your own test set (`eval/my-test-set.jsonl`)
+
+**One hundred questions, written from what a user would ask, not from what the documents say:**
+60 straightforward, 20 the documents cannot answer, 20 whose answer depends on the version. Each
+answerable row names the document it is answered from and the fact the answer must contain. Three
+example rows show the shape.
+
+The natural approach is to read a page and write a question it answers. That produces a set the
+system passes trivially, a number that means nothing, and everyone trusts it. Real users ask in
+their own words, half-specified, with the wrong terminology. The gate checks the composition and
+that your questions do not repeat the documents word for word.
+
+### Core 3: a judge you build and check (`app/eval/judge.py`, `app/llm/prompts/judge_v1.md`)
+
+A judge for **faithfulness**: is every claim in the answer supported by the passages it cited? You
+write the prompt (what a claim is, what support is, which biases to resist) and the call. Then you
+check it against yourself:
 
 ```
-MODEL_PROVIDER=fake_a EMBED_PROVIDER=hash uv run python scripts/eval.py --thresholds eval/thresholds-ci.json
+uv run python scripts/eval.py --set eval/my-test-set.jsonl      # answers, with what they cited
+uv run python scripts/judge_agreement.py --sample 30             # 30 of them to label
+# label each one in eval/judge-labels.jsonl: true (faithful) or false
+uv run python scripts/judge_agreement.py                         # how often your judge agrees
 ```
 
-Read the table and the "worth a look" list. Every line there is a question you can go and ask.
-Both commands need a provider key only for the first: see the main `README.md`, *Model access*.
+### Core 4: a trajectory set (`eval/trajectories.jsonl`)
 
-## Read it (1 hour, change nothing)
+Twenty tasks for the agent you build next week: which tools it should call, in which order, with
+which arguments, which tools it must not touch, and how it should end. Three examples show the
+shape. Include tasks where the version decides the answer, tasks that name a ticket, and tasks
+where the right outcome is **not** to act. `scripts/trajectories.py` runs and scores them; until
+week 4 every task scores zero, which is the honest number.
 
-Read `CONCEPT.md` in this folder first, then the following in this order, and answer the three
-questions in `reflections/week-3.md`, Q1b:
+### Core 5: the gate (`make evidence WEEK=3`)
 
-1. **`app/api/ask.py`** — there are two abstention gates. Which one costs money, and why is the
-   order they run in not negotiable?
-2. **`scripts/eval.py`** — why are there four metrics rather than one "accuracy"? Which one would
-   drop first if the chunker regressed? Which if the prompt did?
-3. **`eval/thresholds.json`** versus **`eval/thresholds-ci.json`** — why two? What does CI prove,
-   and what does it not?
+The evaluation already blocks a change that drops the score below the floors
+(`eval/thresholds-ci.json` in CI). From this week the programme also runs **about 150 hidden
+questions and 20 hidden trajectory tasks**, written for your own product, on every pull request,
+and blocks a merge that drops the hidden score. You see the totals, never the questions.
 
-Then open `tests/weeks/test_week3.py`. **It is the specification.** Every test name is one
-behaviour, and the table below is the order to make them pass.
-
-## Build it (5 hours)
-
-`app/api/ask.py` is yours. The prompt, the schemas, retrieval and the eval script are given. Run
-`make next` any time to see where you are.
-
-Build in this order. Each step is done when the tests named beside it go green.
-
-| # | Build | Done when these pass |
+| Measurement | Script | What it tells you |
 | --- | --- | --- |
-| 1 | **Gate 1, the cheap one.** Search, then if the top score is below `RELEVANCE_THRESHOLD`, return `abstained: true` with a reason naming the threshold, and make **no** model call | `abstains_below_threshold_without_calling_the_model` |
-| 2 | **Ask and cite.** Number the passages `[1]..[k]`, call the model for an `AskAnswer` (`answer`, `citations`, `grounded`) through `complete_structured`, map each valid `[n]` to the real chunk (id, document, filename, score, text), and record provider, model, tokens, latency and `cost_usd` | `answers_with_citations_that_resolve`, `valid_citations_map_to_real_chunks` |
-| 3 | **Gate 2, the model's own decline.** `grounded: false`, an empty answer, or not one valid citation number → `abstained: true`, no answer, no citations, reason `the passages do not contain the answer` | `abstains_when_the_model_says_not_grounded`, `citation_numbers_outside_the_context_are_dropped`, `unanswerable_question_is_declined` |
-| 4 | **Failures are not abstentions.** A provider error is a `502 provider_error`. Never a decline, because a decline is a claim about the documents | `provider_failure_is_not_an_abstention` |
-| 5 | **The gate runs.** `scripts/eval.py` is given and unchanged; it passes only when the whole route behaves, and fails when a metric is under its floor | `eval_gate_passes_on_ci_thresholds`, `eval_gate_blocks_when_a_threshold_is_not_met` |
+| `eval` | `scripts/eval.py --judge --set eval/my-test-set.jsonl` | Your system on your own hundred questions, with your judge |
+| `threshold` | `scripts/threshold_curve.py` | Correct declines, wrong declines, inventions and wrong answers at seven thresholds |
+| `judge` | `scripts/judge_agreement.py` | How often your judge agrees with your labels, and in which direction it is wrong |
+| `trajectories` | `scripts/trajectories.py` | The trajectory command runs (week 4 makes the numbers mean something) |
 
-Gate 1 first is not a preference. It is the gate that saves money, and it is the only part of the
-week you can test without a model at all — zero calls is the assertion.
+### Stretch
 
-The **relevance threshold** is `RELEVANCE_THRESHOLD` in `.env`, the retrieval score under which
-nothing is considered worth answering from. The repo default is `0.30`. It is a product decision
-disguised as a float: raise it and you decline more, lower it and you invent more.
+- **A second marker for your labels**: ask someone else to label ten of the thirty, and report how
+  often you agreed with each other. That is the ceiling your judge can reach.
+- **Self-consistency**: run the judge twice on the same thirty and report how often it agrees with
+  itself.
 
-`make check WEEK=3` as often as you like. Red is the week's work, not a problem.
+## Decide
+
+**The relevance threshold**, as a trade between wrong answers and wrong declines, read off the
+curve you measured; and **whether to trust your judge**, with its agreement rate and the
+disagreements you read. Write `decisions/week-3.md`, quoting the evidence by key (for example
+`- threshold.curve[3].invented = 5`).
+
+## What proves it
+
+1. **The gate**: `/ask`'s two gates and its citations, the evaluation blocking a seeded
+   regression, your test set's composition, your judge's prompt and verdicts, your labels and
+   trajectory tasks, and the threshold and trajectory commands running.
+2. **The hidden evaluation**, from this week blocking the merge when the hidden score drops.
+3. **The evidence file and the decision record.**
+
+The result: a deliberately bad change demonstrated being blocked by the gate, and **the gap
+between your own score and the hidden score, explained**. Session 3 opens with you explaining it.
+
+**Anti-goal: do not write the test questions by reading the documents.**
 
 ### If you get stuck
 
-- **Rate-limited mid-exercise?** The free tiers are small, and the eval asks every golden question
-  in one run. Iterate with `MODEL_PROVIDER=fake_a EMBED_PROVIDER=hash` and spend the real provider
-  only on the runs you are going to paste.
-- **A test is failing and the message is not obvious?** Open the test. It is short, and it says
-  exactly what it expected.
+- **Rate-limited?** The evaluation asks every question in one run. Iterate with
+  `MODEL_PROVIDER=fake_a EMBED_PROVIDER=hash`, and spend the real provider on `make evidence`.
 <!-- route:start -->
 - **On `start`?** `routes/worked_example.py` answers a question from a single passage, with the
-  `grounded` flag and one citation: the whole shape at `k=1`. Read it beside your stub rather than
-  instead of it.
+  `grounded` flag and one citation: the whole shape at `k=1`. Read it beside your stub.
 <!-- /route -->
-- **Stuck for more than an hour?** That is what the two unblock calls are for. Use one.
+- **Stuck for more than an hour?** That is what the unblock calls are for. Use one.
 
 Your route changes what this week gives you: the page in `routes/` in this folder says how.
 
-## Measure it and block a bad change (1 hour 30 minutes)
+## Submit
 
-This is the point of the week, not the tidy-up after it.
-
-```
-uv run python scripts/eval.py                          # real model, real bar (thresholds.json)
-EMBED_PROVIDER=fastembed uv run python scripts/eval.py # real embeddings too
-```
-
-Four task-specific metrics, each a different thing going wrong:
-
-| Metric | Reads as |
-| --- | --- |
-| `abstain_rate_unanswerable` | of the questions the corpus cannot answer, how many did you decline? |
-| `answer_rate_answerable` | of the questions it can answer, how many did you answer? |
-| `hit_rate` | of the answerable questions you answered, how many held the expected fact? |
-| `citation_validity` | of the answers, how many cited a chunk from the expected document? |
-
-`hit_rate` and `citation_validity` together are what people mean by **faithfulness**: the answer
-says what the cited passage says, and the citation points where it claims to. **Citation validity**
-on its own is the weaker, mechanical half — the `[n]` resolves to a real chunk from the right file.
-
-Paste both tables into your reflection. If `answer_rate_answerable` is low while `hit_rate` is
-high, you have seen the Week 2 lesson from the other side: fix retrieval, not the prompt.
-
-Then grow the **golden set** — `eval/golden.jsonl`, the fixed list of questions with their expected
-outcomes that every run is scored against. Add at least 20 questions you would actually ask of
-these documents, with expected facts, and at least 5 more that cannot be answered. Run again. The
-numbers will move, and that is the exercise: a metric over a set you wrote yourself is a metric you
-understand.
-
-Finally, prove the **regression gate** — the eval running on every proposed change and failing the
-change when a number drops below its floor.
-
-```
-make check WEEK=3     # already runs scripts/eval.py against the CI thresholds
-```
-
-Open a pull request that deliberately breaks citations (return `[]`) and watch CI go red. Revert
-it. That red run is the evidence; link it in your reflection. A gate nobody has seen fire is not
-known to work.
-
-## Submit (30 minutes)
-
-- `reflections/week-3.md`: Q1 (the concept in your words), Q1b (the three reading questions),
-  Q2 (what surprised you), Q3 (what you would change), Q4 (what you contributed and how you
-  checked it), Q5 (help you used), both eval tables, the red CI run, and the golden set additions.
-- Open a pull request `week-3 → main`. CI runs the gate, including the eval. Fix anything red.
-- Send the link to your mentor **24 hours** before the session, not at the start of it.
+1. `make check WEEK=3` green, commit, `make evidence WEEK=3`, commit the evidence.
+2. `decisions/week-3.md`, `ai-use/week-3.yml`, `reflections/week-3.md` (Q1 to Q5).
+3. Open a pull request `week-3 → main` and send the link **24 hours** before the session.
 
 ## Session 3: Observation (60 minutes, end of this week)
 
-Not a progress report. Your mentor watches you work, on a task you have not seen, for most of the
-hour, and says very little. The point is to see how you think, check and recover, not what you
-built. Have the service running and your evaluation ready to run.
+Watched, not reported. Your mentor reads the brief beforehand.
 
 | Min | What happens |
 | --- | --- |
-| 0–5 | Your mentor states the task (grounding or evaluation shaped; you will not have seen it) |
-| 5–45 | You work. Aloud. Your mentor watches: where you look first, what you run, how you check |
-| 45–55 | Your mentor asks three questions about what they saw, and reviews the Week 2 and 3 PRs |
-| 55–60 | Week 4's sentence: *prefer the simplest thing that works* |
-
-**Pass line:** CI green including the eval gate, the red run linked, and from your own numbers,
-where a wrong answer would have come from.
+| 0–10 | You explain the gap between your own score and the hidden score, from your numbers |
+| 10–35 | Assisted. A question your system gets wrong, served from the hidden pool: you diagnose it with your own assistant while your mentor watches what you accept and what you check |
+| 35–55 | Tools closed. You defend your relevance threshold and your judge |
+| 55–60 | Week 4's sentence, said back: *agency and model size are both costs* |
 
 ## Optional: self-test
 
-`QUIZ.md` in this folder, with an explanation for every answer. On the hub page it is interactive.
-The score stays in your browser: it never reaches the repository, your mentor or your route. Use
-it to find what to re-read, not to measure yourself.
+`QUIZ.md` in this folder, with an explanation for every answer. The score stays in your browser.
