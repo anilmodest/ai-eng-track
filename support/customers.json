@@ -141,6 +141,166 @@
       "region": "APAC",
       "seats": 45,
       "contact": "lab@treyresearch.example"
+    },
+    {
+      "customer_id": "C-3003",
+      "account": "desk-amer",
+      "name": "Castlegate Group",
+      "version": "v2",
+      "plan": "starter",
+      "region": "AMER",
+      "seats": 25,
+      "contact": "support@castlegate-group.example"
+    },
+    {
+      "customer_id": "C-3004",
+      "account": "desk-emea",
+      "name": "Deansgate Group",
+      "version": "v2",
+      "plan": "enterprise",
+      "region": "EMEA",
+      "seats": 400,
+      "contact": "support@deansgate-group.example"
+    },
+    {
+      "customer_id": "C-3005",
+      "account": "desk-apac",
+      "name": "Eastwick Services",
+      "version": "v2",
+      "plan": "business",
+      "region": "APAC",
+      "seats": 120,
+      "contact": "support@eastwick-services.example"
+    },
+    {
+      "customer_id": "C-3006",
+      "account": "desk-amer",
+      "name": "Fairhaven Trading",
+      "version": "v3",
+      "plan": "starter",
+      "region": "AMER",
+      "seats": 900,
+      "contact": "support@fairhaven-trading.example"
+    },
+    {
+      "customer_id": "C-3007",
+      "account": "desk-emea",
+      "name": "Glenmore Labs",
+      "version": "v2",
+      "plan": "enterprise",
+      "region": "EMEA",
+      "seats": 25,
+      "contact": "support@glenmore-labs.example"
+    },
+    {
+      "customer_id": "C-3008",
+      "account": "desk-apac",
+      "name": "Highbury Group",
+      "version": "v2",
+      "plan": "enterprise",
+      "region": "APAC",
+      "seats": 1500,
+      "contact": "support@highbury-group.example"
+    },
+    {
+      "customer_id": "C-3009",
+      "account": "desk-amer",
+      "name": "Ironbridge Services",
+      "version": "v2",
+      "plan": "starter",
+      "region": "AMER",
+      "seats": 25,
+      "contact": "support@ironbridge-services.example"
+    },
+    {
+      "customer_id": "C-3010",
+      "account": "desk-emea",
+      "name": "Kingsmead Works",
+      "version": "v2",
+      "plan": "starter",
+      "region": "EMEA",
+      "seats": 1500,
+      "contact": "support@kingsmead-works.example"
+    },
+    {
+      "customer_id": "C-3011",
+      "account": "desk-apac",
+      "name": "Langley Trading",
+      "version": "v2",
+      "plan": "business",
+      "region": "APAC",
+      "seats": 40,
+      "contact": "support@langley-trading.example"
+    },
+    {
+      "customer_id": "C-3012",
+      "account": "desk-amer",
+      "name": "Millbank Labs",
+      "version": "v3",
+      "plan": "business",
+      "region": "AMER",
+      "seats": 40,
+      "contact": "support@millbank-labs.example"
+    },
+    {
+      "customer_id": "C-3013",
+      "account": "desk-emea",
+      "name": "Newhaven Holdings",
+      "version": "v3",
+      "plan": "enterprise",
+      "region": "EMEA",
+      "seats": 25,
+      "contact": "support@newhaven-holdings.example"
+    },
+    {
+      "customer_id": "C-3014",
+      "account": "desk-apac",
+      "name": "Oakmere Trading",
+      "version": "v3",
+      "plan": "business",
+      "region": "APAC",
+      "seats": 120,
+      "contact": "support@oakmere-trading.example"
+    },
+    {
+      "customer_id": "C-3015",
+      "account": "desk-amer",
+      "name": "Portview Holdings",
+      "version": "v2",
+      "plan": "enterprise",
+      "region": "AMER",
+      "seats": 40,
+      "contact": "support@portview-holdings.example"
+    },
+    {
+      "customer_id": "C-3016",
+      "account": "desk-emea",
+      "name": "Queensway Partners",
+      "version": "v3",
+      "plan": "business",
+      "region": "EMEA",
+      "seats": 900,
+      "contact": "support@queensway-partners.example"
+    },
+    {
+      "customer_id": "C-3017",
+      "account": "desk-apac",
+      "name": "Riverside Services",
+      "version": "v2",
+      "plan": "enterprise",
+      "region": "APAC",
+      "seats": 400,
+      "contact": "support@riverside-services.example"
+    },
+    {
+      "customer_id": "C-3018",
+      "account": "desk-amer",
+      "name": "Southbank Works",
+      "version": "v2",
+      "plan": "business",
+      "region": "AMER",
+      "seats": 75,
+      "contact": "support@southbank-works.example"
     }
   ]
 }
