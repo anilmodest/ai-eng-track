@@ -93,3 +93,24 @@ def test_strip_marked() -> None:
     )
     assert strip_marked(text, "start") == "a\nc\n"
     assert strip_marked(text, "pro") == "a\nB\nc\n"
+
+
+def test_every_core_fault_file_keeps_every_name_the_service_uses() -> None:
+    """A core file replaces a whole file. If the source gained a function since the fault was
+    planted, the core template would not even import: every top-level name must still be there."""
+    import ast
+
+    def names(path: Path) -> set[str]:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        out = set()
+        for node in tree.body:
+            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
+                out.add(node.name)
+            elif isinstance(node, ast.Assign):
+                out |= {t.id for t in node.targets if isinstance(t, ast.Name)}
+        return {n for n in out if not n.startswith("_")}
+
+    for faulty in sorted(ROOT.glob("weeks/*/routes/core/*.py")):
+        source = ROOT / faulty.name.replace("__", "/")
+        missing = names(source) - names(faulty)
+        assert not missing, f"{faulty.name} lacks {sorted(missing)} from {source.relative_to(ROOT)}"

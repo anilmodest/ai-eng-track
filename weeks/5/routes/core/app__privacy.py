@@ -39,10 +39,11 @@ def mask(text: str, names: Iterable[str] = (), known: dict[str, str] | None = No
     out = replace(_EMAIL, "EMAIL", text)
     out = replace(_PHONE, "PHONE", out)
     for name in sorted({n for n in names if n.strip()}, key=len, reverse=True):
-        # Text often arrives inside JSON (a tool result): "\nPriya Natarajan" after an escaped
-        # newline, and "Wójcik" for a name with an accent. Match the name as written and as
-        # JSON writes it, without word boundaries, which an escaped newline would break.
-        out = re.sub(rf"\b{re.escape(name)}\b", lambda _m, n=name: placeholder_for("NAME", n), out)
+
+        def as_placeholder(_m: re.Match[str], n: str = name) -> str:
+            return placeholder_for("NAME", n)
+
+        out = re.sub(rf"\b{re.escape(name)}\b", as_placeholder, out)
     used = set(_PLACEHOLDER.findall(out))
     return Masked(text=out, mapping={p: v for p, v in mapping.items() if p in used})
 

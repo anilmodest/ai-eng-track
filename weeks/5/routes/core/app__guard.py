@@ -105,3 +105,30 @@ def check_limits(settings: Settings, session: Session) -> None:
             "budget_exceeded",
             f"spent ${spent:.4f} in the last 24h, budget ${settings.daily_budget_usd:.2f}",
         )
+
+
+def fence_tool_result(tool: str, text: str) -> str:
+    """What the model sees of a tool result someone outside the desk wrote. Given.
+
+    Known instruction patterns are stripped (your detect_injection), the rest is fenced so it
+    cannot close its own fence (your wrap_untrusted), and the whole is labelled as data from that
+    tool. The agent's prompt says what <untrusted> means. This is the second layer of the week 5
+    defence; the first is not offering the tool an attack is aimed at (app/agents/routing.py).
+    """
+    cleaned, report = detect_injection(text)
+    flag = f' stripped="{report.stripped_lines}"' if report.injection_detected else ""
+    return f'<untrusted source="{tool}"{flag}>\n{wrap_untrusted(cleaned, "data")}\n</untrusted>'
+
+
+def record_in(text: str) -> dict[str, object]:
+    """The JSON record inside a tool result, fenced or not; {} if there is none. Given."""
+    import json
+
+    start, end = text.find("{"), text.rfind("}")
+    if start < 0 or end <= start:
+        return {}
+    try:
+        found = json.loads(text[start : end + 1])
+    except json.JSONDecodeError:
+        return {}
+    return found if isinstance(found, dict) else {}
