@@ -113,7 +113,7 @@ def _action(request: str, tools: set[str], ticket: str | None) -> dict[str, Any]
             "args": {"ticket_id": ticket, "team": "engineering", "reason": request[:200]},
         }
     if (
-        re.search(r"\b(issue|give|grant) (a |them a )?(credit|refund)\b", q)
+        re.search(r"\b(issue|give|grant)\b.{0,40}\b(credit|refund)\b", q)
         and "issue_credit" in tools
     ):
         m = _AMOUNT.search(request)
@@ -200,8 +200,18 @@ def decide(messages: list[Message]) -> dict[str, Any]:
     about_ticket_only = (
         ticket and not customer and not re.search(r"\bmanual|setting|version\b", request, re.I)
     )
+    # "What plan is C-1007 on?" is answered by the lookup; "how is the timeout set?" needs the
+    # manual. A product question names something the product does.
+    product = re.search(
+        r"\b(how|why|default|setting|timeout|export|log|retr|schedul|auth|configure|header|"
+        r"format|error|mean)",
+        request,
+        re.I,
+    )
+    lookup_only = customer and not product
     if (
         not about_ticket_only
+        and not lookup_only
         and not analysis
         and "search_docs" in tools
         and not _done(results, "search_docs")

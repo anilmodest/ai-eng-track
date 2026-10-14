@@ -60,8 +60,9 @@ async def run(tasks: list[TrajectoryTask]) -> dict[str, Any]:
             steps: list[dict[str, Any]] = out.get("steps", [])
             calls = [(s["tool"], s.get("args", {})) for s in steps if s.get("tool") != "finish"]
             pending = out.get("pending")
-            if isinstance(pending, dict) and pending.get("tool"):
-                calls.append((pending["tool"], pending.get("args", {})))
+            asked = pending.get("tool") if isinstance(pending, dict) else None
+            if asked and (not calls or calls[-1][0] != asked):
+                calls.append((asked, pending.get("args", {})))  # type: ignore[union-attr]
             s = score(
                 task,
                 calls,

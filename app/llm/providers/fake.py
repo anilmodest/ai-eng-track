@@ -187,7 +187,34 @@ def _choose_tool(messages: list[Message]) -> dict[str, object]:
     for i, (name, pattern) in enumerate(patterns(chosen).items()):
         match = next((t for t in ids if fits(pattern, t)), None)
         args[name] = match if match is not None else (ids[i] if i < len(ids) else "")
+    # An argument with a fixed set of values: the value the request mentions, the way a model
+    # reads "open urgent tickets"; a required one the request does not mention gets the first.
+    params = chosen.get("parameters")
+    props = params.get("properties", {}) if isinstance(params, dict) else {}
+    required = params.get("required", []) if isinstance(params, dict) else []
+    words = request.lower()
+    for name, prop in props.items() if isinstance(props, dict) else []:
+        options = _enum(prop)
+        if not options:
+            continue
+        said = [o for o in options if re.search(rf"\b{re.escape(o.replace('_', ' '))}\b", words)]
+        if said:
+            args[name] = said[0]
+        elif name in required:
+            args[name] = options[0]
     return {"tool": chosen.get("name", ""), "args": args}
+
+
+def _enum(prop: object) -> list[str]:
+    """The allowed values of one schema property, also when it is optional (anyOf with null)."""
+    if not isinstance(prop, dict):
+        return []
+    if isinstance(prop.get("enum"), list):
+        return [str(v) for v in prop["enum"]]
+    for option in prop.get("anyOf", []):
+        if isinstance(option, dict) and isinstance(option.get("enum"), list):
+            return [str(v) for v in option["enum"]]
+    return []
 
 
 def _judge(messages: list[Message]) -> dict[str, object]:
