@@ -28,7 +28,7 @@ flowchart TD
   R["POST /ask  ·  root<br/>412 ms · $0.00094 · error_kind: none"]
   R --> S["retrieval.search<br/>18 ms · $0"]
   R --> M["model.call<br/>380 ms · 706 in / 115 out · $0.00094"]
-  R --> T["tool.search_documents (agents only)<br/>…"]
+  R --> T["tool.get_ticket (agents only)<br/>gen_ai.tool.name · …"]
   style M fill:#fff4e5,stroke:#9a5b00
 ```
 

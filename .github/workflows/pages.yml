@@ -76,6 +76,7 @@ jobs:
       - name: Build the page
         env:
           LIVE_URL: ${{ vars.LIVE_URL }}
+          PUBLIC_HUB: "true"  # the hidden-set numbers stay off the public page
         run: uv run python scripts/build_pages.py
       - name: Is GitHub Pages switched on for this repo?
         id: pages

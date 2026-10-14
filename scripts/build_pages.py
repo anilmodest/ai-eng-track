@@ -104,23 +104,29 @@ WEEK_RUN: dict[int, list[str]] = {
 }
 WEEK_BUILD: dict[int, list[str]] = {  # app/trace.py is added to Week 5 on core and pro (below)
     0: [],
-    1: ["app/api/extract.py"],
-    2: ["app/retrieval/metrics.py", "app/retrieval/chunkers.py", "app/retrieval/context.py"],
-    3: ["app/api/ask.py"],
-    4: ["app/agents/agent.py"],
-    5: ["app/guard.py"],
-    6: ["reflections/writeup.md"],
+    1: ["app/api/extract.py", "app/tools/desk.py"],
+    2: [
+        "app/retrieval/metrics.py",
+        "app/retrieval/chunkers.py",
+        "app/retrieval/versions.py",
+        "app/retrieval/hybrid.py",
+        "app/tools/search.py",
+    ],
+    3: ["app/api/ask.py", "app/eval/judge.py", "eval/my-test-set.jsonl", "eval/trajectories.jsonl"],
+    4: ["app/tools/actions.py", "app/tools/analysis.py", "app/agents/agent.py"],
+    5: ["app/agents/routing.py", "app/guard.py", "app/privacy.py"],
+    6: ["reflections/writeup.md", "decisions/week-6-rehearsal.md"],
 }
 if ROUTE != "start":
     WEEK_BUILD[5] = ["app/trace.py", *WEEK_BUILD[5]]
 
 WEEK_MEASURE: dict[int, str] = {
-    1: "make live-check",
-    2: "uv run python scripts/retrieval_eval.py && uv run python scripts/degrade_repair.py",
-    3: "uv run python scripts/eval.py",
-    4: "uv run python scripts/compare_week4.py",
-    5: "uv run python scripts/attack.py",
-    6: "uv run python scripts/smoke.py $LIVE_URL --expect-sha <sha>",
+    1: "make evidence WEEK=1",
+    2: "make evidence WEEK=2",
+    3: "make evidence WEEK=3",
+    4: "make evidence WEEK=4",
+    5: "make evidence WEEK=5",
+    6: "make evidence WEEK=6",
 }
 # The four mentor sessions (the PDF's cadence). Other weeks are self-directed.
 WEEK_SESSION: dict[int, str] = {
@@ -131,12 +137,12 @@ WEEK_SESSION: dict[int, str] = {
 }
 WEEK_BUILD_NOTE: dict[int, str] = {
     0: "Nothing to build. Run the service, trace one upload aloud, build the Docker image.",
-    1: "The endpoint is a stub with the build order in comments. Every test in tests/weeks/test_week1.py is a sentence from the concept.",
-    2: "Metrics raise NotImplementedError; by_heading falls back to paragraphs; select_and_compress returns everything (the degraded pipeline). Build all three, then measure.",
-    3: "POST /ask answers 501 until you build the two abstention gates and citations.",
-    4: "run_agent returns not_implemented. Build the loop: wall, money checkpoint, recovery.",
-    5: "The guard ships as a pass-through: get attacked first, then build the four defences.",
-    6: "Tag, deploy, break, roll back, then write the one page that says what it did for the business.",
+    1: "The extract endpoint and the agent's first two tools. You design the tools: descriptions, constraints, what comes back, refusals in words.",
+    2: "Metrics, the heading chunker, the version filter, hybrid search and search_docs. Then the context experiment and six configurations, on a real model.",
+    3: "POST /ask with its two gates and citations; your own hundred questions; a judge you build and check against thirty labels; twenty trajectory tasks.",
+    4: "Three action tools, one analysis tool and the agent loop, with every wall. Then three ways on three task types, and your model against a frontier one.",
+    5: "Least agency first (routing), then the guard, then masking personal data. Get attacked, then prove nothing personal reached the model.",
+    6: "Tag, release, break, roll back, fix forward; the trade-off table, the write-up, the demo and the AI-assisted rehearsal.",
 }
 
 
@@ -1072,6 +1078,14 @@ def hidden_card(w: "Week") -> str:
     """The programme's score on questions you never see. Totals only, by design."""
     if w.n < HIDDEN_FROM_WEEK:
         return ""
+    if os.environ.get("PUBLIC_HUB") == "true":
+        # The published page is public; the hidden-set numbers go to you and your mentor only.
+        return (
+            '<div class="card" id="hidden"><h3 style="margin:0 0 6px">Hidden evaluation</h3>'
+            '<p class="fineprint" style="margin:0">Not shown on the public page. Your totals are '
+            "on your pull request's <code>hidden-eval</code> check and in <code>make hub</code>; "
+            "your mentor sees them on the brief.</p></div>"
+        )
     if not w.hidden:
         return (
             '<div class="card" id="hidden"><h3 style="margin:0 0 6px">Hidden evaluation</h3>'
