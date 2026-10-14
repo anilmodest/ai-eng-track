@@ -1,0 +1,32 @@
+name: clean clone
+# Week 6: can a stranger run it from the instructions alone? A fresh machine, the steps the README
+# gives and nothing else, then the smoke test against the running service. Runs on pull requests
+# from week-6 and on demand. No key is needed: the fake provider stands in for the model.
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  clean-clone:
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'week-6'
+    runs-on: ubuntu-latest
+    env:
+      MODEL_PROVIDER: fake_a
+      EMBED_PROVIDER: hash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: The README's steps, and nothing else
+        run: |
+          cp .env.example .env
+          make setup
+          make check WEEK=0
+      - name: Start the service as the README says, then smoke-test it
+        run: |
+          (make run > service.log 2>&1 &)
+          for i in $(seq 1 30); do curl -sf localhost:8000/health && break; sleep 2; done
+          uv run python scripts/smoke.py http://127.0.0.1:8000
+      - name: What the service said, if anything failed
+        if: failure()
+        run: cat service.log || true

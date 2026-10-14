@@ -161,3 +161,64 @@ def test_smoke_script_is_runnable_standalone() -> None:
         cwd=ROOT,
     )
     assert p.returncode == 0 and "expect-sha" in p.stdout
+
+
+# ---- proving it: the trade-offs, the rehearsal, the write-up, a clean start ---------------------
+
+
+def _words(rel: str) -> str:
+    path = ROOT / rel
+    return path.read_text(encoding="utf-8") if path.exists() else ""
+
+
+def test_the_tradeoff_table_compiles_every_decision_record() -> None:
+    import json
+    import subprocess
+    import sys
+
+    r = subprocess.run(
+        [sys.executable, "scripts/tradeoffs.py"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert r.returncode == 0, r.stdout + r.stderr
+    rows = json.loads((ROOT / "reports" / "tradeoffs.json").read_text())["weeks"]
+    assert [row["week"] for row in rows][:5] == [1, 2, 3, 4, 5], "a decision record for weeks 1-5"
+    for row in rows:
+        assert row["decision"] and row["rejected"], row["week"]
+        assert row["numbers_match"], f"week {row['week']}: its numbers do not match its evidence"
+
+
+def test_the_ai_assisted_rehearsal_is_written_up() -> None:
+    text = _words("decisions/week-6-rehearsal.md")
+    for heading in (
+        "The change request",
+        "What the assistant did",
+        "What I checked",
+        "Against the rubric",
+        "The recording",
+    ):
+        assert f"## {heading}" in text, heading
+    assert len(text.split()) >= 200, "say what happened, honestly, in at least 200 words"
+
+
+def test_the_business_write_up_is_numbers_not_adjectives() -> None:
+    text = _words("reflections/writeup.md")
+    assert len(text.split()) >= 250, "reflections/writeup.md, from weeks/6/WRITEUP_TEMPLATE.md"
+    table = [
+        line
+        for line in text.splitlines()
+        if line.startswith("|") and any(c.isdigit() for c in line)
+    ]
+    assert len(table) >= 3, "the measurement table needs rows with numbers"
+    assert "http" in text, "link the demo recording and the release"
+
+
+def test_a_stranger_can_run_it_from_the_instructions_alone() -> None:
+    workflow = (ROOT / ".github" / "workflows" / "clean-clone.yml").read_text(encoding="utf-8")
+    for step in ("make setup", "make check WEEK=0", "make run", "scripts/smoke.py"):
+        assert step in workflow, step
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "make run" in readme and "make check" in readme

@@ -1,7 +1,7 @@
 # Week 6 — What the gate checks
 
-`make check WEEK=6` runs everything: lint, format, strict types, Weeks 0–6 tests under both
-fakes, the evaluation gate and the attack gate.
+`make check WEEK=6` runs everything: lint, format, strict types, weeks 0 to 6 tests under both
+fakes, the evaluation gate, the attack gate and the records gate.
 
 | Test | Expects |
 | --- | --- |
@@ -15,7 +15,11 @@ fakes, the evaluation gate and the attack gate.
 | `smoke_test_skips_exercises_that_are_not_built_yet` | a typed 501 counts as skipped, so a week 1 fellow can still release |
 | `a_wrong_answer_still_fails_even_when_other_weeks_are_unbuilt` | skipping the unbuilt is not the same as passing the wrong |
 | `live_traffic_can_be_sampled_and_scored` | `scripts/sample_live.py` reads the last requests and scores them |
+| `the_tradeoff_table_compiles_every_decision_record` | A row for each of weeks 1 to 5 at least, each with a decision, a rejected option, and numbers that match its evidence |
+| `the_ai_assisted_rehearsal_is_written_up` | `decisions/week-6-rehearsal.md`: the request, what the assistant did, what you checked, the rubric, the recording |
+| `the_business_write_up_is_numbers_not_adjectives` | `reflections/writeup.md`: a page, a measurement table with numbers, links |
+| `a_stranger_can_run_it_from_the_instructions_alone` | The clean-clone workflow follows the README's steps |
 
-The release, the break, the rollback and the write-up are not gates. They are the week, and they
+The release, the break, the rollback and the demo are not gates. They are the week, and they
 are what the Defence is about. The release workflow smoke-tests the candidate image before
 publishing, so a broken build never becomes a tag someone can pull.
