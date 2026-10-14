@@ -24,7 +24,7 @@ QUESTION = "What is the vendor code for Volta? Answer with the code only."
 
 def filler(n: int) -> list[str]:
     paras: list[str] = []
-    for path in sorted((ROOT / "corpus").iterdir()):
+    for path in sorted(p for p in (ROOT / "corpus").iterdir() if p.is_file()):
         paras.extend(by_paragraph(path.read_text(encoding="utf-8"), max_chars=600))
     random.seed(7)
     random.shuffle(paras)

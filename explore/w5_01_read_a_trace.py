@@ -23,7 +23,7 @@ async def main() -> None:
     from app.main import app
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://x") as api:
-        for path in sorted((ROOT / "corpus").iterdir()):
+        for path in sorted(p for p in (ROOT / "corpus").iterdir() if p.is_file()):
             await api.post("/documents", files={"file": (path.name, path.read_bytes())})
         await api.post("/index")
         requests: list[tuple[str, str, str, dict[str, str] | None]] = [

@@ -75,7 +75,7 @@ async def test_live_traffic_can_be_sampled_and_scored(
     monkeypatch.setenv("CHUNK_STRATEGY", "paragraph")
     get_settings.cache_clear()
     corpus = ROOT / "corpus"
-    for path in sorted(corpus.iterdir()):
+    for path in sorted(p for p in corpus.iterdir() if p.is_file()):
         await api.post("/documents", files={"file": (path.name, path.read_bytes())})
     await api.post("/index", params={"strategy": "paragraph"})
     await api.post("/ask", json={"question": "What is the personal car mileage rate?"})
@@ -88,7 +88,7 @@ async def test_live_traffic_can_be_sampled_and_scored(
     assert "recent /ask requests" in out and "judge mean" in out, out
     report = json.loads((ROOT / "reports" / "live-sample.json").read_text())
     answered = [r for r in report["rows"] if not r["declined"]]
-    assert answered and answered[0]["judge_score"] == 4  # the fake judge
+    assert answered and 1 <= answered[0]["judge_score"] <= 5  # your judge, on the fake model
 
 
 async def test_smoke_test_skips_exercises_that_are_not_built_yet() -> None:
