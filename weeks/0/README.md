@@ -42,28 +42,46 @@ flowchart LR
 ```
 
 
-## Do this (about 2 hours)
+## Do this (about 5 hours, all of week 0)
 
-1. `make check WEEK=0` — read the output. Everything should be green.
-2. `make run` — open the forwarded port, go to `/docs`, upload `samples/invoice.md`, read it back.
-3. Start a reindex job, then immediately call `/health`. Notice the API did not wait.
-4. Read, in this order, and be ready to explain each one in two sentences:
+Your discovery session has already set your route: you made this repository from your route's
+template, and `.route` says which. Now, in this order:
+
+1. **Two free model keys, from two different providers**, stored as Codespaces secrets
+   (`GEMINI_API_KEY`, `GROQ_API_KEY`, ...), never in a file. Set the second as
+   `MODEL_FALLBACK_PROVIDER` in `.env`. Two, because week 1 swaps between them and free quotas run
+   out. `make live-check` proves each one works.
+2. **Connect your repository to the programme**: the "Connect repo" link you were sent installs
+   the programme's GitHub App on this one repository. From then on your pull requests get the
+   hidden evaluation and your mentor gets a brief; the programme records a baseline on your
+   untouched starter. If the programme sends a "Your product" pull request (your own variant of
+   the product), merge it.
+3. `make check WEEK=0`: read the output. Everything should be green.
+4. `make run` — open the forwarded port, go to `/docs`, upload `samples/invoice.md`, read it back.
+5. Start a reindex job, then immediately call `/health`. Notice the API did not wait.
+6. Read, in this order, and be ready to explain each one in two sentences:
    - `app/main.py` → `app/api/documents.py` → `app/ingest/parsers.py` → `app/db/session.py`
    - `app/jobs/queue.py` — why are there two queues, and which one is running right now?
-5. Build the production image and run it:
+7. Build the production image and run it:
    ```
    docker build -t ai-eng-track .
    docker run -p 7860:7860 ai-eng-track
    ```
    Then `curl localhost:7860/health`.
-6. Fill `reflections/week-0.md` (copy `REFLECTION_TEMPLATE.md` there), Q1 only: trace one upload request from
+8. Fill `reflections/week-0.md` (copy `REFLECTION_TEMPLATE.md` there), Q1 only: trace one upload request from
    the HTTP call to the row in SQLite, in your own words, under 150 words.
 
-## Session 1: Discovery (45 minutes, this week)
+## Session 1: Discovery (45 minutes, before this repository existed)
 
-Your mentor runs an observed task: trace one request aloud, unaided, in under three minutes;
-answer one or two of the questions above; and a short fixed exercise that is the starting measure.
-No pass or fail. A route is assigned, and the finished piece you will defend in Week 6 is agreed.
+You were given a small support agent that answers badly, with any AI assistant you normally use,
+and asked to find out why. It had two faults planted: a loud one that visibly breaks, and a silent
+one that returns a confident, fluent, wrong answer your assistant probably said was fine. Which you
+found set your route. Your mentor shows you what you found and what you walked past at session 2;
+it is the reason weeks 2 and 3 matter as much as they do.
+
+Your mentor confirms from the first brief that this week is done: the repository exists, checks
+are green, the baseline is recorded, and your live-check shows both keys working. If they are not
+by the end of the week, that is what an unblock call is for.
 
 Your route is already in this repository: you made it from your route's template, and `.route`
 says which. Open `weeks/1/CONCEPT.md`.

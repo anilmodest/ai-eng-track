@@ -29,29 +29,34 @@ They get the most hours.
 
 ## How a week works
 
-Every week is the same loop, in six words you will see everywhere: **Read, Run, Build, Check,
-Submit, Defend**. You never scaffold a new project after Week 0.
+Every week has the same shape: **Read, See, Build, Measure, Decide, Submit**. You never scaffold
+a new project after Week 0. Each week names one lesson; every build item is core (needed for it,
+checked by the gate) or stretch (shown to your mentor, never blocking).
 
 ```mermaid
 flowchart LR
-  A["Read<br/>the concept, 1 h"] --> B["Run<br/>the scripts, 2 h"]
-  B --> C["Build<br/>the one file, 3–5 h"]
+  A["Read<br/>the concept, 1 h"] --> B["See<br/>the scripts, 0.5–2 h"]
+  B --> C["Build<br/>5–7 h, any assistant, logged"]
   C --> D["Check<br/>make check WEEK=N"]
-  D --> E["Submit<br/>PR + reflection"]
-  E --> F["Defend<br/>the session, 40 min"]
+  D --> M["Measure<br/>make evidence WEEK=N"]
+  M --> E["Decide<br/>decisions/week-N.md"]
+  E --> F["Submit<br/>PR: checks, brief data, hidden evaluation"]
   F --> G["merge"]
 ```
 
 - **Read**: one page, one sentence you must be able to say back in your own words, a few
   diagrams and a short reading list. Write the sentence in `reflections/week-N.md`, Q1.
 - **Run**: one or two small scripts and a few files to read. Change nothing yet.
-- **Build**: the one piece that week leaves out ships as a stub with the build order in comments.
-  Build it, then measure something with the week's script.
+- **Build**: what the week asks for, specified as behaviour that must hold, not as a list of
+  functions. Use any assistant you like, and log it in `ai-use/week-N.yml` as you go.
 - **Check**: `make check WEEK=N`, as often as you like. Green is the goal, not the end.
-- **Submit**: a pull request from branch `week-N` to `main`, and your reflection, 24 hours before
-  the session.
-- **Defend**: a 30–40 minute session where your mentor probes your pull request and runs inputs
-  you have not seen. Then the next week's sentence.
+- **Measure**: `make evidence WEEK=N` runs the week's measurements on a real model and keeps them
+  in `evidence/week-N.json`, with the commit, provider and model.
+- **Decide**: `decisions/week-N.md`, the one decision of the week, with the numbers from the
+  evidence file. The gate checks that they match.
+- **Submit**: a pull request from `week-N` to `main`, 24 hours before a session. The checks run,
+  the data for your mentor's brief is collected, and from week 2 the programme's hidden evaluation
+  runs on questions you never see.
 
 Your **route** (start, core or pro) is set by your mentor at discovery from two questions, in
 order: can you do the basic work of the track at all; and do you check what you produce. It holds
@@ -77,13 +82,18 @@ hours go, so what they are spent on depends on where you started.
 | Session | When | Length | What happens |
 | --- | --- | --- | --- |
 | **1. Discovery** | Week 0 | 45 min | An observed task sets your route and takes the starting measure. The finished piece is agreed |
-| **2. Direction** | end of Week 1 | 45 min | Route confirmed or corrected, in writing. The plan for the rest is set against the work you already attempted |
-| **3. Observation** | end of Week 3 | 60 min | Your mentor watches you work on a task you have not seen. Not a progress report: they see how you think, check and recover |
-| **4. Defence** | end of Week 6 | 60 min | You defend the finished piece. The starting measure is taken again |
+| **2. Direction** | end of Week 1 | 45 min | Route confirmed or a correction recommended. Unseen items with your assistant; your decisions without it |
+| **3. Observation** | end of Week 3 | 60 min | You explain the gap between your score and the hidden score, diagnose a hidden failure with your assistant, then defend your threshold and judge without it |
+| **4. Defence** | end of Week 6 | 60 min | Demo; three decisions defended with tools closed; an unseen change with your assistant; the starting measure again |
 
-Weeks 2, 4 and 5 are self-directed: the gate, the held-out inputs your mentor left with you, the
-self-tests and this page are your feedback. Your pull requests still go up every week; your mentor
-reads them before the next session, and their review comments land in that session, not between.
+From session 2, every session has a half where you drive your own AI assistant on something
+unseen while your mentor watches how you steer it, and a half with tools closed. Interviews now
+have both kinds of round.
+
+Weeks 2, 4 and 5 have no session: the gate, the hidden evaluation on your pull request, the
+self-tests and this page are your feedback. Your mentor reads a one-page brief built from each pull
+request (they do not read your diff) and gives a one-click verdict: on track, something to probe
+at the next session, or an offer of an unblock call.
 
 **Unblock calls**: up to two, fifteen minutes each, on request, after you have attempted the thing
 yourself. Send what you tried with the request.
@@ -100,9 +110,10 @@ Three layers of evidence, from cheapest to most human. None of them is self-repo
 
 | Layer | Who | What it measures |
 | --- | --- | --- |
-| **The gate**: `make check WEEK=N` | CI, on every pull request, with a fake model so no key is needed | Lint, strict types, that week's tests under two fake providers, and from Week 3 the evaluation gate, from Week 5 the attack gate |
-| **Held-out inputs** | Your mentor, in sessions 2 and 3, and left with you for the self-directed weeks | How your service behaves on documents and questions you did not design for |
-| **Your reflection**: `reflections/week-N.md` | You write, your mentor reads before each session | The concept in your words, what surprised you, what you would change |
+| **The gate**: `make check WEEK=N` | CI, on every pull request, with a fake model so no key is needed | Lint, strict types, that week's tests under two fake providers, the records, and from Week 3 the evaluation gate, from Week 5 the attack gate |
+| **The hidden evaluation** | The programme, on every pull request from week 2, on one reference model | About 150 questions and 20 agent tasks written for your product, never shown to you: you see the totals |
+| **Your records** | You write; the gate checks them; your mentor's brief shows them | The decision and the numbers behind it, what an assistant did and what you checked, your reflection |
+| **Your mentor's judgement** | Sessions, against one rubric | How you steer an assistant on something unseen, and whether you can explain your own work without one |
 
 Work reaches your mentor a day early, so the session is not spent finding out what is there. You
 talk more than your mentor, because otherwise the hour drifts into them solving the problem.
