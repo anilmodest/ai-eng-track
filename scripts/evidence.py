@@ -92,7 +92,8 @@ def git(*args: str) -> str:
 def model_in_use() -> tuple[str, str]:
     s = get_settings()
     spec = PROVIDERS.get(s.model_provider)
-    model = s.model_name or (spec.default_model if spec else "")
+    fallback = "fake-1" if s.model_provider in FAKE_PROVIDERS else ""
+    model = s.model_name or (spec.default_model if spec else fallback)
     return s.model_provider, model
 
 
