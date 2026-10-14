@@ -202,8 +202,17 @@ def spent_since(session: Session, since: datetime) -> float:
 REMOVE: dict[str, list[str]] = {
     "start": [],
     "core": ["app/trace.py"],
-    "pro": ["app/llm/retry.py", "app/llm/structured.py", "app/llm/cost.py", "app/trace.py"],
+    "pro": [
+        "app/llm/retry.py",
+        "app/llm/structured.py",
+        "app/llm/cost.py",
+        "app/trace.py",
+        "app/mcp_server.py",
+    ],
 }
+
+# Stubs kept as files rather than strings: the core route's stub is also pro's.
+STUB_FILES = {"app/mcp_server.py": "weeks/4/routes/core/app__mcp_server.py"}
 
 
 # Never shipped to a fellow: the machinery that makes the templates, and its own test.
@@ -222,6 +231,7 @@ HELPER_WEEK = {
     "app/llm/structured.py": 1,
     "app/llm/cost.py": 1,
     "app/trace.py": 5,
+    "app/mcp_server.py": 4,
 }
 
 # Text for one route only:      <!-- route:start --> ... <!-- /route -->   (or route:core,pro)
@@ -318,7 +328,10 @@ def build(root: Path, route: str, out: Path) -> dict[str, object]:
     for rel, week in HELPER_WEEK.items():
         week_files.setdefault(week, set()).add(rel)
     for rel in REMOVE[route]:
-        _write(out / rel, STUBS[rel])
+        if rel in STUB_FILES:
+            _write(out / rel, (root / STUB_FILES[rel]).read_bytes().decode("utf-8"))
+        else:
+            _write(out / rel, STUBS[rel])
 
     for path in out.rglob("*"):
         if path.is_file() and path.suffix in _TEXT_SUFFIXES:

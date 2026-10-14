@@ -18,7 +18,9 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-      - run: uv sync
+      - name: Install (pro also needs LangGraph, for the week 4 rebuild)
+        run: |
+          if [ "$(cat .route 2>/dev/null)" = pro ]; then uv sync --extra langgraph; else uv sync; fi
       - name: Work out which week this PR is for
         id: week
         run: |

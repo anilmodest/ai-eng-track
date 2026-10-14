@@ -1,6 +1,10 @@
 # Week 4 on the pro route
 
-**No helpers, one real constraint.** The constraint: a **plan-then-execute** variant alongside the
-loop (one model call produces the whole plan; the plan runs without the model), and the agent's
-cost per correct answer must not exceed the workflow's on at least four of the six tasks. The
-comparison table, with a fourth column, is the evidence.
+**No helpers, two real constraints.** You write the MCP server from its signatures. And:
+
+1. **The LangGraph rebuild is core for you** (`app/agents/langgraph_agent.py`,
+   `uv sync --extra langgraph`): the same walls and the same `AgentResult`, passing the same
+   tests, then compared with your loop on code size, cost, speed and how hard each is to debug.
+   Your decision record says which you would ship.
+2. **A plan step**: before the loop, one call that writes the plan; measure it on the trajectory
+   tasks with two or more tools, against the loop without it, and keep it only if it pays.

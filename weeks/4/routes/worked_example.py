@@ -1,89 +1,77 @@
-"""Week 4 worked example (start route): one tool call, then finish. The loop body without the loop.
+"""Week 4 worked example (start route): the loop's body, without the loop.
 
     uv run python weeks/4/routes/worked_example.py
 
-Everything run_agent needs is here once: the prompt with the tool schemas, a ToolCall from the
-model, run_tool, the result appended to the transcript. Your job is the loop and its walls.
+One turn of the agent, written out in full: ask the model for one tool call, run it through the
+door every tool goes through, and handle each way it can end. Your run_agent repeats this inside
+the walls (steps, cost), and adds "finish" with the numbers check.
+
+    the model answers with a call   -> app.tools.call runs it -> the result goes back as text
+    the call is malformed           -> the result is an error the model can read; go round again
+    the call needs approval         -> NeedsApproval: stop, and say what is pending
+    the model fails                 -> ModelError, SchemaError: stop as a provider error
 """
 
 import asyncio
-import json
 import os
-from pathlib import Path
 
-from pydantic import BaseModel, Field
+from sqlmodel import Session
 
-from app.agents.tools import ToolContext, run_tool, tool_schemas
-from app.llm.client import Message
-from app.llm.providers.fake import FakeClient
-from app.llm.structured import complete_structured
-
-SAMPLE = str(Path(__file__).resolve().parents[3] / "samples/invoice.md")
-PROMPT = (Path(__file__).resolve().parents[3] / "app/llm/prompts/agent_v1.md").read_text(
-    encoding="utf-8"
-)
+from app.agents.agent import system_prompt
+from app.db.session import get_engine
+from app.llm.client import Message, ModelError
+from app.llm.registry import get_model_client
+from app.llm.structured import SchemaError, complete_structured
+from app.settings import get_settings
+from app.tools import NeedsApproval, ToolContext, call
+from app.tools.base import ToolCall
 
 
-class ToolCall(BaseModel):
-    tool: str = Field(min_length=1)
-    args: dict[str, object] = Field(default_factory=dict)
-
-
-async def run_once(ctx: ToolContext, question: str) -> str:
-    system = f"{PROMPT}\n\nTools:\n{json.dumps(tool_schemas(), indent=1)}"
-    transcript = [
-        Message(role="system", content=system),
-        Message(role="user", content=f"Question: {question}"),
-    ]
-
-    call, _ = await complete_structured(
-        ctx.client, transcript, ToolCall, attempts=1, base_delay_s=0, timeout_s=10
-    )
-    print(f"model chose: {call.tool}({call.args})")
-    result = await run_tool(ctx, call.tool, call.args)  # errors come back as text, never raise
-    print(f"tool said: {result[:120]!r}")
-    transcript.append(Message(role="assistant", content=call.model_dump_json()))
-    transcript.append(Message(role="user", content=f"Result of {call.tool}: {result[:4000]}"))
-    # A loop would go back to complete_structured here, until finish, a wall, or a checkpoint.
-    return result
-
-
-def _read(path: str) -> str:
-    with open(path, encoding="utf-8") as f:
-        return f.read()
+async def one_turn(ctx: ToolContext, transcript: list[Message]) -> str:
+    """Returns how the turn ended: the tool's result, or why it stopped."""
+    assert ctx.client is not None
+    s = ctx.settings
+    try:
+        step, _ = await complete_structured(
+            ctx.client,
+            transcript,
+            ToolCall,
+            attempts=s.model_retry_attempts,
+            base_delay_s=s.model_retry_base_delay_s,
+            timeout_s=s.model_timeout_s,
+        )
+    except (ModelError, SchemaError) as e:
+        return f"stopped, provider error: {e}"
+    print(f"  the model asks for {step.tool}({step.args})")
+    if step.tool == "finish":
+        return f"finished: {step.args.get('answer')}"
+    try:
+        result = await call(ctx, step.tool, step.args)
+    except NeedsApproval as e:
+        return f"stopped for approval: {e.tool}({e.arguments})"
+    transcript.append(Message(role="assistant", content=step.model_dump_json()))
+    transcript.append(Message(role="user", content=f"Result of {step.tool}: {result}"))
+    return f"result: {result[:200]}"
 
 
 async def main() -> None:
-    os.environ["DATABASE_URL"] = "sqlite:///./data/worked-w4.db"
-    os.environ.setdefault("MODEL_PROVIDER", "fake_a")
-    from sqlmodel import Session
-
-    from app.db.models import Document
-    from app.db.session import get_engine
-    from app.retrieval.embed import get_embedder
-    from app.retrieval.store import index_documents
-    from app.settings import get_settings
-
     with Session(get_engine()) as session:
-        if not session.get(Document, 1):
-            sample = SAMPLE
-            text = await asyncio.to_thread(_read, sample)
-            session.add(
-                Document(
-                    filename="invoice.md",
-                    content_type="text/markdown",
-                    text=text,
-                    char_count=len(text),
-                )
-            )
-            session.commit()
-            index_documents(session, get_embedder(), get_settings().chunk_strategy)
-        ctx = ToolContext(
-            session=session, embedder=get_embedder(), settings=get_settings(), client=FakeClient()
-        )
-        await run_once(ctx, "When is the Woodgrove invoice due?")
-    print("Now: the loop, AGENT_MAX_STEPS, NeedsApproval, finish, and the cost roll-up.")
+        ctx = ToolContext(session=session, settings=get_settings(), client=get_model_client())
+        for request in ("Which version is C-1004 on?", "Escalate T-2020 to engineering now."):
+            transcript = [
+                Message(role="system", content=system_prompt()),
+                Message(role="user", content=f"Request: {request}"),
+            ]
+            print(f"Request: {request}")
+            for _ in range(3):
+                ending = await one_turn(ctx, transcript)
+                print(f"  {ending}")
+                if not ending.startswith("result"):
+                    break
+            print()
 
 
 if __name__ == "__main__":
+    os.environ.setdefault("DATABASE_URL", "sqlite:///./data/worked-example-4.db")
+    os.environ.setdefault("MODEL_PROVIDER", "fake_a")
     asyncio.run(main())
