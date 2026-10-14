@@ -360,6 +360,18 @@ def test_mask_replaces_emails_phones_and_the_names_it_is_given() -> None:
     assert unmask(m.text, m.mapping) == PERSON
 
 
+def test_mask_finds_people_inside_a_json_tool_result() -> None:
+    """A ticket reaches the model as JSON: newlines escaped, accents escaped. Still masked."""
+    import json
+
+    from app.privacy import mask
+
+    body = json.dumps({"body": PERSON + "\nTomasz Wójcik"})
+    out = mask(body, names=["Aisha Bello", "Tomasz Wójcik"]).text
+    for value in ("Aisha Bello", "aisha.bello", "161 496", "Tomasz", "W\\u00f3jcik"):
+        assert value not in out, value
+
+
 def test_mask_keeps_what_the_model_needs() -> None:
     from app.privacy import mask
 
