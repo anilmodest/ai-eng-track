@@ -59,7 +59,8 @@ Your mentor runs an observed task: trace one request aloud, unaided, in under th
 answer one or two of the questions above; and a short fixed exercise that is the starting measure.
 No pass or fail. A route is assigned, and the finished piece you will defend in Week 6 is agreed.
 
-Then: `make route ROUTE=<what your mentor said>` once, and open `weeks/1/CONCEPT.md`.
+Your route is already in this repository: you made it from your route's template, and `.route`
+says which. Open `weeks/1/CONCEPT.md`.
 
 ## Optional: self-test
 

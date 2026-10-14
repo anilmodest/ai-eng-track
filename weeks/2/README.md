@@ -153,13 +153,14 @@ After step 4, run `scripts/version_check.py` again. The filtered column should b
   gate runs on a fake provider with `EMBED_PROVIDER=hash`, so it never costs you a request.
 - **A test is failing and the message is not obvious?** Open the test. It is short, and it says
   exactly what it expected.
+<!-- route:start -->
 - **On `start`?** `routes/worked_example.py` implements a sibling metric (mean average precision)
   and a sibling chunker (`by_lines`) in full. Run it, then read it beside your stub rather than
   instead of it. Copy the shape, not the code.
+<!-- /route -->
 - **Stuck for more than an hour?** That is what the unblock call is for. Use it.
 
-Your route changes what this week gives you: read `routes/start.md`, `routes/core.md` or
-`routes/pro.md` in this folder. The hub shows which one is yours.
+Your route changes what this week gives you: the page in `routes/` in this folder says how.
 
 ## Measure it and choose (2 hours)
 

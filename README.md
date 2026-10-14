@@ -9,12 +9,11 @@ You build the assistant that gets it right, cites its source, and says when it d
 The brief is `weeks/0/BRIEF.md`; what it must do is `weeks/0/REQUIREMENTS.md`; what is expected
 of you, including the rule on AI tools, is [`RULES.md`](RULES.md).
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/anilmodest/ai-eng-track?quickstart=1)
-
 ## Start here (three clicks, nothing to install)
 
-1. You made this repo from the template. Good.
-2. Click the badge above (or **Code → Create codespace on main**). Wait about 90 seconds.
+1. You made this repo from the template your route's link pointed to. Good: `.route` says which
+   route that is, and it is the only route in here.
+2. **Code → Codespaces → Create codespace on main**. Wait about 90 seconds.
 3. `weeks/0/README.md` opens by itself. Follow it.
 
 Everything is installed for you. The first check already ran. If you see `Ready.` in the
@@ -28,7 +27,6 @@ terminal, you are ready.
 | `make run` | Start the API on port 8000 (docs at `/docs`) |
 | `make check WEEK=1` | This week's gate: lint, types, tests, once per fake provider. Writes `reports/week-1.json` |
 | `make live-check` | Call the real provider from `.env` with the sample documents |
-| `make route` | Apply the route you were placed on. It is already in `.route`; you do not choose it. `start`: worked examples; `core`: planted faults to find; `pro`: no helpers, one constraint per week |
 | `make fmt` | Format and auto-fix lint |
 
 Per-week measurement scripts (evidence for the session, not gates unless the week says so):
@@ -88,14 +86,14 @@ corpus/     the product manual, every topic written for both version 2 and versi
             attacked with. Every product, setting and default in it is invented, on purpose
 eval/       golden set, retrieval queries, tasks, attacks, thresholds
 samples/    three documents used by tests and live-check
-scripts/    check.py, live_check.py, route.py, and one measurement script per week
+scripts/    check.py, live_check.py, next_step.py, and one measurement script per week
 ```
 
 
 ## Your hub page
 
-Every merge to `main` rebuilds a page at `https://<your-user>.github.io/ai-eng-track` from what is in
-the repo. It is the one place to start from:
+Every push rebuilds a page at `https://<your-user>.github.io/<your-repo>` from what is in the
+repo. It is the one place to start from:
 
 - **The front page** answers one question: where are you and what is next. One line per week:
   status, one sentence of evidence, and a link.
@@ -122,7 +120,7 @@ container registry. No account beyond GitHub, nothing to pay, nothing to configu
 Anyone can then run exactly what you shipped:
 
 ```
-docker run -p 7860:7860 ghcr.io/<your-user>/ai-eng-track:v1.0.0
+docker run -p 7860:7860 ghcr.io/<your-user>/<your-repo>:v1.0.0
 ```
 
 Nothing to configure: a package published by Actions from a public repository is public, so

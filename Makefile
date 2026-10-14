@@ -4,7 +4,7 @@ ROUTE ?=
 # uv may live in ~/.local/bin (pip --user) before the shell's PATH knows it; find it anyway.
 UV ?= $(shell command -v uv 2>/dev/null || (test -x $(HOME)/.local/bin/uv && echo $(HOME)/.local/bin/uv) || echo uv)
 
-.PHONY: setup check test lint types run worker live-check route fmt
+.PHONY: setup next check test lint types run worker live-check fmt
 
 setup:            ## Install everything (Codespaces runs this for you)
 	$(UV) sync
@@ -38,5 +38,8 @@ worker:           ## Start the Redis job worker (needs REDIS_URL)
 live-check:       ## Hit the real provider from .env with the sample documents
 	$(UV) run python scripts/live_check.py
 
-route:            ## Apply the route you were assigned (.route). Mentor re-assign: ROUTE=start|core|pro
-	$(UV) run python scripts/route.py $(ROUTE)
+# source-only:begin
+# Programme team only; never in a fellow's repository.
+templates:        ## Build the three route templates into build/templates/start|core|pro
+	$(UV) run python scripts/templates.py build --all --out build/templates
+# source-only:end

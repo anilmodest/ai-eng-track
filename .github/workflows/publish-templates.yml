@@ -1,0 +1,71 @@
+name: publish templates
+# Source repo only (never shipped to a fellow). On every push to main, builds the three route
+# templates with scripts/templates.py, proves week 0 passes in each, and pushes each tree as one
+# new commit to <owner>/<prefix>-start, -core and -pro. A fellow creates their repository from
+# the one their route's link points to. One-time setup: docs/templates.md.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-templates
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        route: [start, core, pro]
+    env:
+      OWNER: ${{ vars.PROGRAMME_OWNER || github.repository_owner }}
+      PREFIX: ${{ vars.TEMPLATE_PREFIX || 'ai-eng-track' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync
+      - name: Build the ${{ matrix.route }} template
+        run: uv run python scripts/templates.py build --route ${{ matrix.route }} --out "$RUNNER_TEMP/tpl"
+      - name: Week 0 must pass in the built template (on a copy, so nothing it writes ships)
+        env:
+          MODEL_PROVIDER: fake_a
+        run: |
+          cp -r "$RUNNER_TEMP/tpl" "$RUNNER_TEMP/tpl-check"
+          cd "$RUNNER_TEMP/tpl-check"
+          uv sync
+          uv run python scripts/check.py --week 0
+      - name: Push it to the template repository
+        env:
+          TOKEN: ${{ secrets.TEMPLATES_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::error title=No TEMPLATES_TOKEN::Add a token that can push to $OWNER/$PREFIX-start|core|pro (docs/templates.md)."
+            exit 1
+          fi
+          repo="$OWNER/$PREFIX-${{ matrix.route }}"
+          git config --global user.name "programme-bot"
+          git config --global user.email "programme-bot@users.noreply.github.com"
+          if ! git clone --depth 1 "https://x-access-token:${TOKEN}@github.com/${repo}.git" "$RUNNER_TEMP/dest"; then
+            echo "::error title=Template repo missing::Create $repo first (docs/templates.md)."
+            exit 1
+          fi
+          cd "$RUNNER_TEMP/dest"
+          rsync -a --delete --exclude .git "$RUNNER_TEMP/tpl/" ./
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No change for $repo."
+            exit 0
+          fi
+          version=$(jq -r .template_version .template.json)
+          git commit -m "Template ${version} (route ${{ matrix.route }}) from ${GITHUB_REPOSITORY}@${GITHUB_SHA::7}"
+          git push origin HEAD
+          echo "### $repo updated to $version" >> "$GITHUB_STEP_SUMMARY"

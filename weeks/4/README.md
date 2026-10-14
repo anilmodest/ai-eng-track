@@ -147,12 +147,13 @@ block the comparison.
   Week 1's lesson, so doing it under duress is on-topic rather than a detour.
 - **A test is failing and the message is not obvious?** Open the test. It is short, and it says
   exactly what it expected.
+<!-- route:start -->
 - **On `start`?** `routes/worked_example.py` runs *one* tool call and finishes: the loop's body
   without the loop. Read it beside your stub rather than instead of it.
+<!-- /route -->
 - **Stuck for more than an hour?** An unblock call is available after a real attempt. Use it.
 
-Your route changes what this week gives you: read `routes/start.md`, `routes/core.md` or
-`routes/pro.md` in this folder (the hub shows yours).
+Your route changes what this week gives you: the page in `routes/` in this folder says how.
 
 ## Measure it and decide (2 hours)
 

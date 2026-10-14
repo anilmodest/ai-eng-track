@@ -108,13 +108,14 @@ disguised as a float: raise it and you decline more, lower it and you invent mor
   only on the runs you are going to paste.
 - **A test is failing and the message is not obvious?** Open the test. It is short, and it says
   exactly what it expected.
+<!-- route:start -->
 - **On `start`?** `routes/worked_example.py` answers a question from a single passage, with the
   `grounded` flag and one citation: the whole shape at `k=1`. Read it beside your stub rather than
   instead of it.
+<!-- /route -->
 - **Stuck for more than an hour?** That is what the two unblock calls are for. Use one.
 
-Your route changes what this week gives you: read `routes/start.md`, `routes/core.md` or
-`routes/pro.md` in this folder. The hub shows which one is yours.
+Your route changes what this week gives you: the page in `routes/` in this folder says how.
 
 ## Measure it and block a bad change (1 hour 30 minutes)
 

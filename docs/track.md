@@ -64,8 +64,9 @@ never what is measured:
 | Pace | slow, mentor-supported | compressed | self-directed |
 | Finished piece | modest and completed | full | harder, made public |
 
-Set it once with `make route ROUTE=...`; each week's `routes/<route>.md` says what that means for
-the week.
+You make your repository from your route's template, so it holds that route and no other; each
+week's `routes/` page says what it means for the week. If the route is corrected at session 2, the
+programme opens a pull request on your repository that swaps the files for the weeks still ahead.
 
 ## Sessions and gates
 

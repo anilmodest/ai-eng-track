@@ -65,10 +65,14 @@ The explore script asks you three questions and expects you to answer them from 
 without opening the code: which step cost the most, which request was slowest and why, which
 failed and with what kind.
 
-**Tracing is given and working on the start route only.** On core and pro, `app/trace.py` is
-signatures only, so these commands show you nothing until you have instrumented the service
-yourself. Read this section now, run the commands against the start route's tracer if you want to
-see the target, and come back to them after step 3 of the build.
+<!-- route:start -->
+**Tracing is given and working on your route.** Run the commands now and read what they show.
+<!-- /route -->
+<!-- route:core,pro -->
+**On your route `app/trace.py` is signatures only**, so these commands show you nothing until you
+have instrumented the service yourself. Read this section now, and come back to the commands after
+step 3 of the build.
+<!-- /route -->
 
 Then get attacked. **This template ships with the guard as a pass-through**: the service works,
 and it is wide open. Run:
@@ -119,11 +123,17 @@ before step 8: the budget is enforced from your own trace data.
 
 `make check WEEK=5` as often as you like. Red is the week's work, not a problem.
 
-Your route changes what you are given: read `routes/start.md`, `routes/core.md` or `routes/pro.md`
-in this folder (the hub shows yours). On start, tracing is given and the guard's docstrings name
-each defence, with `routes/worked_example.py` solving a one-label, one-pattern version in full. On
-core, the guard is implemented with faults planted but not located or counted. On pro, both files
-are signatures only, and there is an extra constraint.
+Your route changes what this week gives you: the page in `routes/` in this folder says how.
+<!-- route:start -->
+On start, tracing is given and the guard's docstrings name each defence, with
+`routes/worked_example.py` solving a one-label, one-pattern version in full.
+<!-- /route -->
+<!-- route:core -->
+On core, the guard is implemented with faults planted but not located or counted.
+<!-- /route -->
+<!-- route:pro -->
+On pro, both files are signatures only, and there is an extra constraint.
+<!-- /route -->
 
 ### If you get stuck
 
@@ -132,8 +142,10 @@ are signatures only, and there is an extra constraint.
   nothing.
 - **A test is failing and the message is not obvious?** Open the test. It is short, and it says
   exactly what it expected. `CHECKS.md` in this folder lists what each one wants in one line.
+<!-- route:start -->
 - **On `start`?** `routes/worked_example.py` fences a `<passage>` and strips one pattern, with the
   test that proves both. Read it beside your stub rather than instead of it.
+<!-- /route -->
 - **Stuck for more than an hour?** An unblock call is available after a real attempt. Use it.
 
 ## Attack it and prove the defence (1 hour 30 minutes)

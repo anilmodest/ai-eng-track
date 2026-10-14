@@ -111,9 +111,9 @@ back to, so the tag comes first and the break comes second.
    win over the file.
    *Done when* `health_says_what_is_running` and `health_reflects_the_build_the_deploy_wrote`
    pass.
-2. **Decide whether you trust the smoke test.** On the core and pro routes it is not simply
-   given: run it against a healthy service and a broken one before you rely on it
-   (`routes/core.md`). It must pass when the service is fine, fail on the wrong commit, treat a
+2. **Decide whether you trust the smoke test.** Run it against a healthy service and a broken one
+   before you rely on it; your page in `routes/` says how much of it your route gives you. It
+   must pass when the service is fine, fail on the wrong commit, treat a
    `kill_switch` refusal as intended with no model call, skip exercises that answer 501, still
    fail on a genuinely wrong answer, and run on its own from the command line.
    *Done when* `smoke_test_passes_against_the_service`, `smoke_test_fails_on_the_wrong_commit`,
@@ -159,8 +159,7 @@ back to, so the tag comes first and the break comes second.
    *Done when* every row of the measurement table has a number and a source, and the "what went
    wrong on the way" section is filled in — it is the section your mentor will trust most.
 
-Your route changes what this week gives you: read `routes/start.md`, `routes/core.md` or
-`routes/pro.md` in this folder (the hub shows yours).
+Your route changes what this week gives you: the page in `routes/` in this folder says how.
 
 `make check WEEK=6` runs everything from all six weeks.
 

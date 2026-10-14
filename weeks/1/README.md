@@ -99,12 +99,13 @@ reading your invoice, you are computing it from tokens so the number exists at a
   on-topic rather than a detour.
 - **A test is failing and the message is not obvious?** Open the test. It is short, and it says
   exactly what it expected.
+<!-- route:start -->
 - **On `start`?** `routes/worked_example.py` solves a smaller version of this in full. Read it
   beside your stub rather than instead of it.
+<!-- /route -->
 - **Stuck for more than an hour?** That is what the two unblock calls are for. Use one.
 
-Your route changes what you are given: read `routes/start.md`, `routes/core.md` or
-`routes/pro.md` in this folder. The hub shows which one is yours.
+Your route changes what this week gives you: the page in `routes/` in this folder says how.
 
 ## Prove the swap (30 minutes)
 
