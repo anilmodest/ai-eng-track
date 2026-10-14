@@ -128,6 +128,14 @@ def main() -> int:
             },
         )
 
+    # Week 1+: the week ends in a decision record whose numbers match the evidence file, and an
+    # AI-use log. Written last, from evidence/week-N.json (make evidence WEEK=N, real model).
+    if args.week >= 1 and (ROOT / "scripts" / "records.py").exists():
+        results["records"] = run(
+            "decision record and AI-use log",
+            ["uv", "run", "python", "scripts/records.py", "--week", str(args.week)],
+        )
+
     report_path = ROOT / "reports" / f"week-{args.week}.json"
     report = json.loads(report_path.read_text()) if report_path.exists() else {}
     report["gates"] = results
@@ -162,6 +170,13 @@ def main() -> int:
             print(f"  tests/weeks/test_week{args.week}.py: work that passed before does not now.")
             print("  Fix those first; a regression is worth more of your attention than a stub.")
             print("  Run  make next  to see which.")
+        elif results.get("records") is False and all(
+            v for k, v in results.items() if k != "records"
+        ):
+            print("  Everything passes except the week's records, which are written last:")
+            print(f"    make evidence WEEK={args.week}      (a real model; writes evidence/)")
+            print(f"    decisions/week-{args.week}.md      (from DECISION_TEMPLATE.md)")
+            print(f"    ai-use/week-{args.week}.yml        (from AI_USE_TEMPLATE.yml)")
         else:
             print("  The tests pass. Something else above does not: read the first FAIL line.")
     return 0 if report["ok"] else 1

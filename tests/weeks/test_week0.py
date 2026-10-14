@@ -74,3 +74,20 @@ async def test_batch_job_runs_without_blocking(api: AsyncClient, queue: InMemory
     r = await api.get(f"/jobs/{job_id}")
     assert r.json()["status"] == "done"
     assert r.json()["detail"] == "reindexed 3 documents"
+
+
+def test_the_desks_customers_and_tickets_are_loaded(env: None) -> None:
+    """Loaded in week 0, read by nothing until week 1's tools. Other desks' rows are there too:
+    the scope that keeps them out is something week 1 builds, not something the data hides."""
+    from sqlmodel import Session, select
+
+    from app.db.session import get_engine
+    from app.support import Customer, Ticket, desk_account, desk_tickets, load_support
+
+    with Session(get_engine()) as session:
+        customers = session.exec(select(Customer)).all()
+        tickets = session.exec(select(Ticket)).all()
+        assert len(customers) >= 10 and len(tickets) >= 50
+        assert {c.account for c in customers} > {desk_account()}
+        assert 0 < len(desk_tickets(session)) < len(tickets)
+        assert load_support(session) == (len(customers), len(tickets))  # loading twice adds none

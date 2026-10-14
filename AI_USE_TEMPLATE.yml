@@ -1,0 +1,11 @@
+# Copy to ai-use/week-N.yml and keep it as you go, not at the end. Every line must be something
+# you can explain at a session: using an assistant is expected, undisclosed help is the one thing
+# that fails the programme. Empty is honest if you used none; say so with `entries: []`.
+hours: 0          # roughly how many hours you spent on this week, all in
+entries:
+  - when: 2026-10-20
+    tool: ""        # the assistant: Claude Code, Copilot, ChatGPT, Cursor, ...
+    asked: ""       # what you asked it for, in a sentence
+    produced: ""    # what it gave you
+    checked: ""     # what you checked, and how (ran it, read the source, compared a number...)
+    kept: yes       # yes | partly | no

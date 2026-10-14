@@ -36,14 +36,5 @@ Your mentor reads this before the session; it is what the session is about.
 
 ## Evidence
 
-<!-- Week 1: paste both `make live-check` tables here, one per provider. -->
-
-### Provider A
-
-```
-```
-
-### Provider B
-
-```
-```
+<!-- Nothing to paste. Your numbers are in evidence/week-N.json (make evidence WEEK=N), and your
+     decision record quotes them. -->

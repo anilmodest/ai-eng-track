@@ -1,0 +1,146 @@
+{
+  "_note": "The support desk's customer records, standing in for the system a real desk would call. Read through app/tools only; nothing here is writable by the model.",
+  "account": "desk-emea",
+  "customers": [
+    {
+      "customer_id": "C-1001",
+      "account": "desk-emea",
+      "name": "Fabrikam Logistics",
+      "version": "v3",
+      "plan": "enterprise",
+      "region": "EMEA",
+      "seats": 240,
+      "contact": "ops@fabrikam.example"
+    },
+    {
+      "customer_id": "C-1002",
+      "account": "desk-emea",
+      "name": "Tailspin Freight",
+      "version": "v2",
+      "plan": "business",
+      "region": "EMEA",
+      "seats": 55,
+      "contact": "it@tailspin.example"
+    },
+    {
+      "customer_id": "C-1003",
+      "account": "desk-emea",
+      "name": "Northwind Traders",
+      "version": "v2",
+      "plan": "enterprise",
+      "region": "EMEA",
+      "seats": 1200,
+      "contact": "platform@northwind.example"
+    },
+    {
+      "customer_id": "C-1004",
+      "account": "desk-emea",
+      "name": "Contoso Manufacturing",
+      "version": "v3",
+      "plan": "business",
+      "region": "EMEA",
+      "seats": 310,
+      "contact": "support@contoso.example"
+    },
+    {
+      "customer_id": "C-1005",
+      "account": "desk-emea",
+      "name": "Woodgrove Bank",
+      "version": "v3",
+      "plan": "enterprise",
+      "region": "EMEA",
+      "seats": 90,
+      "contact": "integration@woodgrove.example"
+    },
+    {
+      "customer_id": "C-1006",
+      "account": "desk-emea",
+      "name": "Adventure Works Cycles",
+      "version": "v2",
+      "plan": "starter",
+      "region": "EMEA",
+      "seats": 18,
+      "contact": "admin@adventure-works.example"
+    },
+    {
+      "customer_id": "C-1007",
+      "account": "desk-emea",
+      "name": "Lamna Healthcare",
+      "version": "v3",
+      "plan": "business",
+      "region": "EMEA",
+      "seats": 140,
+      "contact": "data@lamna.example"
+    },
+    {
+      "customer_id": "C-1008",
+      "account": "desk-emea",
+      "name": "Margie's Travel",
+      "version": "v2",
+      "plan": "starter",
+      "region": "EMEA",
+      "seats": 12,
+      "contact": "tech@margies.example"
+    },
+    {
+      "customer_id": "C-1009",
+      "account": "desk-emea",
+      "name": "Alpine Ski House",
+      "version": "v3",
+      "plan": "starter",
+      "region": "EMEA",
+      "seats": 25,
+      "contact": "it@alpineski.example"
+    },
+    {
+      "customer_id": "C-1010",
+      "account": "desk-emea",
+      "name": "Coho Winery",
+      "version": "v2",
+      "plan": "business",
+      "region": "EMEA",
+      "seats": 60,
+      "contact": "ops@cohowinery.example"
+    },
+    {
+      "customer_id": "C-2001",
+      "account": "desk-amer",
+      "name": "Litware Retail",
+      "version": "v2",
+      "plan": "enterprise",
+      "region": "AMER",
+      "seats": 480,
+      "contact": "ops@litware.example"
+    },
+    {
+      "customer_id": "C-2002",
+      "account": "desk-amer",
+      "name": "Proseware Health",
+      "version": "v3",
+      "plan": "business",
+      "region": "AMER",
+      "seats": 75,
+      "contact": "it@proseware.example"
+    },
+    {
+      "customer_id": "C-3001",
+      "account": "desk-apac",
+      "name": "Wide World Importers",
+      "version": "v3",
+      "plan": "enterprise",
+      "region": "APAC",
+      "seats": 900,
+      "contact": "platform@wwi.example"
+    },
+    {
+      "customer_id": "C-3002",
+      "account": "desk-apac",
+      "name": "Trey Research",
+      "version": "v2",
+      "plan": "business",
+      "region": "APAC",
+      "seats": 45,
+      "contact": "lab@treyresearch.example"
+    }
+  ]
+}

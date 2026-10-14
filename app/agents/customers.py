@@ -20,7 +20,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-REGISTRY = Path(__file__).resolve().parent.parent.parent / "samples" / "customers.json"
+REGISTRY = Path(__file__).resolve().parent.parent.parent / "support" / "customers.json"
 
 
 class OutOfScope(Exception):

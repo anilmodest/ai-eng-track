@@ -18,9 +18,13 @@ def get_engine() -> Engine:
         _engine = create_engine(url, connect_args={"check_same_thread": False})
         # Imported for the side effect: every table must be registered before create_all runs.
         import app.retrieval.store  # noqa: F401
+        import app.support
         import app.trace  # noqa: F401
 
         SQLModel.metadata.create_all(_engine)
+        # The desk's customers and tickets are there from week 0, before anything reads them.
+        with Session(_engine) as session:
+            app.support.load_support(session)
     return _engine
 
 

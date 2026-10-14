@@ -1,4 +1,8 @@
 name: check
+# On every pull request: that week's gate against the fake provider (no key is ever needed), then
+# the data your mentor's weekly brief is built from, uploaded as the artifact `brief-data`.
+# The programme's hidden evaluation is not here: it runs outside your repository and posts its own
+# check, `hidden-eval`, so nothing in this file can see or change it.
 on:
   pull_request:
   push:
@@ -9,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the brief compares this branch with main
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
@@ -24,8 +30,18 @@ jobs:
         run: uv run python scripts/check.py --week ${{ steps.week.outputs.week }}
         env:
           MODEL_PROVIDER: fake_a
+      - name: Brief data for your mentor (the same file you can build with scripts/brief_data.py)
+        if: always() && github.event_name == 'pull_request'
+        run: |
+          uv run python scripts/brief_data.py --week ${{ steps.week.outputs.week }} \
+            --base "origin/${{ github.base_ref }}"
+      - uses: actions/upload-artifact@v4
+        if: always() && github.event_name == 'pull_request'
+        with:
+          name: brief-data
+          path: reports/brief.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: week-report
-          path: reports/*.json
+          path: reports/week-*.json

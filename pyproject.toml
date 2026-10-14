@@ -19,6 +19,7 @@ dependencies = [
     "fastembed>=0.3",
     "mcp>=1.2",
     "sqlite-vec>=0.1.9",
+    "pyyaml>=6.0",
 ]
 
 [dependency-groups]
@@ -59,7 +60,7 @@ plugins = ["pydantic.mypy"]
 files = ["app", "scripts", "explore", "tests"]
 
 [[tool.mypy.overrides]]
-module = ["arq.*", "pypdf.*", "fastembed.*", "mcp.*", "markdown_it.*", "sqlite_vec.*", "qdrant_client.*"]
+module = ["arq.*", "pypdf.*", "fastembed.*", "mcp.*", "markdown_it.*", "sqlite_vec.*", "qdrant_client.*", "yaml.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
