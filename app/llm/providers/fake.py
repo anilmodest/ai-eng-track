@@ -156,12 +156,34 @@ def _choose_tool(messages: list[Message]) -> dict[str, object]:
     if not tools:
         return {"tool": "none", "args": {}}
     want = _stems(request)
-    scores = [len(want & _stems(_schema_words(t))) for t in tools]
-    chosen = tools[max(range(len(tools)), key=lambda i: scores[i])]
-    params = chosen.get("parameters")
-    required = params.get("required", []) if isinstance(params, dict) else []
     ids = _ID_TOKEN.findall(request)
-    args = {name: (ids[i] if i < len(ids) else "") for i, name in enumerate(required)}
+
+    def patterns(tool: dict[str, object]) -> dict[str, str]:
+        """Each required argument's regex, when the schema gives one."""
+        params = tool.get("parameters")
+        if not isinstance(params, dict):
+            return {}
+        props = params.get("properties", {})
+        return {
+            name: str(props.get(name, {}).get("pattern", ""))
+            for name in params.get("required", [])
+            if isinstance(props, dict)
+        }
+
+    def fits(pattern: str, token: str) -> bool:
+        return bool(pattern) and re.fullmatch(pattern, token.upper()) is not None
+
+    def score(tool: dict[str, object]) -> int:
+        # Words in common, plus a strong hint when an id in the request fits the tool's argument
+        # pattern: a constraint is information a model reads, not only a check.
+        hint = any(fits(p, t) for p in patterns(tool).values() for t in ids)
+        return len(want & _stems(_schema_words(tool))) + (3 if hint else 0)
+
+    chosen = tools[max(range(len(tools)), key=lambda i: score(tools[i]))]
+    args: dict[str, str] = {}
+    for i, (name, pattern) in enumerate(patterns(chosen).items()):
+        match = next((t for t in ids if fits(pattern, t)), None)
+        args[name] = match if match is not None else (ids[i] if i < len(ids) else "")
     return {"tool": chosen.get("name", ""), "args": args}
 
 
