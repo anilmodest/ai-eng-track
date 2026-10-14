@@ -1013,6 +1013,50 @@ def checks_card(w: "Week") -> str:
     )
 
 
+def records_card(w: "Week") -> str:
+    """The week's decision and AI-use log, with the same verdict the gate gave them."""
+    if w.n < 1:
+        return ""
+    from scripts.records import check_ai_use, check_decision
+
+    d, a = check_decision(w.n), check_ai_use(w.n)
+    if not d.present and not a.present:
+        return (
+            '<div class="card" id="records"><h3 style="margin:0 0 6px">Decision and AI use</h3>'
+            '<p class="fineprint" style="margin:0">Written last: <code>make evidence WEEK='
+            f"{w.n}</code>, then <code>decisions/week-{w.n}.md</code> and "
+            f"<code>ai-use/week-{w.n}.yml</code>.</p></div>"
+        )
+    pill = '<span class="pill green">ok</span>' if d.ok else '<span class="pill red">not yet</span>'
+    parts = [f'<div class="card" id="records"><h3 style="margin:0 0 6px">Decision {pill}</h3>']
+    if d.decision:
+        parts.append(f'<p style="margin:0 0 8px">{esc(d.decision)}</p>')
+    if d.evidence_lines:
+        rows: list[list[object]] = [
+            [
+                e.key,
+                f"{e.claimed:g}",
+                "" if e.actual is None else f"{e.actual:g}",
+                "✓" if e.ok else "✗",
+            ]
+            for e in d.evidence_lines
+        ]
+        parts.append(table(["evidence", "you wrote", "the file says", ""], rows))
+    if d.rejected:
+        parts.append(f'<p class="fineprint"><b>Rejected:</b> {esc(d.rejected)}</p>')
+    for problem in d.problems:
+        parts.append(f'<p class="fineprint">✗ {esc(problem)}</p>')
+    if a.present:
+        kept = ", ".join(f"{v} {k}" for k, v in sorted(a.kept.items())) or "none"
+        hours = f"{a.hours:g} hours" if a.hours else "hours not given"
+        parts.append(
+            f'<p class="fineprint"><b>AI use:</b> {a.entries} entries, {a.checked_entries} say '
+            f"what was checked, kept: {esc(kept)} &middot; {esc(hours)}</p>"
+        )
+    parts.append("</div>")
+    return "".join(parts)
+
+
 HIDDEN_FROM_WEEK = 2
 
 
@@ -1082,6 +1126,7 @@ def render_week(w: "Week", weeks: list["Week"], repo: str) -> str:
         )
     parts.append(checks_card(w))
     parts.append(hidden_card(w))
+    parts.append(records_card(w))
 
     if w.pr:
         state = str(w.pr.get("state", "")).lower()

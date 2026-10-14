@@ -4,7 +4,7 @@ ROUTE ?=
 # uv may live in ~/.local/bin (pip --user) before the shell's PATH knows it; find it anyway.
 UV ?= $(shell command -v uv 2>/dev/null || (test -x $(HOME)/.local/bin/uv && echo $(HOME)/.local/bin/uv) || echo uv)
 
-.PHONY: setup next check test lint types run worker live-check fmt hub
+.PHONY: setup next check evidence test lint types run worker live-check fmt hub
 
 setup:            ## Install everything (Codespaces runs this for you)
 	$(UV) sync
@@ -14,6 +14,10 @@ next:             ## What to do now: the week, the files to edit, the first thin
 
 check:            ## Run this week's gate: lint + types + tests, writes reports/week-$(WEEK).json
 	$(UV) run python scripts/check.py --week $(WEEK)
+
+ONLY ?=
+evidence:         ## This week's measurements on a REAL model -> evidence/week-$(WEEK).json (ONLY=name for one)
+	$(UV) run python scripts/evidence.py --week $(WEEK) $(if $(ONLY),--only $(ONLY),)
 
 test:
 	$(UV) run pytest -q
