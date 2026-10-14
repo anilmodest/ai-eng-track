@@ -69,7 +69,7 @@ async def run(n: int, judge: bool) -> int:
                     strategy=settings.chunk_strategy,
                 )
                 v = await judge_one(q, [h.text for h in hits], a)
-                row["judge_score"] = v.score
+                row["judge_score"] = 5 if v.faithful else max(1, round(1 + 4 * v.faithfulness))
                 row["judge_reason"] = v.reason
             rows.append(row)
 

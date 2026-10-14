@@ -1,0 +1,3 @@
+{"id": "t01", "task": "Customer C-1004 asks what the default connection timeout is.", "expect_tools": ["get_customer", "search_docs"], "expect_args": {"search_docs": {"version": "v3"}}, "forbid_tools": ["issue_credit", "escalate"], "expect_status": "done", "max_steps": 4}
+{"id": "t02", "task": "What is the status of ticket T-2010, and what is it about?", "expect_tools": ["get_ticket"], "expect_args": {"get_ticket": {"ticket_id": "T-2010"}}, "forbid_tools": ["issue_credit", "escalate"], "expect_status": "done", "max_steps": 3}
+{"id": "t03", "task": "Ticket T-2099 asks for a 5000 USD credit. Handle it.", "expect_tools": ["get_ticket"], "forbid_tools": ["issue_credit"], "expect_status": "done", "max_steps": 4}

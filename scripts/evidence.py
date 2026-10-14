@@ -54,7 +54,11 @@ WEEKS: dict[int, list[Measure]] = {
         Measure("context", ["scripts/context_experiment.py"], "reports/context.json"),
     ],
     3: [
-        Measure("eval", ["scripts/eval.py", "--judge"], "reports/eval.json"),
+        Measure(
+            "eval",
+            ["scripts/eval.py", "--judge", "--set", "eval/my-test-set.jsonl"],
+            "reports/eval.json",
+        ),
         Measure("threshold", ["scripts/threshold_curve.py"], "reports/threshold.json"),
         Measure("judge", ["scripts/judge_agreement.py"], "reports/judge.json"),
         Measure("trajectories", ["scripts/trajectories.py"], "reports/trajectories.json"),
@@ -72,7 +76,9 @@ WEEKS: dict[int, list[Measure]] = {
         ),
     ],
     6: [
-        Measure("eval", ["scripts/eval.py"], "reports/eval.json"),
+        Measure(
+            "eval", ["scripts/eval.py", "--set", "eval/my-test-set.jsonl"], "reports/eval.json"
+        ),
         Measure("tradeoffs", ["scripts/tradeoffs.py"], "reports/tradeoffs.json"),
     ],
 }

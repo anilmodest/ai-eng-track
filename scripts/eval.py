@@ -3,7 +3,8 @@
     uv run python scripts/eval.py                   # thresholds from eval/thresholds.json
     uv run python scripts/eval.py --judge           # add model-as-judge scoring (costs tokens)
     uv run python scripts/eval.py --min-hit 0.9     # override one threshold
-    uv run python scripts/eval.py --thresholds eval/thresholds-ci.json   # what CI runs
+    uv run python scripts/eval.py --thresholds eval/thresholds-ci.json --corpus core  # CI
+    uv run python scripts/eval.py --set eval/my-test-set.jsonl   # your own 100 questions
 
 Loads corpus/ into a scratch database, indexes with CHUNK_STRATEGY, asks every golden question,
 and reports four task-specific metrics:
@@ -12,6 +13,11 @@ and reports four task-specific metrics:
     answer_rate_answerable      of questions it can answer, how many did we answer?
     hit_rate                    of answered answerable questions, how many held the expected fact?
     citation_validity           of answers, how many cited a chunk from the expected document?
+    answer_accuracy             of answerable questions, how many were answered with the fact?
+
+A set whose rows carry `kind` (straightforward | no_answer | version, as your own set does) also
+gets each kind's accuracy or decline rate. `--corpus core` loads only the hand-written pages, which
+the programme's golden set was written against; the default loads the whole corpus.
 
 Exit code 1 if any metric is under its threshold. That is the CI gate. Writes reports/eval.json.
 """
@@ -44,7 +50,7 @@ async def run(
 
     rows: list[dict[str, Any]] = []
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://eval") as api:
-        for path in corpus_paths():
+        for path in corpus_paths(generated=args.corpus == "all"):
             r = await api.post("/documents", files={"file": (path.name, path.read_bytes())})
             assert r.status_code == 201, r.text
         r = await api.post("/index")
@@ -80,6 +86,7 @@ async def run(
                     "top_score": out.get("top_score"),
                     "cost_usd": out.get("cost_usd", 0.0),
                     "answer": out.get("answer"),
+                    "cited": [c["text"] for c in out["citations"]],
                 }
             )
 
@@ -99,9 +106,19 @@ async def run(
         "total_cost_usd": round(sum(r.get("cost_usd", 0.0) for r in rows), 6),
         "errors": sum(1 for r in rows if "error" in r),
     }
+    metrics["answer_accuracy"] = _rate([bool(r.get("hit")) for r in answerable])
+    kinds = sorted({str(r["kind"]) for r in rows if r.get("kind")})
+    for kind in kinds:
+        of_kind = [r for r in rows if r.get("kind") == kind and "error" not in r]
+        if kind == "no_answer":
+            metrics["decline_rate_no_answer"] = _rate([not r["answered"] for r in of_kind])
+        else:
+            metrics[f"accuracy_{kind}"] = _rate([bool(r.get("hit")) for r in of_kind])
     if args.judge:
         scored = [r["judge_score"] for r in rows if "judge_score" in r]
         metrics["judge_mean"] = round(sum(scored) / len(scored), 2) if scored else 0.0
+        verdicts = [r["judge_faithful"] for r in rows if "judge_faithful" in r]
+        metrics["judge_faithful_rate"] = _rate(verdicts)
 
     gates = {
         "abstain_rate_unanswerable": metrics["abstain_rate_unanswerable"]
@@ -146,8 +163,9 @@ async def run(
 
     from app.run_mode import run_mode
 
-    (ROOT / "reports").mkdir(exist_ok=True)
-    (ROOT / "reports" / "eval.json").write_text(
+    out_path = Path(args.out)
+    out_path.parent.mkdir(exist_ok=True)
+    out_path.write_text(  # noqa: ASYNC240 (once, at the end of a script)
         json.dumps(
             {
                 **run_mode(),
@@ -160,8 +178,15 @@ async def run(
         )
     )
     ok = all(gates.values()) and metrics["errors"] == 0
-    print(f"\n{'GATE PASS' if ok else 'GATE FAIL'}  (reports/eval.json)")
+    print(f"\n{'GATE PASS' if ok else 'GATE FAIL'}  ({out_path.name})")
     return 0 if ok else 1
+
+
+def _normalise(row: dict[str, Any]) -> dict[str, Any]:
+    """Your own set says `kind`; the golden set says `answerable`. Both mean the same here."""
+    if "answerable" not in row and "kind" in row:
+        row = {**row, "answerable": row["kind"] != "no_answer"}
+    return row
 
 
 def _rate(flags: list[bool]) -> float:
@@ -177,10 +202,13 @@ def main() -> int:
     ap.add_argument("--min-hit", dest="min_hit", type=float)
     ap.add_argument("--min-citation", dest="min_citation", type=float)
     ap.add_argument("--db", default=str(ROOT / "data" / "eval.db"))
+    ap.add_argument("--set", default=str(GOLDEN), help="the questions: golden.jsonl or your own")
+    ap.add_argument("--corpus", choices=["all", "core"], default="all")
+    ap.add_argument("--out", default=str(ROOT / "reports" / "eval.json"))
     args = ap.parse_args()
     os.environ["DATABASE_URL"] = f"sqlite:///{Path(args.db).as_posix()}"
     Path(args.db).unlink(missing_ok=True)
-    golden = load_jsonl(GOLDEN)
+    golden = [_normalise(r) for r in load_jsonl(Path(args.set))]
     thresholds: dict[str, float] = json.loads(Path(args.thresholds).read_text(encoding="utf-8"))
     for key in ("min_abstain", "min_answer", "min_hit", "min_citation"):
         override = getattr(args, key)

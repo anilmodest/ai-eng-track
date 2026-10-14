@@ -108,6 +108,8 @@ def main() -> int:
                 "eval/thresholds-ci.json",
                 "--db",
                 "data/eval-check.db",
+                "--corpus",
+                "core",
             ],
             env={
                 "MODEL_PROVIDER": "fake_a",

@@ -17,8 +17,6 @@ def corpus_paths(*, generated: bool = True) -> list[Path]:
     if not generated:
         return top
     more = sorted(
-        p
-        for p in CORPUS.rglob("*")
-        if p.is_file() and p.suffix in SUFFIXES and p.parent != CORPUS
+        p for p in CORPUS.rglob("*") if p.is_file() and p.suffix in SUFFIXES and p.parent != CORPUS
     )
     return top + more

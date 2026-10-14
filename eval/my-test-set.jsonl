@@ -1,0 +1,3 @@
+{"id": "m001", "kind": "straightforward", "q": "our invoice from northwind says 4800, is that right?", "doc": "invoice-northwind-0042.md", "expect": "4,800"}
+{"id": "m002", "kind": "no_answer", "q": "can kestrel send a text message when a run fails"}
+{"id": "m003", "kind": "version", "version": "v3", "q": "we upgraded and the timeout we set in the conf file does nothing now", "doc": "manual-v3-connection-timeout.md", "expect": "KESTREL_CONNECT_TIMEOUT"}

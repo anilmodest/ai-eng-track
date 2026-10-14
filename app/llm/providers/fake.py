@@ -21,7 +21,9 @@ Two dials:
                  (app/guard.py) is present
        ask       an AskAnswer that quotes the first context chunk and cites [1]
        agent     a scripted tool sequence: search_documents, then finish with the first hit
-       judge     a JudgeVerdict with score 4
+       judge     a faithfulness verdict: the answer after `Answer:` is split into sentences
+                 (claims); a claim is supported when most of its words appear in the text after
+                 `Passages:`. Crude, deterministic, and a fair stand-in for a careful grader
        tool_call one {"tool", "args"} chosen the way a weak model chooses: the listed tool whose
                  name and descriptions share most words with the request, and the first id-like
                  token of the request as each required argument. Vague descriptions therefore
@@ -187,6 +189,30 @@ def _choose_tool(messages: list[Message]) -> dict[str, object]:
     return {"tool": chosen.get("name", ""), "args": args}
 
 
+def _judge(messages: list[Message]) -> dict[str, object]:
+    text = _all_text(messages)
+    if "Answer:" not in text or "Passages:" not in text:
+        return {
+            "faithful": False,
+            "claims": 0,
+            "supported": 0,
+            "unsupported": [],
+            "reason": "no passages or no answer to grade",
+        }
+    passages = text.split("Passages:", 1)[1].split("Answer:", 1)[0]
+    answer = text.split("Answer:", 1)[1]
+    known = _stems(passages)
+    claims = [s.strip() for s in re.split(r"(?<=[.!?])\s+", answer.strip()) if len(s.strip()) > 3]
+    unsupported = [c for c in claims if _stems(c) and len(_stems(c) & known) / len(_stems(c)) < 0.6]
+    return {
+        "faithful": not unsupported,
+        "claims": len(claims),
+        "supported": len(claims) - len(unsupported),
+        "unsupported": unsupported,
+        "reason": "every claim is in the passages" if not unsupported else "some claims are not",
+    }
+
+
 class FakeClient:
     def __init__(self, *, name: str = "fake_a", script: str = "ok", model: str = "fake-1") -> None:
         self.name = name
@@ -230,7 +256,7 @@ class FakeClient:
         if task == "tool_call":
             return json.dumps(_choose_tool(messages))
         if task == "judge":
-            return json.dumps({"score": 4, "reason": "answer is supported by the cited context"})
+            return json.dumps(_judge(messages))
         if task == "language":  # the Week 1 worked example
             return json.dumps({"language": "French", "confidence": 0.9})
         return "The single most important property is reliability."
