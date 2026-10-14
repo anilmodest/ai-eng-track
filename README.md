@@ -9,6 +9,10 @@ You build the assistant that gets it right, cites its source, and says when it d
 The brief is `weeks/0/BRIEF.md`; what it must do is `weeks/0/REQUIREMENTS.md`; what is expected
 of you, including the rule on AI tools, is [`RULES.md`](RULES.md).
 
+**New here? Read [`docs/start-here.md`](docs/start-here.md) first: Track 3 in ten minutes.** The
+[glossary](docs/glossary.md) has every term in one sentence, and
+[worked examples](docs/worked-examples.md) show how to read the numbers in weeks 2 and 3.
+
 ## Start here (three clicks, nothing to install)
 
 1. You made this repo from the template your route's link pointed to. Good: `.route` says which
@@ -67,11 +71,21 @@ Read → Run → Build → Check → Submit → Defend, every week, on one growi
 four steps, the routes and how sessions and gates work are in [`docs/track.md`](docs/track.md)
 (also section 1, 2 and 5 of your hub page).
 
-- Work on a branch named `week-N`. Open a PR to `main`. CI runs `make check WEEK=N`.
-- Fill `reflections/week-N.md` (copy `REFLECTION_TEMPLATE.md` there) before you send the PR link.
-- Four mentor sessions in total: Discovery (Week 0), Direction (end of Week 1), Observation (end of
-  Week 3), Defence (end of Week 6). Other weeks are self-directed. PRs go up every week and are
-  reviewed at the next session; send the link a day before it. Merge when the gate is green.
+Every week, from week 1, the same eight steps:
+
+1. `git checkout -b week-N`.
+2. Read `weeks/N/CONCEPT.md`, then `weeks/N/README.md` (the exercise).
+3. In weeks 1 to 4, run that week's `explore/` scripts. Read them; never edit them.
+4. Make the change to the service, with any assistant you like, logging it as you go in
+   `ai-use/week-N.yml` (from `AI_USE_TEMPLATE.yml`).
+5. `make check WEEK=N` until it passes, then `make evidence WEEK=N` on a real model.
+6. Write `decisions/week-N.md` from the evidence file (`DECISION_TEMPLATE.md`), and
+   `reflections/week-N.md` (`REFLECTION_TEMPLATE.md`).
+7. Open a pull request to `main`. The checks, the brief data for your mentor and the programme's
+   hidden evaluation (from week 2) report within minutes.
+8. In a session week, send the link 24 hours before the session; merge after it. Four sessions in
+   total: Discovery (week 0), Direction (end of week 1), Observation (end of week 3), Defence (end
+   of week 6).
 
 ## Layout
 
@@ -86,6 +100,8 @@ corpus/     the product manual, every topic written for both version 2 and versi
             business documents the same desk gets asked about. What you index, search and get
             attacked with. Every product, setting and default in it is invented, on purpose
 eval/       golden set, retrieval queries, tasks, attacks, thresholds
+support/    the desk's customers and tickets, loaded at start; read only through app/tools
+decisions/  your decision record each week; ai-use/ your AI-use log; evidence/ your measurements
 samples/    three documents used by tests and live-check
 scripts/    check.py, live_check.py, next_step.py, and one measurement script per week
 ```

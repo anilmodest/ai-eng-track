@@ -26,7 +26,7 @@
         "[python]": { "editor.defaultFormatter": "charliermarsh.ruff" }
       }
     },
-    "codespaces": { "openFiles": ["weeks/0/README.md"] }
+    "codespaces": { "openFiles": ["docs/start-here.md", "weeks/0/README.md"] }
   },
   "secrets": {
     "GEMINI_API_KEY": { "description": "Default provider. Free key, no card: https://aistudio.google.com/apikey" },

@@ -3,12 +3,15 @@
 Area 1 of the track is not taught here. It is checked. This week you show that the ground the
 next six weeks stand on is solid, and your mentor uses what they see to place you on a route.
 
-**Read `BRIEF.md` in this folder first.** It is the client's own brief, and it is the reason every
+**Read [`docs/start-here.md`](../../docs/start-here.md) first: Track 3 in ten minutes.** Then
+`BRIEF.md` in this folder. It is the client's own brief, and it is the reason every
 later week is shaped the way it is. Then read `REQUIREMENTS.md`: twelve things the finished system
 must do, each one checked. `../../RULES.md` says what is expected of you, including the one rule
 about using AI tools.
 
-**There is no model anywhere in the service yet.** That is deliberate.
+**There is no model anywhere in the service yet.** That is deliberate. The desk's customers and
+tickets (`support/`) are already loaded into the database, and nothing reads them yet: week 1's
+tools are the first thing that will.
 
 ## What the service does today
 
@@ -20,6 +23,9 @@ about using AI tools.
 | `POST /jobs/reindex` | Start a slow batch job on a queue and return at once |
 | `GET /jobs/{id}` | Its status |
 | `GET /health` | Liveness |
+
+At start the service also loads `support/customers.json` and `support/tickets.jsonl` into two
+tables, `customer` and `ticket` (`app/support.py`).
 
 One upload, drawn. Trace it in the code, then trace it aloud.
 
