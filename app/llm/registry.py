@@ -64,6 +64,15 @@ PROVIDERS: dict[str, ProviderSpec] = {
 
 FAKE_PROVIDERS = {"fake_a", "fake_b"}
 
+# Two providers whose address is configuration, not code:
+#   openai_compat  any OpenAI-compatible endpoint: MODEL_BASE_URL, MODEL_API_KEY, MODEL_NAME.
+#                  The programme's hidden evaluation runs your service this way, through a proxy
+#                  that fixes the model and caps the spend.
+#   programme      the programme's own key, for the one week 4 run on a frontier model:
+#                  PROGRAMME_MODEL_BASE_URL and PROGRAMME_MODEL_TOKEN (Codespaces secrets the
+#                  programme gives you); MODEL_NAME is the frontier model it names. Capped.
+CONFIGURED_PROVIDERS = {"openai_compat", "programme"}
+
 
 class ProviderConfigError(RuntimeError):
     pass
@@ -74,9 +83,26 @@ def build_client(
 ) -> ModelClient:
     if provider in FAKE_PROVIDERS:
         return FakeClient(name=provider, script=settings.fake_script)
+    if provider in CONFIGURED_PROVIDERS:
+        if provider == "openai_compat":
+            base_url, key = settings.model_base_url, api_key
+            missing = "MODEL_BASE_URL and MODEL_API_KEY"
+        else:
+            base_url = os.environ.get("PROGRAMME_MODEL_BASE_URL", "")
+            key = api_key or os.environ.get("PROGRAMME_MODEL_TOKEN")
+            missing = "PROGRAMME_MODEL_BASE_URL and PROGRAMME_MODEL_TOKEN"
+        if not base_url or not key or not model:
+            raise ProviderConfigError(f"{provider} needs {missing}, and MODEL_NAME")
+        return OpenAICompatClient(
+            name=provider,
+            base_url=base_url,
+            api_key=key,
+            model=model,
+            timeout_s=settings.model_timeout_s,
+        )
     spec = PROVIDERS.get(provider)
     if spec is None:
-        known = ", ".join(sorted([*PROVIDERS, *FAKE_PROVIDERS]))
+        known = ", ".join(sorted([*PROVIDERS, *FAKE_PROVIDERS, *CONFIGURED_PROVIDERS]))
         raise ProviderConfigError(f"unknown MODEL_PROVIDER {provider!r}; known: {known}")
     key = api_key or os.environ.get(spec.key_env)
     if not key:

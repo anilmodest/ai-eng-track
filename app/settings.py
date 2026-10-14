@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     model_provider: str = "gemini"
     model_name: str | None = None
     model_api_key: str | None = None
+    model_base_url: str = ""  # only for MODEL_PROVIDER=openai_compat
     model_fallback_provider: str | None = None
     model_fallback_api_key: str | None = None
 
