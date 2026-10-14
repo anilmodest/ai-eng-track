@@ -2,9 +2,9 @@
 
     uv run python explore/w4_01_watch_the_agent_think.py ["your question"]
 
-Needs a real provider (the agent path spends a few calls). Plain code answers instantly or
-declines; the workflow does its fixed steps; the agent decides as it goes. Read the agent's
-transcript: which tools did it pick, in what order, and did it stop when it had the answer?
+Needs a real provider (the agent path spends a few calls). The default question is one plain
+code answers in three lines, instantly and for nothing. Watch what the agent spends to reach the
+same answer: which tools did it pick, in what order, and did it stop when it had the answer?
 """
 
 import asyncio
@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_Q = "Which invoice has the largest total due, and what is it?"
+DEFAULT_Q = "What plan is C-1007 on?"
 
 
 async def main() -> None:
@@ -25,14 +25,14 @@ async def main() -> None:
 
     question = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_Q
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://x") as api:
-        for path in sorted((ROOT / "corpus").iterdir()):
+        from app.ingest.corpus import corpus_paths
+
+        for path in corpus_paths(generated=False):
             await api.post("/documents", files={"file": (path.name, path.read_bytes())})
         await api.post("/index")
         print(f"Q: {question}\n")
         for mode in ("plain", "workflow", "agent"):
-            r = await api.post(
-                "/tasks/run", json={"question": question, "mode": mode, "approved": True}
-            )
+            r = await api.post("/tasks/run", json={"question": question, "mode": mode})
             out = r.json()
             print(f"=== {mode}: {out['status']}  ${out['cost_usd']:.5f}  {out['latency_ms']} ms")
             print(f"    calls: {out['calls'] or '-'}")
