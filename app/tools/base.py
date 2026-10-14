@@ -25,7 +25,11 @@ from sqlmodel import Session
 
 from app.llm.client import ModelClient
 from app.settings import Settings
-from app.trace import span
+from app.trace import set_attribute, span
+
+# Tools whose results carry text someone outside the desk wrote: a customer's ticket, a page of
+# the manual. With the guard on, their results reach the model fenced as data (week 5).
+THIRD_PARTY = {"get_ticket", "search_docs"}
 
 
 class ToolCall(BaseModel):
@@ -46,6 +50,12 @@ class ToolContext:
     approved: set[str] = field(default_factory=set)  # tool names a person approved for this run
     spent_usd: float = 0.0
     calls: list[str] = field(default_factory=list)
+    # Fence third-party text as data before a model reads it (week 5). On wherever a model is
+    # the reader: the tasks API and the MCP server set it from GUARD_ENABLED.
+    fence_untrusted: bool = False
+    # The tools this run was offered (week 5, least agency); None means every tool. A tool that
+    # was not offered is refused here, whatever the model asks for: the offer is a boundary too.
+    offered: set[str] | None = None
 
 
 class NeedsApproval(Exception):
@@ -96,6 +106,9 @@ async def run_tool(tools: dict[str, ToolSpec], ctx: ToolContext, name: str, args
     spec = tools.get(name)
     if spec is None:
         return f"error: unknown tool {name!r}; the tools are: {', '.join(tools)}"
+    if ctx.offered is not None and name not in ctx.offered:
+        offered = ", ".join(sorted(ctx.offered))
+        return f"error: {name} is not available for this request; use: {offered}"
     if not isinstance(args, dict):
         return f"error: arguments for {name} must be a JSON object, not {type(args).__name__}"
     try:
@@ -103,10 +116,22 @@ async def run_tool(tools: dict[str, ToolSpec], ctx: ToolContext, name: str, args
     except ValidationError as e:
         return f"error: invalid arguments for {name}: {readable(e)}"
     if spec.needs_approval and name not in ctx.approved:
+        async with span("approval"):
+            set_attribute("approval.tool", name)
+            set_attribute("approval.granted", False)
         raise NeedsApproval(name, parsed.model_dump())
     ctx.calls.append(name)
     async with span(f"tool.{name}"):
-        return await spec.run(ctx, parsed)
+        set_attribute("gen_ai.operation.name", "execute_tool")
+        set_attribute("gen_ai.tool.name", name)
+        result = await spec.run(ctx, parsed)
+    if name in THIRD_PARTY and ctx.fence_untrusted:
+        # Text someone else wrote (a customer's ticket, a page of the manual) goes back to the
+        # model fenced as data, with known instruction patterns stripped (week 5, app/guard.py).
+        from app.guard import fence_tool_result
+
+        result = fence_tool_result(name, result)
+    return result
 
 
 def as_json(data: dict[str, Any]) -> str:

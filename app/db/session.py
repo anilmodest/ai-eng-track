@@ -17,6 +17,7 @@ def get_engine() -> Engine:
             Path(url.removeprefix("sqlite:///")).parent.mkdir(parents=True, exist_ok=True)
         _engine = create_engine(url, connect_args={"check_same_thread": False})
         # Imported for the side effect: every table must be registered before create_all runs.
+        import app.llm.masking  # noqa: F401
         import app.retrieval.store  # noqa: F401
         import app.support
         import app.trace  # noqa: F401

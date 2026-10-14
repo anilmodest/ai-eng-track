@@ -15,13 +15,16 @@ from sqlmodel import Session
 
 from app.agents import plain
 from app.agents.agent import AgentStep, run_agent
+from app.agents.routing import tools_for
 from app.agents.workflow import run_workflow
 from app.db.session import get_session
 from app.llm.client import ModelClient
+from app.llm.masking import MaskingClient, start_run
 from app.llm.registry import get_model_client
 from app.retrieval.embed import Embedder, get_embedder
 from app.settings import Settings, get_settings
 from app.tools import ToolContext
+from app.trace import note
 
 router = APIRouter()
 
@@ -67,7 +70,14 @@ async def run_task(
         client=client,
         embedder=embedder,
         approved=set(body.approve),
+        fence_untrusted=settings.guard_enabled,
     )
+    # Every model call in this run is masked (week 5, when MASK_PERSONAL_DATA is on) and recorded.
+    start_run()
+    ctx.client = MaskingClient(client, settings, session)
+
+    # On the trace root, so cost can be attributed per ticket (scripts/trace_report.py).
+    note(f"{body.mode}: {body.question[:300]}")
 
     def ms() -> int:
         return int((time.perf_counter() - started) * 1000)
@@ -92,7 +102,11 @@ async def run_task(
             cost_usd=round(ctx.spent_usd, 6),
             latency_ms=ms(),
         )
-    a = await run_agent(ctx, body.question)
+    # Least agency (week 5): offered only the tools this request's task needs, and refused any
+    # other, in app/tools/base.py, whatever the model asks for.
+    offered = tools_for(body.question)
+    ctx.offered = set(offered)
+    a = await run_agent(ctx, body.question, tools=offered)
     return TaskOut(
         mode="agent",
         status=a.status,

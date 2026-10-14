@@ -49,6 +49,7 @@ async def call_tool(token: str, tool: str, args: dict[str, Any]) -> str:
             client=get_model_client(),
             embedder=get_embedder(),
             approved=approved_tools(),
+            fence_untrusted=get_settings().guard_enabled,
         )
         try:
             return await call_registered(ctx, tool, args)

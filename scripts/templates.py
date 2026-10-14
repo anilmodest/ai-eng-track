@@ -69,6 +69,8 @@ async def with_retry[T](
 ''',
     "app/llm/structured.py": f'''"""Ask for JSON, validate against a schema, repair once, then fail.
 {MARK}. Rebuild it: tests/weeks/test_week1.py says what it must do.
+Time every call in a "model.call" span (app.trace.span), with add_usage and, from week 5, the
+gen_ai.* attributes app.trace.set_attribute records (tests/weeks/test_week5.py names them).
 """
 
 from pydantic import BaseModel
@@ -148,6 +150,7 @@ class Span(SQLModel, table=True):
     cost_usd: float = 0.0
     error_kind: str | None = None
     detail: str = ""
+    attributes: str = "{{}}"  # JSON: OpenTelemetry-style key/value pairs
 
 
 def begin_request(name: str) -> str:
@@ -167,6 +170,11 @@ def mark_error(kind: ErrorKind | str, detail: str = "") -> None:
 def note(text: str) -> None:
     """Leave a short note on the request root (what was asked, what was answered)."""
     return None  # TODO
+
+
+def set_attribute(key: str, value: str | int | float | bool) -> None:
+    """Set an OpenTelemetry-style attribute (gen_ai.request.model, ...) on the innermost span."""
+    return None  # TODO: stored with the span as JSON in Span.attributes
 
 
 def add_usage(tokens_in: int, tokens_out: int, cost_usd: float) -> None:

@@ -44,6 +44,9 @@ class Settings(BaseSettings):
 
     # Week 5+: guardrails
     guard_enabled: bool = True
+    mask_personal_data: bool = (
+        False  # week 5: mask names, emails and phones before every model call
+    )
     kill_switch: bool = False
     daily_budget_usd: float = 1.00
 

@@ -3,12 +3,14 @@
     uv run python scripts/trace_report.py [--db data/app.db]
 
 Per step: how many, how slow (p50, p95), how much. Per request: the five most expensive. Per
-failure: which kind, how often. Writes reports/traces.json for the progress page.
+failure: which kind, how often. Per ticket: what working on it cost, from the ticket ids the
+requests named. Per day: the cost over time. Writes reports/traces.json.
 """
 
 import argparse
 import json
 import os
+import re
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -83,6 +85,19 @@ def main() -> int:
     if not errors:
         print("  none")
 
+    per_ticket: dict[str, float] = defaultdict(float)
+    per_day: dict[str, float] = defaultdict(float)
+    for s in roots:
+        per_day[s.started_at.strftime("%Y-%m-%d")] += s.cost_usd
+        for ticket in set(re.findall(r"\bT-\d{4,}\b", s.detail or "")):
+            per_ticket[ticket] += s.cost_usd
+    if per_ticket:
+        print("\ncost per ticket (most expensive five):")
+        for ticket, cost in sorted(per_ticket.items(), key=lambda kv: -kv[1])[:5]:
+            print(f"  {ticket:<10} ${cost:.5f}")
+        mean = sum(per_ticket.values()) / len(per_ticket)
+        print(f"  mean over {len(per_ticket)} tickets: ${mean:.5f}")
+
     (ROOT / "reports").mkdir(exist_ok=True)
     (ROOT / "reports" / "traces.json").write_text(
         json.dumps(
@@ -91,6 +106,11 @@ def main() -> int:
                 "total_cost_usd": round(total_cost, 6),
                 "steps": steps,
                 "errors": dict(errors),
+                "cost_per_ticket_usd": {k: round(v, 6) for k, v in per_ticket.items()},
+                "mean_cost_per_ticket_usd": round(sum(per_ticket.values()) / len(per_ticket), 6)
+                if per_ticket
+                else 0.0,
+                "cost_per_day_usd": {k: round(v, 6) for k, v in sorted(per_day.items())},
             },
             indent=2,
         )

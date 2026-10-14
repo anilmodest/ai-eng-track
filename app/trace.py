@@ -3,9 +3,14 @@
 You cannot fix what you cannot see. A request that cost 0.4 cents is a fact; *which step* cost
 0.3 of it is the thing you can act on. Spans are buffered per request in a contextvar and written
 once, by the middleware, when the response is on its way out.
+
+Each span also carries attributes named the way OpenTelemetry's conventions name them
+(`gen_ai.request.model`, `gen_ai.usage.input_tokens`, `gen_ai.tool.name`, ...), so a trace from
+this service reads the same in whatever tool an employer uses. GET /traces/{id}/otel exports one.
 """
 
 import contextvars
+import json
 import time
 import uuid
 from collections.abc import AsyncIterator
@@ -43,6 +48,7 @@ class Span(SQLModel, table=True):
     cost_usd: float = 0.0
     error_kind: str | None = None
     detail: str = ""
+    attributes: str = "{}"  # JSON: OpenTelemetry-style key/value pairs
 
 
 class _Live:
@@ -58,6 +64,7 @@ class _Live:
         self.cost_usd = 0.0
         self.error_kind: str | None = None
         self.detail = ""
+        self.attributes: dict[str, str | int | float | bool] = {}
 
     def row(self, request_id: str) -> Span:
         return Span(
@@ -71,6 +78,7 @@ class _Live:
             cost_usd=round(self.cost_usd, 6),
             error_kind=self.error_kind,
             detail=self.detail[:500],
+            attributes=json.dumps(self.attributes),
         )
 
 
@@ -111,6 +119,13 @@ def note(text: str) -> None:
     stack = _stack.get()
     if stack and not stack[0].detail:
         stack[0].detail = text[:500]
+
+
+def set_attribute(key: str, value: str | int | float | bool) -> None:
+    """Set an OpenTelemetry-style attribute on the innermost open span. No-op outside a request."""
+    stack = _stack.get()
+    if stack:
+        stack[-1].attributes[key] = value
 
 
 def add_usage(tokens_in: int, tokens_out: int, cost_usd: float) -> None:

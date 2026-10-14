@@ -162,6 +162,12 @@ def credited_so_far(session: Session, ticket_id: str) -> float:
 
 
 def record(session: Session, row: Draft | Escalation | Credit) -> int:
+    if isinstance(row, Draft):
+        # A draft is read by a person before it is sent: the one output that gets personal data
+        # back, in place of the placeholders the model saw (week 5, app/llm/masking.py).
+        from app.llm.masking import restore
+
+        row.body = restore(row.body)
     session.add(row)
     session.commit()
     session.refresh(row)

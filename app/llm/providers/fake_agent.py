@@ -67,8 +67,12 @@ def _done(results: list[tuple[str, str]], tool: str) -> bool:
 
 
 def _json(text: str) -> dict[str, Any]:
+    """The JSON record in a result, also when the result is fenced as untrusted data."""
+    start, end = text.find("{"), text.rfind("}")
+    if start < 0 or end <= start:
+        return {}
     try:
-        data = json.loads(text)
+        data = json.loads(text[start : end + 1])
     except json.JSONDecodeError:
         return {}
     return data if isinstance(data, dict) else {}

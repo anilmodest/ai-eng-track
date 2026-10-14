@@ -19,6 +19,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from app.guard import record_in
 from app.llm.client import Message
 from app.llm.structured import complete_structured
 from app.tools import NeedsApproval, ToolContext, call
@@ -94,12 +95,11 @@ async def run_workflow(ctx: ToolContext, request: str) -> WorkflowResult:
     if c:
         result = await call(ctx, "get_customer", {"customer_id": c.group(0).upper()})
         found.append(result)
-        version = json.loads(result).get("version") if result.startswith("{") else None
+        version = str(record_in(result).get("version") or "") or None
     if t:
         result = await call(ctx, "get_ticket", {"ticket_id": t.group(0).upper()})
         found.append(result)
-        if result.startswith("{"):
-            version = version or json.loads(result).get("product_version")
+        version = version or str(record_in(result).get("product_version") or "") or None
 
     k = kind(request)
     if k == "analysis":
@@ -108,7 +108,7 @@ async def run_workflow(ctx: ToolContext, request: str) -> WorkflowResult:
         )
         chosen = await _model(ctx, _QUERY + schema, f"Request: {request}", _Call)
         result = await call(ctx, "query_tickets", chosen.args)
-        data = json.loads(result) if result.startswith("{") else {}
+        data = record_in(result)
         if "result" not in data:
             return WorkflowResult(answer=result, status="done", calls=list(ctx.calls))
         return WorkflowResult(
