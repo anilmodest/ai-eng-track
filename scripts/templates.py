@@ -286,7 +286,7 @@ def _keeps_route_file(rel: str, route: str) -> bool:
         return False  # explains all three routes; a template holds one
     if name.startswith("core/"):
         return False  # copied into place on core, never shipped as a folder of faults
-    if name == "worked_example.py":
+    if name.startswith("worked_example"):
         return route == "start"
     return name == f"{route}.md"
 

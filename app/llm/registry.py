@@ -54,6 +54,14 @@ PROVIDERS: dict[str, ProviderSpec] = {
         default_model="mistral-small-latest",
         signup="https://console.mistral.ai/api-keys",
     ),
+    # A model on your own machine (https://ollama.com): no key, no quota, slow on 2 CPUs.
+    # `ollama pull llama3.2:3b` first. Recommended on pro as the week 1 second provider.
+    "ollama": ProviderSpec(
+        base_url="http://localhost:11434/v1",
+        key_env="",
+        default_model="llama3.2:3b",
+        signup="https://ollama.com/download (local, no account)",
+    ),
     "openai": ProviderSpec(
         base_url="https://api.openai.com/v1",
         key_env="OPENAI_API_KEY",
@@ -104,7 +112,8 @@ def build_client(
     if spec is None:
         known = ", ".join(sorted([*PROVIDERS, *FAKE_PROVIDERS, *CONFIGURED_PROVIDERS]))
         raise ProviderConfigError(f"unknown MODEL_PROVIDER {provider!r}; known: {known}")
-    key = api_key or os.environ.get(spec.key_env)
+    # A provider with no key_env needs no key (a local model); the client still sends one.
+    key = api_key or (os.environ.get(spec.key_env) if spec.key_env else "not-needed")
     if not key:
         raise ProviderConfigError(
             f"no key for {provider}: set MODEL_API_KEY or {spec.key_env} (signup: {spec.signup})"

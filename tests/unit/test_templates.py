@@ -26,8 +26,10 @@ def test_each_template_holds_only_its_own_route_pages(templates: dict[str, Path]
     for route, tree in templates.items():
         pages = sorted(p.name for p in tree.glob("weeks/*/routes/*"))
         assert pages, route
-        allowed = {f"{route}.md"} | ({"worked_example.py"} if route == "start" else set())
-        assert set(pages) <= allowed, (route, set(pages) - allowed)
+        others = {p for p in pages if p != f"{route}.md"}
+        if route == "start":
+            others = {p for p in others if not p.startswith("worked_example")}
+        assert not others, (route, others)
         assert not list(tree.glob("weeks/*/routes/core")), route
 
 

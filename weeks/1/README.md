@@ -1,11 +1,25 @@
-# Week 1 — Working with a model as a component
+# Week 1 — The model as a component, and its first tools
 
-Area 2 of the track. About 9 hours including the session. Branch: `week-1`.
+Areas 2 and 6. 8 to 10 hours. Session 2 (Direction) at the end of this week. Branch: `week-1`.
+
+> **The one lesson.** A model is an unreliable dependency. Its output must fit a schema, and its
+> tools must be described exactly, or it calls them wrongly.
+
+## The gap it closes
+
+Most people's first instinct is to treat a model like a function: call it, get the answer. It is
+not. It is a service someone else owns, and it behaves like the least reliable dependency in your
+system. Someone who has only used a chat window writes code that has no timeout, retries a
+permanent error forever, has no idea what a call costs, and hands the model a vague tool
+description and is surprised when it calls the tool with the wrong arguments. This week is the
+difference between someone who has used a model and someone who can put one in a system.
 
 ## What you are building
 
-An endpoint that reads one uploaded document and returns **structured facts about it**: a title,
-what kind of document it is, a short summary, a few key facts, and how confident the model is.
+Two things, on the service you already have.
+
+**An endpoint that reads one document and returns structured facts about it**: a title, the kind
+of document, a short summary, a few key facts, and how confident the model is.
 
 ```
 POST /documents/42/extract
@@ -13,55 +27,51 @@ POST /documents/42/extract
        "key_facts": ["default is 15 seconds", "..."], "confidence": 0.82 }
 ```
 
-Why the support desk cares: before anything can answer a question *from* a document, something
-has to read it reliably. That is this week. Nothing you build here is clever — it is the part
-that has to keep working at three in the morning when the provider is having a bad day.
+**The agent's first two tools**, which every later week builds on: `get_customer` (which version,
+which account, which plan) and `get_ticket` (what a ticket says and where it stands). They read
+the desk's own data, loaded in week 0 (`support/`).
 
 ## The constraint everything is built under
 
-**Nothing in `app/api/extract.py` may name a provider, a model or an SDK.** Not `openai`, not
-`gemini`, not `if provider == ...`. The model is a component you call through an interface, and
-a component you can swap is the difference between a demo and a system.
+**Nothing in `app/api/` or `app/tools/` may name a provider, a model or an SDK.** Not `openai`,
+not `gemini`, not `if provider == ...`. The gate runs every test under two different fake
+providers; code that worked against only one of them named one somewhere. "How would you move off
+this provider?" is a real interview question, and "edit one line of `.env`" is a real answer.
 
-The gate proves it by running your tests under two different fake providers. If your code worked
-against only one of them, it named one of them somewhere.
+## Read (1 hour)
 
-This is also the week's interview answer. "How would you move off this provider?" is a real
-question, and "edit one line of `.env`" is a real answer.
+`CONCEPT.md` first. Then `app/llm/` in this order, and answer the three questions in
+`reflections/week-1.md`, Q1b:
 
-## Run it and watch (1 hour, change nothing)
+1. **`client.py`**: the contract. What is the one thing a caller may branch on when a call fails?
+2. **`registry.py`**: where is `MODEL_PROVIDER` read, and what does `FallbackClient` do that
+   `retry.py` does not?
+3. **`providers/fake.py`**: why does this file exist, and what would break in CI without it?
+
+Then `app/tools/base.py`: the one door every tool call goes through.
+
+## See it (1 hour, change nothing)
 
 ```
-uv run python explore/w1_01_same_prompt_x5.py
-uv run python explore/w1_02_break_it.py
+uv run python explore/w1_01_same_prompt_x5.py     # the same prompt, five answers, five costs
+uv run python explore/w1_02_break_it.py           # 429, 429, ok; a 400; a timeout
+uv run python explore/w1_03_vague_tools.py        # two badly described tools, wrong calls
 ```
 
-The first sends the **same prompt five times**. Note what changes between runs: wording, facts,
-token counts, milliseconds. That variance is the thing you are building around.
+All three need a provider key (main `README.md`, *Model access*). Note what varies, what the
+retry helper does with each failure, and which wrong tool calls a better description would have
+prevented.
 
-The second breaks the provider on purpose — two 429s then success, then a 400, then a 50 ms
-timeout — and shows the retry helper coping. Watch the backoff delays grow.
+## Build (5 to 7 hours)
 
-Both need a provider key: see the main `README.md`, *Model access*. Default is Gemini's free tier.
+Every item is **core** (needed for the lesson, checked by the gate) or **stretch** (worth doing,
+shown to your mentor, never blocking). Use any assistant you like and log it as you go in
+`ai-use/week-1.yml`. `make next` tells you where you are; `make check WEEK=1` as often as you like.
+Red is the week's work, not a problem.
 
-## Read it (1 hour, change nothing)
+### Core 1: the extract endpoint (`app/api/extract.py`)
 
-Read `app/llm/` in this order, and answer the three questions in `reflections/week-1.md`, Q1b:
-
-1. **`client.py`** — the contract. What is the one thing a caller may branch on when a call fails?
-2. **`registry.py`** — where does `MODEL_PROVIDER` get read, and what does `FallbackClient` do
-   that `retry.py` does not?
-3. **`providers/fake.py`** — why does this file exist, and what would break in CI without it?
-
-Then open `tests/weeks/test_week1.py`. **It is the specification.** Every test name is one
-behaviour, and the list below is the order to make them pass.
-
-## Build it (5 hours)
-
-Everything is in `app/api/extract.py`. The stub is there, the route is registered, the response
-models are in `app/api/schemas.py`. Run `make next` any time to see where you are.
-
-What the model must return:
+What the model must return, validated by `DocumentExtract`:
 
 | Field | Rule |
 | --- | --- |
@@ -71,89 +81,125 @@ What the model must return:
 | `key_facts` | 3 to 5 strings |
 | `confidence` | 0.0 to 1.0 |
 
-Build in this order. Each step is done when the tests named beside it go green.
+What must hold:
 
-| # | Build | Done when these pass |
+- **Output fits the schema, or fails loudly.** Invalid or malformed output gets **one** repair
+  attempt with the validation error attached. Still bad: `502 schema_error`. Never a 500.
+- **Only failures worth retrying are retried.** 429, 5xx and timeouts, up to
+  `MODEL_RETRY_ATTEMPTS`, with growing waits. A 400 never: `502 provider_error` at once.
+- **Every attempt has a timeout** (`MODEL_TIMEOUT_S`): `504 provider_timeout`.
+- **The same work is never paid for twice.** The same document, provider, model and prompt version
+  returns the stored result with `cached: true` and makes no provider call.
+- **Every call is costed.** Tokens in and out, latency and list-price cost (`app/llm/cost.py`),
+  repairs included, stored with the result.
+- **At most `MAX_INPUT_CHARS` of the document is sent.**
+
+Two words worth being precise about. **Idempotent**: calling it twice has the same effect as
+calling it once; here, the same answer and no second bill. **List-price cost**: what the
+provider's published rate card says the call cost, computed from tokens so the number exists.
+
+### Core 2: two tools you design (`app/tools/desk.py`)
+
+What is fixed: the names `get_customer` and `get_ticket`, the one argument each takes
+(`customer_id`, `ticket_id`), and the data, read only through `app/support.py`.
+
+What is yours:
+
+- **The descriptions.** Of each tool and of its argument: when a model should call it and what it
+  gets back, in the words a request uses. The description is a prompt.
+- **The constraints.** A malformed id (`"1001"`, `""`, `"C-1001; DROP TABLE"`, a number) fails
+  validation and never reaches the tool. The model gets back an error it can act on.
+- **What each tool returns.** What the desk needs to work on the request, and nothing else: no
+  seat counts, no contact details.
+- **Every refusal, in words.** A customer or ticket on another desk, or one that does not exist,
+  is `refused: <why>`, not an exception. A model can recover from a sentence; it cannot recover
+  from a stack trace.
+
+### Core 3: measure it on a real model (`make evidence WEEK=1`)
+
+With the gate green, commit, then run `make evidence WEEK=1`. It runs three measurements on your
+real model and writes `evidence/week-1.json`:
+
+| Measurement | Script | What it tells you |
 | --- | --- | --- |
-| 1 | Call the model, validate what comes back against `DocumentExtract`, return it | `extract_returns_schema_valid_json` |
-| 2 | Invalid or malformed output: **one** repair attempt with the error attached. Still bad → `502 schema_error`. Never a 500 | `malformed_output_is_repaired_once`, `invalid_twice_is_a_typed_error_not_a_500` |
-| 3 | Record `tokens_in`, `tokens_out`, `latency_ms` and list-price `cost_usd` (`app/llm/cost.py`) for **every** call, including a repair | `cost_and_latency_are_recorded` |
-| 4 | Store the result in the `extractions` table. A second call for the same `document_id + provider + model + prompt_version` returns the stored row with `cached: true` and makes **zero** provider calls | `same_document_is_never_paid_for_twice` |
-| 5 | `MODEL_TIMEOUT_S` per attempt → `504 provider_timeout`. Retry 429, 5xx and timeouts up to `MODEL_RETRY_ATTEMPTS` with exponential backoff. **Never** retry a 400 → `502 provider_error` on the first failure | `429_is_retried_then_succeeds`, `400_is_not_retried`, `hang_hits_the_timeout` |
-| 6 | Send at most `MAX_INPUT_CHARS` of the document | `input_is_capped_to_the_context_budget` |
+| `schema_drill` | `scripts/schema_drill.py` | How often plain "reply in JSON" breaks the schema, against schema-enforced output with one repair. The case for Pydantic, as your number |
+| `tool_drill` | `scripts/tool_drill.py` | Twenty requests, run with first-draft descriptions and with yours: right tool, valid arguments, right id. The rise is caused by nothing but your descriptions |
+| `failure_drill` | `scripts/failure_drill.py` | Your failure policy on **two** providers: retries, p50 and p95 latency, cost per call, and two probes (an impossible timeout, a model that does not exist) |
 
-Steps 1 and 2 first is not a preference: nothing else can be tested until the endpoint returns
-something.
+Get keys from two providers and set the second as `MODEL_FALLBACK_PROVIDER`: the failure drill
+needs both, and so will week 4, when the agent becomes the hungriest thing you run.
 
-Two words that appear above and are worth being precise about. **Idempotent** means calling it
-twice has the same effect as calling it once — here, the same answer and no second bill.
-**List-price cost** means what the provider's published rate card says this call cost; nobody is
-reading your invoice, you are computing it from tokens so the number exists at all.
+### Stretch
 
-`make check WEEK=1` as often as you like. Red is the week's work, not a problem.
+- **A local model as your second provider** (Ollama, `MODEL_FALLBACK_PROVIDER=ollama`). Several
+  employers screen for it; a 2-CPU Codespace runs only small models, slowly. Recommended on pro.
+- **A cost ceiling per call**: refuse, with a typed error, any call whose input would cost more
+  than a limit you choose.
+
+## Decide
+
+**Your failure policy**: which errors retry, how many times, the timeout, and the most you will
+pay for one call, read off the failure drill on your two providers. **And the model you build
+on**, checked against the minimum standard in [`docs/models.md`](../../docs/models.md).
+
+Write it in `decisions/week-1.md` (from `DECISION_TEMPLATE.md`): the decision, the options you
+measured, the evidence as keys into your evidence file (for example
+`- failure_drill.providers.gemini.p95_ms = 2140`), the option you rejected and why, and the risk
+you accepted.
+
+## What proves it
+
+1. **The gate** (`make check WEEK=1`, also on your pull request): the endpoint's behaviour under
+   scripted failures on two fake providers, your tools' schemas, scope, validation and refusals,
+   the three measurements running, and your records. `CHECKS.md` lists every check.
+2. **The evidence file**, from a real model, tied to the commit.
+3. **The decision record**, whose numbers the gate checks against the evidence file.
+
+Plus one result that has to be demonstrably true: the provider swapped with zero code difference
+(`git diff main -- app/` names no provider), the second identical request making zero provider
+calls, and a measured rise in correct tool calls caused by your own descriptions.
+
+**Anti-goal: do not tune the answer prompt.** This week is the plumbing and the tool contracts. A
+week spent improving wording has missed the point.
 
 ### If you get stuck
 
-- **Rate-limited mid-exercise?** The free tiers are small. Put a second provider's key in `.env`
-  and change `MODEL_PROVIDER`. That switch is the week's lesson, so doing it under duress is
-  on-topic rather than a detour.
+- **Rate-limited mid-exercise?** Switch `MODEL_PROVIDER` to your second key. That switch is the
+  week's lesson, so doing it under duress is on-topic rather than a detour.
 - **A test is failing and the message is not obvious?** Open the test. It is short, and it says
-  exactly what it expected.
+  what must hold.
 <!-- route:start -->
-- **On `start`?** `routes/worked_example.py` solves a smaller version of this in full. Read it
-  beside your stub rather than instead of it.
+- **On `start`?** `routes/worked_example.py` solves a smaller version of the endpoint in full, and
+  `routes/worked_example_tool.py` designs one smaller tool in full. Read them beside your stubs
+  rather than instead of them.
 <!-- /route -->
 - **Stuck for more than an hour?** That is what the two unblock calls are for. Use one.
 
 Your route changes what this week gives you: the page in `routes/` in this folder says how.
 
-## Prove the swap (30 minutes)
+## Submit
 
-With the gate green:
-
-```
-make live-check                      # your default provider
-# change MODEL_PROVIDER and the key in .env, then:
-make live-check                      # a different one
-```
-
-Paste both tables into `reflections/week-1.md`. Then:
-
-```
-git diff main -- app/
-```
-
-There must be no provider-specific code in it. A line like `import openai`, `if provider ==
-"gemini":` or a hard-coded model name is a fail. If you find one, that is the finding of the
-week — fix it and say so in your reflection.
-
-## Submit (30 minutes)
-
-- `reflections/week-1.md`: Q1 (the concept in your words), Q1b (the three reading questions),
-  Q2 (what surprised you), Q3 (what you would change), Q4 (what you contributed and how you
-  checked it), Q5 (help you used), and both live-check tables.
-- Open a pull request `week-1 → main`. CI runs the gate. Fix anything red.
-- Send the link to your mentor **24 hours** before the session, not at the start of it.
+1. `make check WEEK=1` green, then commit, then `make evidence WEEK=1`, and commit the evidence.
+2. `decisions/week-1.md`, `ai-use/week-1.yml` and `reflections/week-1.md` (Q1 to Q5).
+3. Open a pull request `week-1 → main` and send the link to your mentor **24 hours** before the
+   session.
 
 ## Session 2: Direction (45 minutes, end of this week)
 
-Your mentor reads the pull request and your reflection before the call, not during it.
+Your mentor reads a one-page brief built from your pull request beforehand (about ten minutes),
+not your diff during the call.
 
 | Min | What happens |
 | --- | --- |
-| 0–7 | You demo: extract a document, extract it again (zero calls), switch provider live |
-| 7–20 | Your mentor probes the diff, typing questions as review comments on the pull request |
-| 20–30 | Held-out documents you have not seen. Watch the behaviour, not the code |
-| 30–40 | Route confirmed or corrected, in writing. The plan for weeks 2–6 set against what you did |
-| 40–45 | Week 2's sentence, said back: *context is an attention budget* |
+| 0–8 | You demo: extract a document, extract it again (zero calls), switch provider live |
+| 8–25 | Tools closed. Your mentor probes your decision record and your tool schemas, typing questions on the pull request |
+| 25–37 | Assisted. Unseen requests from the programme; you fix one failure with your own assistant while your mentor watches how you steer it and what you check |
+| 37–42 | Route confirmed, or a correction recommended. The plan for weeks 2–6 |
+| 42–45 | Week 2's sentence, said back: *the same model gives a different answer when you give it different context* |
 
 **This is the one point where your route can change.** After it, it holds.
-
-**Pass line:** CI green under both fakes, the provider switch demonstrated, and a reason drawn
-from your own work for treating the model as untrusted.
 
 ## Optional: self-test
 
 `QUIZ.md` in this folder, with an explanation for every answer. On the hub page it is interactive.
-The score stays in your browser: it never reaches the repository, your mentor or your route. Use
-it to find what to re-read, not to measure yourself.
+The score stays in your browser: it never reaches the repository, your mentor or your route.
