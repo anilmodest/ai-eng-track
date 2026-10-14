@@ -1,0 +1,20 @@
+{"request": "Which version of the product is customer C-1004 running?", "tool": "get_customer", "value": "C-1004"}
+{"request": "What plan is C-1007 on?", "tool": "get_customer", "value": "C-1007"}
+{"request": "Is Tailspin Freight (C-1002) on version 2 or 3?", "tool": "get_customer", "value": "C-1002"}
+{"request": "Before I answer C-1005, I need to know which release they have.", "tool": "get_customer", "value": "C-1005"}
+{"request": "Which account does customer C-1009 belong to?", "tool": "get_customer", "value": "C-1009"}
+{"request": "c-1003 asked about timeouts; what are they on?", "tool": "get_customer", "value": "1003"}
+{"request": "Look up the subscription tier for C-1010.", "tool": "get_customer", "value": "C-1010"}
+{"request": "Does C-1006 have the enterprise plan?", "tool": "get_customer", "value": "C-1006"}
+{"request": "Find out what Kestrel release customer C-1001 uses so I search the right manual.", "tool": "get_customer", "value": "C-1001"}
+{"request": "Customer C-1008 wants to know if a feature applies to them. What version do they have?", "tool": "get_customer", "value": "C-1008"}
+{"request": "What is the status of ticket T-2010?", "tool": "get_ticket", "value": "T-2010"}
+{"request": "Summarise T-2033 for me.", "tool": "get_ticket", "value": "T-2033"}
+{"request": "How urgent is T-2047?", "tool": "get_ticket", "value": "T-2047"}
+{"request": "What did the customer actually write in T-2021?", "tool": "get_ticket", "value": "T-2021"}
+{"request": "Is ticket T-2005 still open?", "tool": "get_ticket", "value": "T-2005"}
+{"request": "Which category was T-2060 filed under?", "tool": "get_ticket", "value": "T-2060"}
+{"request": "Customer C-1003 says their ticket T-2014 was raised as urgent. Was it?", "tool": "get_ticket", "value": "T-2014"}
+{"request": "Pull up the case T-2038 so I can reply.", "tool": "get_ticket", "value": "T-2038"}
+{"request": "When was T-2029 opened?", "tool": "get_ticket", "value": "T-2029"}
+{"request": "The issue t-2051: which product version is it about?", "tool": "get_ticket", "value": "2051"}

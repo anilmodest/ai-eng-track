@@ -22,6 +22,10 @@ Two dials:
        ask       an AskAnswer that quotes the first context chunk and cites [1]
        agent     a scripted tool sequence: search_documents, then finish with the first hit
        judge     a JudgeVerdict with score 4
+       tool_call one {"tool", "args"} chosen the way a weak model chooses: the listed tool whose
+                 name and descriptions share most words with the request, and the first id-like
+                 token of the request as each required argument. Vague descriptions therefore
+                 tie, and a tie goes to the first tool listed: the wrong one half the time.
    No TASK line: plain text.
 """
 
@@ -116,6 +120,51 @@ def _best_passage(messages: list[Message]) -> tuple[int, str, int]:
     return best + 1, passages[best], overlaps[best]
 
 
+_ID_TOKEN = re.compile(r"\b[A-Za-z]{1,3}-?\d{3,}\b")
+
+
+def _tools_listed(messages: list[Message]) -> list[dict[str, object]]:
+    """The tool schemas a tool_call prompt lists after a line `Tools:` (a JSON array)."""
+    text = _all_text(messages)
+    if "Tools:" not in text:
+        return []
+    body = text.split("Tools:", 1)[1]
+    start, end = body.find("["), body.rfind("]")
+    try:
+        tools = json.loads(body[start : end + 1])
+    except (ValueError, json.JSONDecodeError):
+        return []
+    return [t for t in tools if isinstance(t, dict)]
+
+
+def _schema_words(tool: dict[str, object]) -> str:
+    """Name, description and every argument description: what a model reads about a tool."""
+    params = tool.get("parameters")
+    props = params.get("properties", {}) if isinstance(params, dict) else {}
+    arg_text = " ".join(
+        f"{k} {v.get('description', '')}" for k, v in props.items() if isinstance(v, dict)
+    )
+    return f"{str(tool.get('name', '')).replace('_', ' ')} {tool.get('description', '')} {arg_text}"
+
+
+def _choose_tool(messages: list[Message]) -> dict[str, object]:
+    tools = _tools_listed(messages)
+    request = _question(messages) if "Question:" in _all_text(messages) else ""
+    m = re.search(r"Request:\s*(.+)", _all_text(messages))
+    if m:
+        request = m.group(1).strip()
+    if not tools:
+        return {"tool": "none", "args": {}}
+    want = _stems(request)
+    scores = [len(want & _stems(_schema_words(t))) for t in tools]
+    chosen = tools[max(range(len(tools)), key=lambda i: scores[i])]
+    params = chosen.get("parameters")
+    required = params.get("required", []) if isinstance(params, dict) else []
+    ids = _ID_TOKEN.findall(request)
+    args = {name: (ids[i] if i < len(ids) else "") for i, name in enumerate(required)}
+    return {"tool": chosen.get("name", ""), "args": args}
+
+
 class FakeClient:
     def __init__(self, *, name: str = "fake_a", script: str = "ok", model: str = "fake-1") -> None:
         self.name = name
@@ -156,6 +205,8 @@ class FakeClient:
             m = re.search(r"Result of search_documents:\s*(.+?)(?=\n\nResult of|\Z)", text, re.S)
             first = m.group(1).strip().splitlines()[0] if m else "no result"
             return json.dumps({"tool": "finish", "args": {"answer": first[:300]}})
+        if task == "tool_call":
+            return json.dumps(_choose_tool(messages))
         if task == "judge":
             return json.dumps({"score": 4, "reason": "answer is supported by the cited context"})
         if task == "language":  # the Week 1 worked example
