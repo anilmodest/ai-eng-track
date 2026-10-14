@@ -1,6 +1,7 @@
 # Week 5 on the core route
 
-**Faults present, not located, count not given.** The guard is implemented with mistakes
-planted, and `app/trace.py` is signatures only: instrument the project yourself, then find what
-is wrong with the guard. One planted fault makes the output scan flag everything; another makes
-the budget check off by one.
+**Faults present, not located, count not given.** The guard, `app/privacy.py` and
+`app/agents/routing.py` are written with mistakes planted, and `app/trace.py` is signatures only:
+you instrument the service yourself. One planted fault lets a phone number through that the gate
+never tests for; one offers a capability a request never asked for. Review before you run, and
+record what you found and how in `ai-use/week-5.yml`.

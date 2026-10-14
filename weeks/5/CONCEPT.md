@@ -1,7 +1,7 @@
 # Week 5 — Concept
 
-> **You cannot fix what you cannot see. And the defining vulnerability of this work is an
-> instruction hidden in the data, which does not look like a bug during normal testing.**
+> **Once the system can act, content it reads can attack it. Remove the capability first, and
+> see everything: you cannot fix what you cannot trace.**
 
 Read this once (about 20 minutes). Write the sentence in your own words in `reflections/week-5.md`,
 Q1, before you touch code.
@@ -66,6 +66,36 @@ flowchart LR
 ```
 
 
+## Once the system can act
+
+Since week 4 an injection does not have to change an answer to do harm: it can ask for an action.
+A ticket says the customer is pre-approved for a credit; a page of the manual says to escalate; a
+tool result says to look up another customer. Approval in code stops the action itself, but an
+agent that keeps reaching for it is one careless approval away from paying out. So, in order:
+
+1. **Remove the capability.** The agent handling a lookup is never offered `issue_credit`. The
+   offer is decided from the request a person on the desk made, never from the content the agent
+   reads, and the door refuses any tool that was not offered. Nothing to call, nothing to trick.
+2. **Then filter, as a second layer.** Third-party text reaches the model fenced as data, known
+   patterns stripped. Say plainly what that cannot catch.
+3. **Then bound what is left.** For every action tool that is still offered, write down its blast
+   radius: the worst it could do if every defence failed, and what caps it.
+
+## Personal data
+
+A ticket carries a name, an email address and a phone number, and none of them helps a model
+answer the question. Before every model call they are replaced with placeholders, the same person
+always the same placeholder within a run, and only an output a person approves (a draft) gets the
+real values back. The proof is not the code: it is a check of everything the model was actually
+shown, finding nothing.
+
+## Traces anyone can read
+
+Name the spans the way OpenTelemetry does (`gen_ai.request.model`, `gen_ai.usage.input_tokens`,
+`gen_ai.tool.name`), and a trace from this service reads the same in whatever tool an employer
+uses. Then turn it into the numbers a business asks for: what a ticket costs, and how that moves
+over time.
+
 ## What this looks like in the service
 
 | Idea | Where it lives | What you do this week |
@@ -73,7 +103,10 @@ flowchart LR
 | Spans and cost attribution | `app/trace.py`, `GET /traces` | Read it; use it to answer questions about your own service |
 | Error taxonomy | `ErrorKind` in `app/trace.py` | Map every failure to a kind |
 | Dashboard | `scripts/trace_report.py` | Run it; explain it to someone who does not code |
-| Guard | `app/guard.py` | Get attacked; build the four defences |
+| Least agency | `app/agents/routing.py`, the door in `app/tools/base.py` | Decide what each request is offered |
+| Guard | `app/guard.py` | Get attacked; build the defences, the second layer |
+| Personal data | `app/privacy.py`, `app/llm/masking.py`, `scripts/privacy_check.py` | Mask before every model call; prove nothing leaked |
+| OpenTelemetry | `GET /traces/{id}/otel` | Read a trace the way an employer's tool would |
 | Attack set | `eval/attacks.jsonl`, `scripts/attack.py` | Attack a peer; add what worked to the set |
 | Limits | `KILL_SWITCH`, `DAILY_BUDGET_USD` | Flip them; watch the service refuse |
 
@@ -83,6 +116,8 @@ flowchart LR
 - Which error kind your service produced most this week, and what you changed because of it.
 - The attack that got through your peer's service, and the one that got through yours.
 - What your input filter cannot catch, and what you rely on instead for that case.
+- Which capability you removed rather than filtered, and the blast radius of what is left.
+- What a ticket costs, from your trace report, and how you would bring it down.
 
 ## Read more
 
