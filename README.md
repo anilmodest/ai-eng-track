@@ -31,7 +31,7 @@ terminal, you are ready.
 | `make run` | Start the API on port 8000 (docs at `/docs`) |
 | `make check WEEK=1` | This week's gate: lint, types, tests, once per fake provider. Writes `reports/week-1.json` |
 | `make live-check` | Call the real provider from `.env` with the sample documents |
-| `make hub` | Your hub page built from what is on your screen right now, at port 8001: every week's checks, measurements, pull requests and hidden-evaluation totals |
+| `make hub` | Your hub page built from what is on your screen right now, at port 8001: every week's checks, measurements and pull requests |
 | `make fmt` | Format and auto-fix lint |
 
 Per-week measurement scripts (evidence for the session, not gates unless the week says so):
@@ -81,8 +81,9 @@ Every week, from week 1, the same eight steps:
 5. `make check WEEK=N` until it passes, then `make evidence WEEK=N` on a real model.
 6. Write `decisions/week-N.md` from the evidence file (`DECISION_TEMPLATE.md`), and
    `reflections/week-N.md` (`REFLECTION_TEMPLATE.md`).
-7. Open a pull request to `main`. The checks, the brief data for your mentor and the programme's
-   hidden evaluation (from week 2) report within minutes.
+7. Open a pull request to `main`. The checks report within minutes. Merging it marks the week
+   done: within a day the programme collects your mentor's brief data from what you merged and,
+   from week 2, runs its hidden evaluation.
 8. In a session week, send the link 24 hours before the session; merge after it. Four sessions in
    total: Discovery (week 0), Direction (end of week 1), Observation (end of week 3), Defence (end
    of week 6).
@@ -109,8 +110,7 @@ scripts/    check.py, live_check.py, next_step.py, and one measurement script pe
 
 ## Your hub page
 
-Every merge to `main`, every push to an open pull request, and every hidden-evaluation result
-rebuilds a page at `https://<your-user>.github.io/<your-repo>` from what is in the repo. `make hub`
+Every merge to `main` and every push to an open pull request rebuilds a page at `https://<your-user>.github.io/<your-repo>` from what is in the repo. `make hub`
 builds the same page from your working copy, without pushing. It is the one place to start from:
 
 - **The front page** answers one question: where are you and what is next. One line per week:

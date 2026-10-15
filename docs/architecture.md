@@ -16,7 +16,7 @@ repository is identified by its numeric GitHub id, which survives a transfer.
 | `ai-eng-track` (this one) | public | the programme team | all the fellow material, all three routes, the template generator |
 | `ai-eng-track-start`, `-core`, `-pro` | public, template repositories | CI only (`publish-templates.yml`) | one route each, nothing of the others |
 | a fellow's repository | public, in their account | the fellow | their work, records, evidence and hub |
-| `ai-eng-programme` | private | the programme team | the mentor kit, the runner and hidden items, the App service, variants, the registry, the mentor hub |
+| `ai-eng-programme` | private | the programme team | the mentor kit, the runner and hidden items, variants, the registry, the mentor hub (and an App service for later) |
 
 ## A fellow's journey, as the machinery sees it
 
@@ -26,17 +26,21 @@ repository is identified by its numeric GitHub id, which survives a transfer.
 2. **Repository**: the fellow clicks *Use this template* on `<owner>/ai-eng-track-<route>`. The
    template carries `.route` and `.template.json` (route, source commit, and `week_files`: per
    week, the files that differ by route).
-3. **Connect repo**: the fellow installs the programme's GitHub App on that one repository. The
-   App's service checks the template and route, records the repository id, opens a "Your product"
-   pull request (the fellow's variant: `corpus/generated/`, `support/`, `.variant`), and dispatches
-   a baseline run.
-4. **Every pull request**: `check.yml` runs the gate on the fake model and uploads `brief-data`
-   (`scripts/brief_data.py`); the App dispatches `hidden-eval` to the programme repository's
-   runner, which builds the fellow's image, runs it on an internal network whose only exit is the
-   model proxy, sends the hidden items, and posts a `hidden-eval` check with totals only. The
-   mentor hub builds a one-page brief from `brief-data` and the runner's result.
-5. **Route change at session 2**: the service opens one pull request replacing the
-   `week_files` of the weeks still ahead with the new route's template's versions.
+3. **Connect repo**: the fellow sends the repository's address and the lead records it
+   (`programme connect`): the public API gives the repository id and the template it came from,
+   which must be the route's. The lead sends "Your product" as a zip (the fellow's variant:
+   `corpus/generated/`, `support/`, `.variant`), which the fellow merges on `week-0`. Nothing is
+   installed on the fellow's repository and the programme never writes to it.
+4. **Every pull request**: `check.yml` runs the gate on the fake model; the hub page rebuilds.
+5. **Every merge of `week-N` to main** marks the week done. The programme's `hidden-eval.yml`
+   (daily, or "Run workflow") finds merge commits with no result, collects the brief data on each
+   (the week's gate, then the programme's own copy of `scripts/brief_data.py`, in a container
+   with no secrets), and evaluates it: builds the fellow's image, runs it on an internal network
+   whose only exit is the model proxy, sends the hidden items, keeps the result privately. The
+   mentor hub builds a one-page brief from the two.
+6. **Route change at session 2**: one set of files replacing the `week_files` of the weeks still
+   ahead with the new route's template's versions (a pull request the service opens, once there
+   is an App).
 
 ## What the fellow's service must offer the runner
 

@@ -1082,16 +1082,16 @@ def hidden_card(w: "Week") -> str:
         # The published page is public; the hidden-set numbers go to you and your mentor only.
         return (
             '<div class="card" id="hidden"><h3 style="margin:0 0 6px">Hidden evaluation</h3>'
-            '<p class="fineprint" style="margin:0">Not shown on the public page. Your totals are '
-            "on your pull request's <code>hidden-eval</code> check and in <code>make hub</code>; "
-            "your mentor sees them on the brief.</p></div>"
+            '<p class="fineprint" style="margin:0">Not shown on the public page. The programme '
+            "runs it on each week you merge; your mentor sees the totals on the brief and brings "
+            "them to you.</p></div>"
         )
     if not w.hidden:
         return (
             '<div class="card" id="hidden"><h3 style="margin:0 0 6px">Hidden evaluation</h3>'
             '<p class="fineprint" style="margin:0">Not run on this week yet. From week '
-            f"{HIDDEN_FROM_WEEK}, the programme runs it on every pull request (the "
-            "<code>hidden-eval</code> check) and the totals appear here.</p></div>"
+            f"{HIDDEN_FROM_WEEK}, the programme runs it on each week you merge to main; your "
+            "mentor brings you the totals.</p></div>"
         )
     conclusion = str(w.hidden.get("conclusion") or "")
     cls = {"success": "green", "failure": "red"}.get(conclusion, "amber")

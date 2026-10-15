@@ -51,11 +51,13 @@ template, and `.route` says which. Now, in this order:
    (`GEMINI_API_KEY`, `GROQ_API_KEY`, ...), never in a file. Set the second as
    `MODEL_FALLBACK_PROVIDER` in `.env`. Two, because week 1 swaps between them and free quotas run
    out. `make live-check` proves each one works.
-2. **Connect your repository to the programme**: the "Connect repo" link you were sent installs
-   the programme's GitHub App on this one repository. From then on your pull requests get the
-   hidden evaluation and your mentor gets a brief; the programme records a baseline on your
-   untouched starter. If the programme sends a "Your product" pull request (your own variant of
-   the product), merge it.
+2. **Connect your repository to the programme**: send its address to your programme lead.
+   Nothing is installed on it and the programme never writes to it: it reads your public
+   repository. It records a baseline on your untouched starter, and from then on every week you
+   merge to `main` gets the hidden evaluation (the programme looks once a day) and your mentor a
+   brief. Your lead also sends "Your product" (your own variant of the product) as a zip: on a
+   branch called `week-0`, unzip it at the repository's root, commit, open the pull request and
+   merge it.
 3. `make check WEEK=0`: read the output. Everything should be green.
 4. `make run` — open the forwarded port, go to `/docs`, upload `samples/invoice.md`, read it back.
 5. Start a reindex job, then immediately call `/health`. Notice the API did not wait.

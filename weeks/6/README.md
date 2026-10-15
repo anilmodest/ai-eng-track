@@ -105,7 +105,7 @@ screen, and make the change with your assistant. Then copy `weeks/6/REHEARSAL_TE
 | `eval` | `scripts/eval.py --set eval/my-test-set.jsonl` | The full evaluation on your own set, at the score you will defend |
 | `tradeoffs` | `scripts/tradeoffs.py` | The table, as the gate checked it |
 
-The hidden evaluation runs on the same pull request; the full evaluation must pass on both sets.
+The hidden evaluation runs on what you merge; the full evaluation must pass on both sets.
 
 ### Stretch
 

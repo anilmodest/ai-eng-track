@@ -9,9 +9,11 @@ hub says so: nothing else depends on them.
 site/prs.json     {"<week>": {"number", "url", "state", "title", "head_sha", "review_comments"}}
 site/hidden.json  {"<week>": {"sha", "conclusion", "summary", "at"}}
 
-The hidden evaluation is run by the programme, not by you, on every pull request from week 2: a
-check called `hidden-eval` on your commit. Its summary holds totals only, for example
-`answer_accuracy=0.71 version_accuracy=0.93 n=150`. You never see its questions.
+The hidden evaluation is run by the programme, not by you, on each week you merge from week 2.
+In the pilot its totals reach you through your mentor and site/hidden.json stays empty; once the
+programme has a GitHub App it also posts a check called `hidden-eval` on your commit, whose
+summary holds totals only (`answer_accuracy=0.71 version_accuracy=0.93 n=150`) and which this
+reads. You never see its questions.
 """
 
 import json

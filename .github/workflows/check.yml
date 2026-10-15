@@ -1,8 +1,8 @@
 name: check
 # On every pull request: that week's gate against the fake provider (no key is ever needed), then
 # the data your mentor's weekly brief is built from, uploaded as the artifact `brief-data`.
-# The programme's hidden evaluation is not here: it runs outside your repository and posts its own
-# check, `hidden-eval`, so nothing in this file can see or change it.
+# The programme's hidden evaluation is not here: it runs outside your repository, on what you
+# merge to main, so nothing in this file can see or change it.
 on:
   pull_request:
   push:

@@ -134,7 +134,7 @@ cheap or frontier, and the numbers that decided it. Put it in `decisions/week-4.
    (allowlist, the numbers are the data), every wall of the loop, the MCP server's scopes and
    approval, the three-way comparison and the model comparison running, the routing table and the
    scope-break write-up.
-2. **The hidden evaluation**: zero unapproved actions on the hidden set, and every number the
+2. **The hidden evaluation**, on what you merge: zero unapproved actions on the hidden set, and every number the
    analysis tool states matching the ground truth.
 3. **The evidence file and the decision record**, with the routing table's model column agreeing
    with the cheap-against-frontier table.
@@ -162,8 +162,8 @@ Your route changes what this week gives you: the page in `routes/` in this folde
 
 ## A week without a session
 
-Your mentor reads the brief and gives a one-click verdict. The gate, the hidden evaluation and the
-hub page are your feedback.
+Your mentor reads the brief and gives a one-click verdict. The gate and the hub page are your
+feedback, and your mentor passes on the hidden evaluation's totals.
 
 ## Optional: self-test
 

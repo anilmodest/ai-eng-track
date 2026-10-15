@@ -135,8 +135,9 @@ experiment. Set `CHUNK_STRATEGY`, `SEARCH_MODE` and `SEARCH_K` in `.env` to matc
 1. **The gate**: the metrics, the chunker, the version filter (a version 3 question returns zero
    version 2 chunks, before ranking), BM25 and fusion, `search_docs`, and the context experiment
    running. `CHECKS.md` lists every check.
-2. **The hidden evaluation** on your pull request: hit rate and version accuracy on questions you
-   have not seen, on the programme's model. You see the totals, never the questions.
+2. **The hidden evaluation**, on what you merge: hit rate and version accuracy on questions you
+   have not seen, on the programme's model. Your mentor brings you the totals, never the
+   questions.
 3. **The evidence file and the decision record**, which the gate checks against each other.
 
 The result: a retrieval configuration chosen with a number rather than an opinion, and the
@@ -165,9 +166,9 @@ Your route changes what this week gives you: the page in `routes/` in this folde
 
 ## A week without a session
 
-Your mentor reads the brief built from your pull request and gives a one-click verdict: on track,
-something to probe at session 3, or an offer of an unblock call. The gate, the hidden evaluation
-on your pull request and the hub page are your feedback this week.
+Your mentor reads the brief built from the week you merged and gives a one-click verdict: on
+track, something to probe at session 3, or an offer of an unblock call. The gate and the hub page
+are your feedback this week, and your mentor passes on the hidden evaluation's totals.
 
 ## Optional: self-test
 

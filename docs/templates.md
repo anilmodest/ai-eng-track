@@ -17,8 +17,8 @@ publish-templates.yml ── scripts/templates.py build --route R ──► week
 ```
 
 A fellow is sent one link: their route's template. They click **Use this template**, create a
-**public** repository in their own account, then **Connect repo** (the programme's GitHub App,
-installed on that one repository). Their repository holds their route and nothing of the other
+**public** repository in their own account, then send its address to the programme lead, who
+records it (nothing is installed on it). Their repository holds their route and nothing of the other
 two: no `weeks/N/routes/core/` folder of planted faults, no worked examples unless they are on
 start, no command to switch route.
 

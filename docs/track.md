@@ -40,8 +40,8 @@ flowchart LR
   C --> D["Check<br/>make check WEEK=N"]
   D --> M["Measure<br/>make evidence WEEK=N"]
   M --> E["Decide<br/>decisions/week-N.md"]
-  E --> F["Submit<br/>PR: checks, brief data, hidden evaluation"]
-  F --> G["merge"]
+  E --> F["Submit<br/>PR: checks"]
+  F --> G["merge<br/>hidden evaluation, mentor's brief"]
 ```
 
 - **Read**: one page, one sentence you must be able to say back in your own words, a few
@@ -54,9 +54,10 @@ flowchart LR
   in `evidence/week-N.json`, with the commit, provider and model.
 - **Decide**: `decisions/week-N.md`, the one decision of the week, with the numbers from the
   evidence file. The gate checks that they match.
-- **Submit**: a pull request from `week-N` to `main`, 24 hours before a session. The checks run,
-  the data for your mentor's brief is collected, and from week 2 the programme's hidden evaluation
-  runs on questions you never see.
+- **Submit**: a pull request from `week-N` to `main`, 24 hours before a session. The checks run.
+  Merging it is what marks the week done: within a day the programme collects the data for your
+  mentor's brief from what you merged and, from week 2, runs its hidden evaluation on questions you
+  never see.
 
 Your **route** (start, core or pro) is set by your mentor at discovery from two questions, in
 order: can you do the basic work of the track at all; and do you check what you produce. It holds
@@ -90,9 +91,9 @@ From session 2, every session has a half where you drive your own AI assistant o
 unseen while your mentor watches how you steer it, and a half with tools closed. Interviews now
 have both kinds of round.
 
-Weeks 2, 4 and 5 have no session: the gate, the hidden evaluation on your pull request, the
-self-tests and this page are your feedback. Your mentor reads a one-page brief built from each pull
-request (they do not read your diff) and gives a one-click verdict: on track, something to probe
+Weeks 2, 4 and 5 have no session: the gate, the self-tests and this page are your feedback, and
+your mentor passes on the hidden evaluation's totals. Your mentor reads a one-page brief built from
+each week you merge (they do not read your diff) and gives a one-click verdict: on track, something to probe
 at the next session, or an offer of an unblock call.
 
 **Unblock calls**: up to two, fifteen minutes each, on request, after you have attempted the thing
@@ -111,7 +112,7 @@ Three layers of evidence, from cheapest to most human. None of them is self-repo
 | Layer | Who | What it measures |
 | --- | --- | --- |
 | **The gate**: `make check WEEK=N` | CI, on every pull request, with a fake model so no key is needed | Lint, strict types, that week's tests under two fake providers, the records, and from Week 3 the evaluation gate, from Week 5 the attack gate |
-| **The hidden evaluation** | The programme, on every pull request from week 2, on one reference model | About 150 questions and 20 agent tasks written for your product, never shown to you: you see the totals |
+| **The hidden evaluation** | The programme, on each week you merge from week 2, on one reference model | About 150 questions and 20 agent tasks written for your product, never shown to you: your mentor brings you the totals |
 | **Your records** | You write; the gate checks them; your mentor's brief shows them | The decision and the numbers behind it, what an assistant did and what you checked, your reflection |
 | **Your mentor's judgement** | Sessions, against one rubric | How you steer an assistant on something unseen, and whether you can explain your own work without one |
 
