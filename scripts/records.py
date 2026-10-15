@@ -30,7 +30,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 SECTIONS = ("Decision", "Options", "Evidence", "Rejected", "Risk accepted")
-_EVIDENCE_LINE = re.compile(r"^\s*[-*]\s*`?([A-Za-z0-9_.\[\]-]+)`?\s*=\s*(-?[0-9][0-9.,]*%?)")
+_EVIDENCE_LINE = re.compile(r"^\s*[-*]\s*`?([A-Za-z0-9_.+\[\]-]+)`?\s*=\s*(-?[0-9][0-9.,]*%?)")
 
 
 @dataclass

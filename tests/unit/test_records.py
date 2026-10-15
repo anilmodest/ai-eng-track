@@ -87,3 +87,19 @@ def test_ai_use_log(tmp_path: Path) -> None:
     log.write_text("hours: 4\nentries: []\n", encoding="utf-8")
     assert check_ai_use(1, tmp_path).ok  # no assistant used is a valid, honest answer
     assert not check_ai_use(3, tmp_path).present
+
+
+def test_an_evidence_key_with_a_plus_is_checked(tmp_path: Path) -> None:
+    # Week 2's own example: retrieval.configs.section+hybrid.hit_rate
+    decision = DECISION.replace(
+        "- tool_drill.after.correct_rate = 85% (was 55%)",
+        "- retrieval.configs.section+hybrid.hit_rate = 0.82",
+    )
+    metrics: dict[str, object] = {
+        "failure_drill": {"gemini": {"recovered_rate": 0.951}},
+        "retrieval": {"configs": {"section+hybrid": {"hit_rate": 0.82}}},
+    }
+    _write(tmp_path, decision=decision, metrics=metrics)
+    check = check_decision(1, tmp_path)
+    assert check.ok, check.problems
+    assert len(check.evidence_lines) == 2

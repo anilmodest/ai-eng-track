@@ -33,6 +33,20 @@ ROOT = Path(__file__).parent.parent.parent
 CORPUS = ROOT / "corpus"
 
 
+def _product() -> tuple[str, str]:
+    """(short name, settings prefix) as your corpus spells them: your product's own variant
+    renames Kestrel and KESTREL_, so the tests read them from the manual instead of naming them."""
+    import re
+
+    page = (CORPUS / "manual-v3-connection-timeout.md").read_text(encoding="utf-8")
+    short = re.search(r"^# Connection timeout \((.+) v3\)", page, re.M)
+    prefix = re.search(r"\b([A-Z][A-Z0-9]*)_CONNECT_TIMEOUT\b", page)
+    return (short.group(1) if short else "Kestrel", prefix.group(1) if prefix else "KESTREL")
+
+
+SHORT, PREFIX = _product()
+
+
 # ---- chunkers ------------------------------------------------------------------------------
 
 
@@ -331,10 +345,10 @@ async def test_hybrid_search_finds_an_exact_setting_name(api: AsyncClient) -> No
     hits = (
         await api.get(
             "/search",
-            params={"q": "KESTREL_RETRY_POLICY", "k": 3, "strategy": "section", "mode": "hybrid"},
+            params={"q": f"{PREFIX}_RETRY_POLICY", "k": 3, "strategy": "section", "mode": "hybrid"},
         )
     ).json()
-    assert "KESTREL_RETRY_POLICY" in hits[0]["text"]
+    assert f"{PREFIX}_RETRY_POLICY" in hits[0]["text"]
 
 
 async def test_unknown_search_mode_is_400(api: AsyncClient) -> None:
@@ -345,9 +359,9 @@ async def test_unknown_search_mode_is_400(api: AsyncClient) -> None:
 def test_section_chunker_says_where_each_chunk_sits() -> None:
     text = (CORPUS / "manual-v3-connection-timeout.md").read_text(encoding="utf-8")
     chunks = chunk(text, "section")
-    assert chunks and all(c.startswith("Connection timeout (Kestrel v3)") for c in chunks)
+    assert chunks and all(c.startswith(f"Connection timeout ({SHORT} v3)") for c in chunks)
     assert any("> Limits" in c for c in chunks)
-    assert not any(c.startswith("---") or "product: Kestrel" in c for c in chunks)
+    assert not any(c.startswith("---") or f"product: {SHORT}" in c for c in chunks)
 
 
 # ---- search_docs: the agent's second tool (app/tools/search.py) ------------------------------
@@ -396,7 +410,7 @@ async def test_search_docs_returns_only_that_versions_pages_with_what_a_citation
     )
     assert "manual-v3-connection-timeout.md" in out
     assert "manual-v2-" not in out
-    assert "KESTREL_CONNECT_TIMEOUT" in out or "15 seconds" in out
+    assert f"{PREFIX}_CONNECT_TIMEOUT" in out or "15 seconds" in out
     nothing = await call(
         search_ctx, "search_docs", {"query": "zebra crossing", "version": "v2", "k": 3}
     )
