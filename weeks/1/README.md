@@ -140,7 +140,8 @@ needs both, and so will week 4, when the agent becomes the hungriest thing you r
 
 **Your failure policy**: which errors retry, how many times, the timeout, and the most you will
 pay for one call, read off the failure drill on your two providers. **And the model you build
-on**, checked against the minimum standard in [`docs/models.md`](../../docs/models.md).
+on**, checked against the minimum standard in [`docs/models.md`](../../docs/models.md), and
+written into `model.json` at the repository's root: the hidden evaluation's model tier runs on it.
 
 Write it in `decisions/week-1.md` (from `DECISION_TEMPLATE.md`): the decision, the options you
 measured, the evidence as keys into your evidence file (for example

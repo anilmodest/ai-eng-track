@@ -112,7 +112,7 @@ Three layers of evidence, from cheapest to most human. None of them is self-repo
 | Layer | Who | What it measures |
 | --- | --- | --- |
 | **The gate**: `make check WEEK=N` | CI, on every pull request, with a fake model so no key is needed | Lint, strict types, that week's tests under two fake providers, the records, and from Week 3 the evaluation gate, from Week 5 the attack gate |
-| **The hidden evaluation** | The programme, on each week you merge from week 2, on one reference model | About 150 questions and 20 agent tasks written for your product, never shown to you: your mentor brings you the totals |
+| **The hidden evaluation** | The programme, on each week you merge from week 2, beside its reference solution: every item on the fake model (with floors), a sample on your `model.json` model (no floor) | About 150 questions and 20 agent tasks written for your product, never shown to you: your score is a share of the reference's, and your mentor brings you the totals |
 | **Your records** | You write; the gate checks them; your mentor's brief shows them | The decision and the numbers behind it, what an assistant did and what you checked, your reflection |
 | **Your mentor's judgement** | Sessions, against one rubric | How you steer an assistant on something unseen, and whether you can explain your own work without one |
 

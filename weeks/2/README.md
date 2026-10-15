@@ -136,7 +136,8 @@ experiment. Set `CHUNK_STRATEGY`, `SEARCH_MODE` and `SEARCH_K` in `.env` to matc
    version 2 chunks, before ranking), BM25 and fusion, `search_docs`, and the context experiment
    running. `CHECKS.md` lists every check.
 2. **The hidden evaluation**, on what you merge: hit rate and version accuracy on questions you
-   have not seen, on the programme's model. Your mentor brings you the totals, never the
+   have not seen, as a share of the reference solution's on the same questions
+   ([`docs/models.md`](../../docs/models.md)). Your mentor brings you the totals, never the
    questions.
 3. **The evidence file and the decision record**, which the gate checks against each other.
 

@@ -133,8 +133,10 @@ disagreements you read. Write `decisions/week-3.md`, quoting the evidence by key
 1. **The gate**: `/ask`'s two gates and its citations, the evaluation blocking a seeded
    regression, your test set's composition, your judge's prompt and verdicts, your labels and
    trajectory tasks, and the threshold and trajectory commands running.
-2. **The hidden evaluation**, on what you merge: from this week a hidden score below the floor
-   goes on your mentor's brief, to be explained at the session.
+2. **The hidden evaluation**, on what you merge: from this week each measure of its system tier
+   must reach 80% of the reference solution's on the same questions; below that goes on your
+   mentor's brief, to be explained at the session. Its model tier, on your `model.json` model,
+   informs the brief.
 3. **The evidence file and the decision record.**
 
 The result: a deliberately bad change demonstrated being blocked by the gate, and **the gap
