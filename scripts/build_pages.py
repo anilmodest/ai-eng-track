@@ -1467,6 +1467,19 @@ system. Being able to say why, with your own numbers, is worth more than having 
     return page("The programme", body)
 
 
+def built_stamp() -> tuple[str, str]:
+    """When this page was built and from what: a chip, and a sentence for the fine print. The
+    workflow passes BUILT_SHA and BUILT_FROM; a local build says so."""
+    sha = os.environ.get("BUILT_SHA", "").strip()[:7]
+    source = os.environ.get("BUILT_FROM", "").strip() or "your working copy"
+    when = datetime.now(UTC).strftime("%d %b %H:%M UTC")
+    chip = f'<span class="chip">updated <b>{esc(when)}</b>{f" &middot; {esc(sha)}" if sha else ""}</span>'
+    return (
+        chip,
+        f"Built {esc(when)} from {esc(source)}{f' at <code>{esc(sha)}</code>' if sha else ''}.",
+    )
+
+
 def render_index(weeks: list[Week], route: str, live_url: str, repo: str) -> str:
     done = [w for w in weeks if w.done]
     milestones = [w for w in weeks if w.n > 0]
@@ -1477,6 +1490,7 @@ def render_index(weeks: list[Week], route: str, live_url: str, repo: str) -> str
         f'<span class="chip"><span class="dot'
         f'{" green" if len(done) == len(weeks) else ""}"></span>'
         f"<b>{len(done)}</b> of {len(weeks)} weeks complete</span>",
+        built_stamp()[0],
     ]
     if live_url:
         chips.append(f'<a class="chip go" href="{esc(live_url)}">Live service</a>')
@@ -1543,8 +1557,10 @@ the right one, shows where the answer came from, and says when it does not know.
 <div class="weeks">{rows}</div>
 <h2><span class="n">Reference</span>when you need it</h2>
 <div class="links">{link_html}</div>
-<p class="fineprint"><b>This page is as of your last merge to <code>main</code>.</b> While you
-are working on a branch your terminal is ahead of it: <code>make next</code> and
+<p class="fineprint"><b>{built_stamp()[1]}</b> It rebuilds on every merge to <code>main</code> and
+every push to an open pull request, in about ten minutes, and your browser can show the previous
+build for up to ten more: reload then. A push to a branch with no pull request does not rebuild
+it. While you are working on a branch your terminal is ahead of it: <code>make next</code> and
 <code>make check</code> are the live answer, and this is the record. Nothing here is typed by
 hand. Numbers measured against the test model and the lexical embedder prove the pipeline holds,
 not that answers are good &mdash; each week says which it ran.
