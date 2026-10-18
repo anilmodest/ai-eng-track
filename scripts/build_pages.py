@@ -50,10 +50,10 @@ MD = MarkdownIt("commonmark", {"html": True}).enable("table")
 
 WEEK_AREAS: dict[int, list[int]] = {
     0: [1],
-    1: [2],
+    1: [2, 6],
     2: [3, 4],
     3: [5, 8],
-    4: [6, 7],
+    4: [6, 7, 8],
     5: [9, 10],
     6: [11],
 }
@@ -776,6 +776,95 @@ def _gh(repo: str, path: str) -> str:
     return f"https://github.com/{repo}/blob/main/{path}"
 
 
+# The docs a fellow reads, each rendered as a page of the hub: (page, file, what it is for).
+# docs/templates.md and docs/architecture.md are the programme's and never ship, so not here.
+GUIDES: list[tuple[str, str, str]] = [
+    ("start-here", "docs/start-here.md", "read first, in week 0"),
+    ("glossary", "docs/glossary.md", "every term in one sentence"),
+    ("worked-examples", "docs/worked-examples.md", "reading the numbers, weeks 2 and 3"),
+    ("track", "docs/track.md", "routes, sessions, gates"),
+    ("models", "docs/models.md", "the model standard"),
+    ("vector-stores", "docs/vector-stores.md", "choosing a store"),
+    ("langgraph-comparison", "docs/langgraph-comparison.md", "the week 4 rebuild"),
+]
+# Which guides each week's page points to: (page, or page#anchor, label).
+WEEK_GUIDES: dict[int, list[tuple[str, str]]] = {
+    0: [("start-here", "Track 3 in ten minutes"), ("glossary", "Glossary")],
+    1: [("models", "The model standard"), ("glossary", "Glossary")],
+    2: [
+        ("worked-examples#example-a-retrieval-metrics-week-2", "Worked example A: retrieval"),
+        ("vector-stores", "Where the vectors live"),
+        ("glossary", "Glossary"),
+    ],
+    3: [
+        ("worked-examples#example-b-faithfulness-week-3", "Worked examples B to E: evaluation"),
+        ("glossary", "Glossary"),
+    ],
+    4: [("langgraph-comparison", "The LangGraph comparison"), ("glossary", "Glossary")],
+    5: [("glossary", "Glossary")],
+    6: [("track", "How you are judged"), ("glossary", "Glossary")],
+}
+
+
+def _slug(text: str) -> str:
+    """The anchor GitHub gives a heading, so links written for GitHub land here too."""
+    text = re.sub(r"<[^>]+>", "", html.unescape(text)).strip().lower()
+    return re.sub(r"\s", "-", re.sub(r"[^\w\s-]", "", text))
+
+
+def guide_html(path: str, repo: str) -> tuple[str, str]:
+    """A doc as (title, body): headings get anchors, links to another guide stay on the hub,
+    and every other relative link goes to the file on GitHub."""
+    file = ROOT / path
+    if not file.exists():
+        return "", ""
+    title = file.read_text(encoding="utf-8").splitlines()[0].lstrip("# ").strip()
+    body = re.sub(
+        r"<(h[2-4])>(.*?)</\1>",
+        lambda m: f'<{m.group(1)} id="{_slug(m.group(2))}">{m.group(2)}</{m.group(1)}>',
+        md(file),
+    )
+    pages = {Path(f).name: slug for slug, f, _ in GUIDES}
+    base = Path(path).parent
+
+    def link(m: re.Match[str]) -> str:
+        href = html.unescape(m.group(1))
+        if re.match(r"^([a-z]+:|#|/)", href):
+            return m.group(0)
+        target, _, anchor = href.partition("#")
+        resolved = os.path.normpath((base / target).as_posix()).replace("\\", "/")
+        if resolved.startswith("docs/") and Path(resolved).name in pages:
+            new = f"{pages[Path(resolved).name]}.html"
+        else:
+            new = _gh(repo, resolved)
+        return f'href="{esc(new + ("#" + anchor if anchor else ""))}"'
+
+    return title, re.sub(r'href="([^"]+)"', link, body)
+
+
+def render_guide(path: str, blurb: str, repo: str) -> str:
+    title, body = guide_html(path, repo)
+    return (
+        '<a class="back" href="overview.html">&lsaquo; The programme</a>'
+        f'<p class="kicker">Guide &middot; {esc(blurb)}</p><h1>{esc(title)}</h1>'
+        f'<div class="prose">{body}</div>'
+        f'<p class="fineprint"><a href="{_gh(repo, path)}">{esc(path)} on GitHub</a></p>'
+    )
+
+
+def guide_links(repo: str) -> str:
+    return "".join(
+        f'<a href="{slug}.html">{esc(guide_html(f, repo)[0])}<span>{esc(blurb)}</span></a>'
+        for slug, f, blurb in GUIDES
+        if (ROOT / f).exists()
+    )
+
+
+def _guide_href(ref: str) -> str:
+    page, _, anchor = ref.partition("#")
+    return f"{page}.html" + (f"#{anchor}" if anchor else "")
+
+
 def _cmds(cmds: list[str]) -> str:
     return "".join(f'<code class="cmd">{esc(c)}</code>' for c in cmds)
 
@@ -879,6 +968,13 @@ INTERVIEW: list[tuple[str, str, int]] = [
         1,
     ),
     (
+        "Design the tool you would give it.",
+        "I wrote the schemas for get_customer and get_ticket, measured how often the model "
+        "called them correctly before and after I changed the descriptions, and the tools refuse "
+        "in words when the arguments are wrong.",
+        1,
+    ),
+    (
         "What stops it answering a question it should not?",
         "Two gates. Nothing retrieved clears the relevance threshold, so it declines before the "
         "model is called; and afterwards, the model has to say the passages support the answer.",
@@ -887,19 +983,29 @@ INTERVIEW: list[tuple[str, str, int]] = [
     (
         "How do you know a change made it better?",
         "The evaluation runs on every proposed change and fails the change if the score drops. "
-        "I can show you a seeded bad change being blocked.",
+        "I can show you a seeded bad change being blocked, and a test set I never saw scored "
+        "every week I merged.",
         3,
     ),
     (
-        "Did you use an agent?",
-        "I built the same task three ways and measured them. The agent cost more and was no more "
-        "accurate, so it did not ship. The comparison is in the repository.",
+        "How do you test an agent?",
+        "On its path as well as its answer: the right tool, in the right order, in how many "
+        "steps, and never an action without approval, on tasks I wrote down before I built it.",
+        3,
+    ),
+    (
+        "Where did you give the model agency, and where did you refuse it?",
+        "I ran plain code, a fixed workflow and an agent on three kinds of task. The routing "
+        "table says which each deserves, and which model, with the numbers. Nothing that writes "
+        "or spends runs without a person's approval, and that is enforced in code, not asked for "
+        "in the prompt.",
         4,
     ),
     (
-        "What happens if a document tries to give your system instructions?",
+        "What happens if a document or a ticket tries to give your system instructions?",
         "It was a working attack before the defence and is not now, and the test that proves it "
-        "runs in the gate.",
+        "runs in the gate. The agent cannot do much even if it obeys: the capability was removed "
+        "first.",
         5,
     ),
     (
@@ -919,43 +1025,47 @@ INTERVIEW: list[tuple[str, str, int]] = [
 # cannot say why week 4 follows week 3 -- the fellow is inside one week at a time. This page can.
 WEEK_ARC: dict[int, tuple[str, str]] = {
     0: (
-        "An API that takes documents, parses them and stores them. No model anywhere yet.",
-        "Week 1 needs somewhere to put a model call, and something worth calling it about.",
+        "A service that takes documents, parses and stores them, with the desk's customers and "
+        "tickets already loaded. No model anywhere yet.",
+        "Week 1 needs somewhere to put a model call, and data worth giving the model tools for.",
     ),
     1: (
         "A model behind an interface: it survives the provider misbehaving, never pays twice, "
-        "records what it cost, and swaps provider from a setting.",
-        "Week 2 measures retrieval. That is only worth measuring if the thing consuming it "
-        "cannot fall over or quietly change underneath you.",
+        "records what it cost and swaps provider from a setting. Output against a schema, and the "
+        "agent's first two tools, get_customer and get_ticket.",
+        "Week 2 gives the agent its main tool, search. That is only worth measuring if the model "
+        "and the tools under it cannot fall over or quietly change.",
     ),
     2: (
-        "Search that finds the right passage from the right version of the manual, with a "
-        "chunking strategy you chose with a number.",
+        "Hybrid search, keyword and meaning together, restricted to the customer's version and "
+        "called by the agent as a tool, with every choice in it made by a number.",
         "Week 3 grounds answers in retrieved text. Grounding a bad retrieval just makes the "
         "wrong answer better written.",
     ),
     3: (
-        "Answers that cite their source, decline when the evidence is thin, and a gate that "
-        "blocks any change making the numbers worse.",
-        "Week 4 asks whether an agent helps. You cannot answer that without a baseline you "
-        "trust and a way to tell if it moved.",
+        "Answers that cite their source and decline when the evidence is thin, your own test "
+        "set, a judge you checked against labels, and the agent's path measured as well as its "
+        "answer.",
+        "Week 4 lets the agent act. You cannot let it act until you can tell whether a change "
+        "made it worse.",
     ),
     4: (
-        "A tool with a scope it refuses to exceed, and the same job done three ways with the "
-        "cost of each.",
-        "Week 5 watches and defends the system. More moving parts is exactly when you need to "
-        "see where the time and money went.",
+        "An agent that looks up, analyses and acts: a reply, an escalation or a credit, the "
+        "risky ones only with approval enforced in code. An MCP server, and a routing table that "
+        "says where an agent and a bigger model pay.",
+        "Week 5 defends it. Once the system can act, the content it reads can attack it.",
     ),
     5: (
-        "Cost and time attributed per step, failures sorted by kind, and a defence against a "
-        "document that tries to give your service instructions.",
+        "Least agency first, a defence against instructions planted in documents and tool "
+        "results, personal data masked before it reaches the model, and cost and time traced per "
+        "step.",
         "Week 6 puts it somewhere other people can reach. Publishing something you cannot "
         "observe is how you find out about problems from a customer.",
     ),
     6: (
-        "A published build someone else can run, a rollback you performed, and one page saying "
-        "what it did for the business.",
-        "That page is what an interview actually asks about.",
+        "A published build someone else can run, a rollback you performed, the trade-off table, "
+        "a recorded five-minute demo, and one page saying what it did for the business.",
+        "That page, and the demo, are what an interview actually asks about.",
     ),
 }
 
@@ -1134,12 +1244,39 @@ def render_week(w: "Week", weeks: list["Week"], repo: str) -> str:
         verb = {
             "Read": "Start by reading the concept, then run what is already there.",
             "Build": "Build this week's exercise, then run the gate.",
-            "Submit": "Fill in your reflection, then open the pull request.",
+            "Submit": "Measure on a real model, write your decision record, AI-use log and "
+            "reflection, then open the pull request.",
         }[w.step]
         parts.append(
             f'<div class="card todo"><h3>Do this next</h3><p>{esc(verb)}</p>'
             f"<pre>make check WEEK={w.n}</pre></div>"
         )
+    glance = []
+    if w.n in WEEK_SESSION:
+        glance.append(f"<tr><td>Session</td><td>{esc(WEEK_SESSION[w.n])}</td></tr>")
+    if WEEK_BUILD_NOTE.get(w.n):
+        glance.append(f"<tr><td>Build</td><td>{esc(WEEK_BUILD_NOTE[w.n])}</td></tr>")
+    if WEEK_BUILD.get(w.n):
+        files = ", ".join(f"<code>{esc(f)}</code>" for f in WEEK_BUILD[w.n])
+        glance.append(f"<tr><td>Files</td><td>{files}</td></tr>")
+    if w.n in WEEK_MEASURE:
+        glance.append(
+            f"<tr><td>Measure</td><td><code>{esc(WEEK_MEASURE[w.n])}</code> on a real model, "
+            f"into <code>evidence/week-{w.n}.json</code></td></tr>"
+            f"<tr><td>Record</td><td><code>decisions/week-{w.n}.md</code> from the evidence, "
+            f"<code>ai-use/week-{w.n}.yml</code>, <code>reflections/week-{w.n}.md</code></td></tr>"
+        )
+    guides = " &middot; ".join(
+        f'<a href="{_guide_href(ref)}">{esc(label)}</a>' for ref, label in WEEK_GUIDES.get(w.n, [])
+    )
+    if guides:
+        glance.append(f"<tr><td>Guides</td><td>{guides}</td></tr>")
+    if glance:
+        parts.append(
+            '<div class="card"><h3 style="margin:0 0 8px">This week at a glance</h3>'
+            f'<div class="tbl"><table><tbody>{"".join(glance)}</tbody></table></div></div>'
+        )
+
     parts.append(checks_card(w))
     parts.append(hidden_card(w))
     parts.append(records_card(w))
@@ -1271,6 +1408,7 @@ def page(title: str, body: str, cfg: dict[str, Any] | None = None) -> str:
   <span class="mark">AI Engineering</span>
   <span class="sp"></span>
   <a href="overview.html">Programme</a>
+  <a href="start-here.html">Start here</a>
   <a href="index.html">Weeks</a>
   <a href="playground.html">Playground</a>
   <a class="btn primary code" href="https://codespaces.new/{REPO}?quickstart=1"
@@ -1347,8 +1485,10 @@ def next_step(weeks: list[Week], repo: str) -> str:
             [f"make check WEEK={current.n}"],
         ),
         "Submit": (
-            "Fill in your reflection, then open the pull request",
+            "Measure on a real model, write your decision record, AI-use log and reflection, "
+            "then open the pull request",
             [
+                *([WEEK_MEASURE[current.n]] if current.n in WEEK_MEASURE else []),
                 f"git add -A && git commit -m 'week {current.n}'",
                 f"git push -u origin week-{current.n}",
                 "gh pr create --fill --base main",
@@ -1371,11 +1511,11 @@ def week_hours(n: int) -> str:
     text = readme.read_text(encoding="utf-8")
     # The header carries the week's total. Week 0 states no total, so fall back to the section
     # that does, rather than leaving a blank cell on a page people read front to back.
-    for scope in (text[:400], text):
-        m = re.search(r"[Aa]bout ([\d\u2013\u2014.-]+(?: to \d+)?) hours?", scope)
-        if m:
-            return m.group(1)
-    return ""
+    m = re.search(r"(\d+ to \d+) hours", text[:400])
+    if m:
+        return m.group(1)
+    m = re.search(r"[Aa]bout ([\d\u2013\u2014.-]+(?: to \d+)?) hours?", text)
+    return m.group(1) if m else ""
 
 
 def render_overview(weeks: list[Week], repo: str) -> str:
@@ -1385,10 +1525,11 @@ def render_overview(weeks: list[Week], repo: str) -> str:
         leaves = WEEK_ARC.get(w.n, ("", ""))[0]
         areas = ", ".join(AREAS[a] for a in WEEK_AREAS.get(w.n, []) if a in AREAS)
         hours = week_hours(w.n)
+        session = WEEK_SESSION.get(w.n, "no session").split(",")[0]
         rows += (
-            f"<tr><td><b>{w.n}</b></td><td>{esc(w.title)}<br>"
+            f'<tr><td><b>{w.n}</b></td><td><a href="week-{w.n}.html">{esc(w.title)}</a><br>'
             f'<span class="muted">{esc(areas)}</span></td>'
-            f"<td>{esc(leaves)}</td><td>{esc(hours)}</td></tr>"
+            f"<td>{esc(leaves)}</td><td>{esc(hours)}</td><td>{esc(session)}</td></tr>"
         )
 
     skills = "".join(
@@ -1403,22 +1544,36 @@ def render_overview(weeks: list[Week], repo: str) -> str:
         for q, a, n in INTERVIEW
     )
 
+    track = _split_track()
     body = f"""
 <p class="kicker">The programme</p>
-<h1>Six weeks, one service, numbers you measured yourself.</h1>
+<h1>Six weeks, one support-desk agent, numbers you measured yourself.</h1>
 <p class="lede">A software company supports versions 2 and 3 of its product. The two manuals are
 worded almost identically and differ in substance, so an answer from the wrong one is worse than
-no answer. You build the assistant that gets it right, shows where the answer came from, and says
-when it does not know. It is built in week 1 and improved every week after, until someone else can
-run it and you can defend every number in it.</p>
+no answer. You build the agent its support desk uses: it finds out which version the customer
+runs, answers only from that version's manual with a citation or declines, looks up and analyses
+the customer's own data, and proposes the next action, carrying it out only when a person
+approves. It starts in week 1 and changes every week, until someone else can run it and you can
+defend every decision in it, with an AI assistant in hand and without one.</p>
+
+<div class="card next"><h3>New here?</h3>
+<p>Read <a href="start-here.html">Track 3 in ten minutes</a> first. The
+<a href="glossary.html">glossary</a> has every term in one sentence, for whenever a word stops
+you, and the <a href="worked-examples.html">worked examples</a> show how to read the numbers in
+weeks 2 and 3, where they all arrive at once.</p>
+<a class="btn primary" href="start-here.html">Start here</a></div>
 
 <h2><span class="n">Weeks</span>what each one leaves behind</h2>
 <div class="tbl"><table>
-<thead><tr><th></th><th>Week</th><th>Leaves behind</th><th>Hours</th></tr></thead>
+<thead><tr><th></th><th>Week</th><th>Leaves behind</th><th>Hours</th><th>Session</th></tr>
+</thead>
 <tbody>{rows}</tbody></table></div>
-<p class="fineprint">Four mentor sessions in all: discovery before week 1, direction at the end of
-week 1, observation at the end of week 3, and the defence at the end of week 6. Weeks 2, 4 and 5
-are self-directed, with a pull request every week either way.</p>
+
+<h2><span class="n">Each week</span>how a week works</h2>
+<div class="prose">{track.get("How a week works", "")}</div>
+
+<h2><span class="n">Judged</span>sessions and gates</h2>
+<div class="prose">{track.get("Sessions and gates", "")}</div>
 
 <h2><span class="n">Skills</span>the eleven areas, and where each lands</h2>
 <div class="tbl"><table>
@@ -1428,38 +1583,23 @@ are self-directed, with a pull request every week either way.</p>
 <h2><span class="n">After</span>what you can say, and show</h2>
 {qa}
 
-<h2><span class="n">Routes</span>same exercises, different scaffolding</h2>
-<div class="tbl"><table>
-<thead><tr><th>Route</th><th>What you are given</th><th>Who it is for</th></tr></thead>
-<tbody>
-<tr><td><b>start</b></td><td>Every helper working, and a fully worked example of a smaller
-version of each exercise</td><td>You can code, but have not built this kind of system</td></tr>
-<tr><td><b>core</b></td><td>A complete implementation with mistakes planted in it, and the
-measurement layer to build yourself</td><td>The expected route for most fellows</td></tr>
-<tr><td><b>pro</b></td><td>No helpers, and one extra constraint each week</td><td>You already
-ship production code</td></tr>
-</tbody></table></div>
-<p class="fineprint">The route is assigned from the discovery conversation, not chosen. Every
-route is calibrated to the same hours: a route that cost more would penalise the people it exists
-to help. It can be corrected once, at the second session, in writing.</p>
-
 <h2><span class="n">Scope</span>what this deliberately is not</h2>
 <div class="card"><p>No model training or fine-tuning. No multi-agent systems. No production
 latency or throughput guarantees. No authentication or multi-tenancy. No paid infrastructure of
 any kind.</p>
-<p>And one the programme expects but does not ship: the three-way comparison in week 4 exists to
-produce a decision, not a feature. The recommended outcome is that no agent goes into the finished
-system. Being able to say why, with your own numbers, is worth more than having built one.</p>
+<p>Agency is earned, not assumed. In week 4 you run plain code, a fixed workflow and an agent on
+three kinds of task, and your routing table says which each deserves, with the numbers. "No agent"
+is a good answer for a task type when the numbers say so; it is not the expected answer for the
+whole system, because the desk's tickets include steps that need judgement.</p>
 </div>
 
 <h2><span class="n">More</span>if you want the detail</h2>
 <div class="links">
+  {guide_links(repo)}
   <a href="{_gh(repo, "weeks/0/BRIEF.md")}">The client's brief<span>what was asked for</span></a>
   <a href="{_gh(repo, "weeks/0/REQUIREMENTS.md")}">The twelve requirements<span>what it must
     do</span></a>
   <a href="{_gh(repo, "RULES.md")}">Your role and the rules<span>including AI tools</span></a>
-  <a href="{_gh(repo, "docs/track.md")}">How the track works<span>routes, sessions,
-    gates</span></a>
   <a href="index.html">Your weeks<span>where you are now</span></a>
   <a href="progress.csv">Progress export<span>csv, for the platform</span></a>
 </div>
@@ -1507,7 +1647,7 @@ def render_index(weeks: list[Week], route: str, live_url: str, repo: str) -> str
         (
             "02",
             "The six weeks",
-            "One service, improved every week, with a gate you run as often as you like.",
+            "One agent, changed every week: build, measure on a real model, decide, merge.",
             f"week-{(current or milestones[0]).n}.html",
             f"{len([w for w in milestones if w.done])} of {len(milestones)} milestones complete",
         ),
@@ -1533,11 +1673,9 @@ def render_index(weeks: list[Week], route: str, live_url: str, repo: str) -> str
         ("The brief", "what the client asked for", _gh(repo, "weeks/0/BRIEF.md")),
         ("What it must do", "the twelve requirements", _gh(repo, "weeks/0/REQUIREMENTS.md")),
         ("Your role and the rules", "including AI tools", _gh(repo, "RULES.md")),
-        ("How the track works", "routes, sessions, gates", _gh(repo, "docs/track.md")),
-        ("Where the vectors live", "choosing a store", _gh(repo, "docs/vector-stores.md")),
         ("The repository", "everything above, as files", f"https://github.com/{esc(repo)}"),
     ]
-    link_html = "".join(
+    link_html = guide_links(repo) + "".join(
         f'<a href="{href}">{esc(t)}<span>{esc(sub)}</span></a>' for t, sub, href in links
     )
 
@@ -1545,9 +1683,10 @@ def render_index(weeks: list[Week], route: str, live_url: str, repo: str) -> str
     body = f"""
 <p class="kicker">Discover &rarr; Build &middot; AI Engineering</p>
 <h1>One service, six weeks, numbers you can defend.</h1>
-<p class="lede">A support desk answers the same documentation questions every day, from a manual
-that exists in two versions worded almost identically. You build the assistant that answers from
-the right one, shows where the answer came from, and says when it does not know.</p>
+<p class="lede">A support desk works the same kinds of ticket every day, from a manual that exists
+in two versions worded almost identically. You build the agent that answers from the right one
+with a citation or declines, looks up the customer's own data, and acts only when a person
+approves. New here? <a href="start-here.html">Track 3 in ten minutes</a>.</p>
 <div class="strip">{"".join(chips)}</div>
 <div class="meter"><i style="width:{pct}%"></i></div>
 {next_step(weeks, repo)}
@@ -1695,6 +1834,11 @@ def main() -> int:
         )
     (out_dir / "overview.html").write_text(render_overview(weeks, repo), encoding="utf-8")
     (out_dir / "playground.html").write_text(page("Playground", PLAYGROUND), encoding="utf-8")
+    for slug, path, blurb in GUIDES:
+        if (ROOT / path).exists():
+            (out_dir / f"{slug}.html").write_text(
+                page(guide_html(path, repo)[0], render_guide(path, blurb, repo)), encoding="utf-8"
+            )
     write_export(export_rows(weeks, route, repo, hub), out_dir, hub)
 
     size = OUT.stat().st_size // 1024
