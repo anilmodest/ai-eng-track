@@ -958,7 +958,7 @@ WEEK_HEADLINE: dict[int, Any] = {
     5: _h_attacks,
 }
 
-# What the twelve requirements in weeks/0/REQUIREMENTS.md sound like when somebody asks about
+# What the sixteen requirements in weeks/0/REQUIREMENTS.md sound like when somebody asks about
 # them. Kept here rather than derived, because the question is the part that is not in the repo.
 INTERVIEW: list[tuple[str, str, int]] = [
     (
@@ -1015,8 +1015,9 @@ INTERVIEW: list[tuple[str, str, int]] = [
     ),
     (
         "What did the feature do for the business?",
-        "Support questions deflected, at a cost per question. The one page says the number and "
-        "where it came from.",
+        "Tickets resolved without a person, at a cost per ticket, with no action nobody approved. "
+        "The one page says the numbers and "
+        "where they came from.",
         6,
     ),
 ]
@@ -1597,7 +1598,7 @@ whole system, because the desk's tickets include steps that need judgement.</p>
 <div class="links">
   {guide_links(repo)}
   <a href="{_gh(repo, "weeks/0/BRIEF.md")}">The client's brief<span>what was asked for</span></a>
-  <a href="{_gh(repo, "weeks/0/REQUIREMENTS.md")}">The twelve requirements<span>what it must
+  <a href="{_gh(repo, "weeks/0/REQUIREMENTS.md")}">The sixteen requirements<span>what it must
     do</span></a>
   <a href="{_gh(repo, "RULES.md")}">Your role and the rules<span>including AI tools</span></a>
   <a href="index.html">Your weeks<span>where you are now</span></a>
@@ -1671,7 +1672,7 @@ def render_index(weeks: list[Week], route: str, live_url: str, repo: str) -> str
 
     links = [
         ("The brief", "what the client asked for", _gh(repo, "weeks/0/BRIEF.md")),
-        ("What it must do", "the twelve requirements", _gh(repo, "weeks/0/REQUIREMENTS.md")),
+        ("What it must do", "the sixteen requirements", _gh(repo, "weeks/0/REQUIREMENTS.md")),
         ("Your role and the rules", "including AI tools", _gh(repo, "RULES.md")),
         ("The repository", "everything above, as files", f"https://github.com/{esc(repo)}"),
     ]

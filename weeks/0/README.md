@@ -5,7 +5,7 @@ next six weeks stand on is solid, and your mentor uses what they see to place yo
 
 **Read [`docs/start-here.md`](../../docs/start-here.md) first: Track 3 in ten minutes.** Then
 `BRIEF.md` in this folder. It is the client's own brief, and it is the reason every
-later week is shaped the way it is. Then read `REQUIREMENTS.md`: twelve things the finished system
+later week is shaped the way it is. Then read `REQUIREMENTS.md`: sixteen things the finished system
 must do, each one checked. `../../RULES.md` says what is expected of you, including the one rule
 about using AI tools.
 
