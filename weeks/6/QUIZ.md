@@ -25,9 +25,9 @@ questions, some of them timed, taken once, and your mentor sees that score.
 - [ ] The registry rejected the image, so the package needs to be made public first — the publish step never ran; the smoke test stopped it
 > Why: the smoke test runs against the built candidate image before anything is pushed. A broken build never becomes something a stranger can pull.
 
-## Q4. During the smoke test, the extract check gets a 503 `kill_switch`. Pass or fail?
+## Q4. During the smoke test, the version 3 question on `/ask` gets a 503 `kill_switch`. Pass or fail?
 - [x] Pass, and the line says the refusal is intended
-- [ ] Fail, because the extract check did not return a schema-valid result — it was refused, which is different from broken
+- [ ] Fail, because the check did not get a cited answer — it was refused, which is different from broken
 - [ ] Pass, without printing anything about it — the operator must see that the switch is on
 > Why: a smoke test that fails on intended refusals gets ignored within a week. The intended case is explicit and green, and a wrong answer still fails.
 
