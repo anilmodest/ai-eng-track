@@ -52,25 +52,31 @@ question, hand those to the model. Every choice in that sentence is a measurable
   match exactly, and a support desk is full of them. Keyword search is the opposite. Reciprocal
   rank fusion merges the two lists by rank, because their scores are on different scales. You
   build both halves this week and measure what fusing them buys.
+- **Filtering on metadata.** The version 2 and version 3 pages on the connection timeout are
+  worded almost identically; one sets it in `kestrel.conf`, the other in an environment variable.
+  No chunker or embedder separates them, because the difference is not in the words a question
+  shares with them. The version in each page's filename does, as a filter that runs before
+  ranking, so every one of the top k comes from the customer's version.
 - **Evaluating retrieval separately from generation.** If the right chunk was never retrieved, the
   best model in the world cannot answer. So measure retrieval on its own, with its own metrics:
   precision at k, recall at k, mean reciprocal rank, and whether the context was relevant at all.
 
-The same clause, cut four ways. Only one strategy keeps "3. Fees." with its fee.
+The same manual page, cut four ways. Only one keeps "Where the setting lives" with the setting and
+its default.
 
 ```mermaid
 flowchart TB
   subgraph fixed [fixed, 500 chars]
-    f1["…sixty (60) days written no"] --- f2["tice. 3. Fees. Client will pay Provider 6,500 GBP…"]
+    f1["…connection_timeout_seconds in kestrel.conf is no longer us"] --- f2["ed. If it is still present the runner reads it, ignores it…"]
   end
   subgraph sentence [sentence, ~400 chars]
-    s1["…written notice. 3. Fees."] --- s2["Client will pay Provider 6,500 GBP per month…"]
+    s1["…The timeout is the environment variable KESTREL_CONNECT_TIMEOUT, in whole seconds."] --- s2["The default is 15 seconds. …"]
   end
   subgraph paragraph [paragraph, ~800 chars]
-    p1["3. Fees. Client will pay Provider 6,500 GBP per month, invoiced monthly in advance, payable within 14 days of invoice."]
+    p1["…restart the runner with kestrelctl restart for the new value to be used. ## Limits"] --- p2["The lowest accepted value is 1. …"]
   end
   subgraph heading [heading-aware, per section]
-    h1["## Fees<br/>Client will pay Provider 6,500 GBP…"]
+    h1["## Where the setting lives<br/>The timeout is the environment variable KESTREL_CONNECT_TIMEOUT, in whole seconds. The default is 15 seconds."]
   end
 ```
 

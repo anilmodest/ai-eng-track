@@ -56,10 +56,13 @@ async def answer_from_one_passage(question: str, passage: str) -> dict[str, obje
 
 async def main() -> None:
     os.environ.setdefault("MODEL_PROVIDER", "fake_a")
-    passage = (
-        "Personal car: 45 pence per mile for the first 10,000 miles in the tax year, then 25 pence."
+    passage = (  # corpus/manual-v3-connection-timeout.md
+        "The timeout is the environment variable KESTREL_CONNECT_TIMEOUT, in whole seconds. "
+        "The default is 15 seconds."
     )
-    print(await answer_from_one_passage("What is the personal car rate per mile?", passage))
+    print(
+        await answer_from_one_passage("What is the default connection timeout in seconds?", passage)
+    )
     print(await answer_from_one_passage("What is the capital of Australia?", passage))
     print("Now: retrieval, gate 1 (the threshold, before any call), k passages, real chunk ids.")
 

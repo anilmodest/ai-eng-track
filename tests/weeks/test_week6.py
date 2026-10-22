@@ -62,6 +62,20 @@ async def test_smoke_test_treats_the_kill_switch_as_intended(
     assert fake.calls == 0
 
 
+async def test_smoke_test_fails_when_everything_declines(
+    fake: FakeClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The break-it-on-purpose step: a threshold nothing clears passes every unit test, and the
+    service declines the brief's question. The smoke test must catch it before anything ships."""
+    from app.main import app
+    from app.settings import get_settings
+
+    monkeypatch.setenv("RELEVANCE_THRESHOLD", "1.5")
+    get_settings.cache_clear()
+    code = await smoke.run("http://smoke", transport=ASGITransport(app=app))
+    assert code == 1
+
+
 async def test_live_traffic_can_be_sampled_and_scored(
     api: AsyncClient, fake: FakeClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -92,7 +106,7 @@ async def test_live_traffic_can_be_sampled_and_scored(
 
 
 async def test_smoke_test_skips_exercises_that_are_not_built_yet() -> None:
-    """A fellow at Week 1 must still be able to release: 501 is "not built", not "broken".
+    """A fellow before Week 3 must still be able to release: 501 is "not built", not "broken".
 
     Driven against a stand-in service that answers like the template does before Week 3.
     """
@@ -115,13 +129,9 @@ async def test_smoke_test_skips_exercises_that_are_not_built_yet() -> None:
     def _upload() -> dict[str, int]:
         return {"id": 1}
 
-    @stub.get("/documents/{doc_id}")
-    def _doc(doc_id: int) -> dict[str, str]:
-        return {"text": "Northwind Traders invoice"}
-
-    @stub.post("/documents/{doc_id}/extract")
-    def _extract(doc_id: int) -> JSONResponse:
-        return not_built
+    @stub.post("/index")
+    def _index() -> dict[str, object]:
+        return {"strategy": "sentence", "embedder": "hash", "chunks": 4}
 
     @stub.post("/ask")
     def _ask() -> JSONResponse:
@@ -132,7 +142,7 @@ async def test_smoke_test_skips_exercises_that_are_not_built_yet() -> None:
         code = await smoke.run("http://stub", transport=ASGITransport(app=stub))
     out = buf.getvalue()
     assert code == 0, out
-    assert "extract: Week 1 not built yet" in out and "ask: Week 3 not built yet" in out
+    assert "ask: not built yet" in out
 
 
 def test_a_wrong_answer_still_fails_even_when_other_weeks_are_unbuilt() -> None:
@@ -146,11 +156,11 @@ def test_a_wrong_answer_still_fails_even_when_other_weeks_are_unbuilt() -> None:
     assert _not_built(Response(200, json={"ok": True})) is False
 
 
-def test_deploy_workflow_supports_rollback_by_ref() -> None:
-    wf = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
+def test_release_workflow_supports_rollback_by_ref() -> None:
+    wf = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
     assert "workflow_dispatch" in wf and "ref:" in wf
-    assert "build_info.py" in wf, "the deploy must stamp the commit into the service"
-    assert "smoke.py" in wf, "every deploy ends with the smoke test"
+    assert "build_info.py" in wf, "the release must stamp the commit into the service"
+    assert "smoke.py" in wf, "every release ends with the smoke test"
 
 
 def test_smoke_script_is_runnable_standalone() -> None:

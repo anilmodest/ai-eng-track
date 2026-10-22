@@ -8,7 +8,8 @@ ARG SOURCE=""
 LABEL org.opencontainers.image.source=$SOURCE
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Spaces run containers as uid 1000; so does this image everywhere, so behaviour matches.
+# A fixed non-root user, the same on every machine that runs the image, so file ownership in
+# /srv/data never depends on where it runs.
 RUN useradd -m -u 1000 app
 WORKDIR /srv
 COPY --chown=app pyproject.toml uv.lock ./
@@ -20,5 +21,6 @@ RUN mkdir -p /srv/data && chown -R app /srv
 USER app
 
 ENV PATH="/srv/.venv/bin:$PATH" DATABASE_URL="sqlite:////srv/data/app.db"
+# The programme's runner and the release workflow both expect the service on 7860.
 EXPOSE 7860
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860"]

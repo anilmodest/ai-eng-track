@@ -65,16 +65,18 @@ The door refuses a tool that was not offered, whatever the model asks for.
 ### Core 3: the guard, the second layer (`app/guard.py`)
 
 `preamble`, `wrap_untrusted`, `detect_injection`, `scan_output` and `check_limits` (the kill
-switch and the daily budget). With the guard on, a ticket's text and a page of the manual reach
+switch and the daily budget: `/extract`, `/ask` and `/tasks/run` refuse with a 503 or a 429
+before any model call). With the guard on, a ticket's text and a page of the manual reach
 the model fenced as data, known patterns stripped, through your functions. State what it cannot
 catch.
 
 ### Core 4: personal data (`app/privacy.py`)
 
 `mask` and `unmask`: names, emails and phone numbers replaced with placeholders before every model
-call, the same person always the same placeholder in a run, and the real values back only in an
-output a person approves (a draft). Turn it on with `MASK_PERSONAL_DATA=true`. Watch for text
-inside JSON: an escaped newline before a name, an accent written as `ó`.
+call that can see a ticket (agent and workflow runs, through `app/llm/masking.py`), the same
+person always the same placeholder in a run, and the real values back only in an output a person
+approves (a draft). Turn it on with `MASK_PERSONAL_DATA=true`. Watch for text inside JSON: an
+escaped newline before a name, an accent written as an escape, so Wójcik arrives as `W\u00f3jcik`.
 
 ### Core 5: blast radius (`decisions/week-5-blast-radius.md`)
 

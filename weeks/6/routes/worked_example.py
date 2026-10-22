@@ -3,7 +3,7 @@
     uv run python weeks/6/routes/worked_example.py http://127.0.0.1:8000
 
 check() prints one line and returns the verdict; run() stops at the first failure. That is the
-whole pattern; scripts/smoke.py has five of them.
+whole pattern; scripts/smoke.py has about ten of them, in four groups.
 """
 
 import asyncio

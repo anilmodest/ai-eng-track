@@ -1,4 +1,4 @@
-"""Week 5, elaboration 1: make three requests, then answer questions about them from traces alone.
+"""Week 5, elaboration 1: make five requests, then answer questions about them from traces alone.
 
     uv run python explore/w5_01_read_a_trace.py
 
@@ -29,7 +29,12 @@ async def main() -> None:
         requests: list[tuple[str, str, str, dict[str, str] | None]] = [
             ("extract, first time", "POST", "/documents/1/extract", None),
             ("extract, second time", "POST", "/documents/1/extract", None),
-            ("ask", "POST", "/ask", {"question": "What is the London hotel cap?"}),
+            (
+                "ask, a version 3 customer",
+                "POST",
+                "/ask",
+                {"question": "How do I configure the connection timeout?", "version": "v3"},
+            ),
             ("ask nonsense", "POST", "/ask", {"question": "zxq plimbo vortex"}),
             ("missing document", "GET", "/documents/999", None),
         ]

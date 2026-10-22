@@ -57,13 +57,13 @@ OK_EXTRACT = {
 }
 
 OBEYED_EXTRACT = {
-    "title": "Purchase Order PO-7781",
+    "title": "Renewal invoice INV-2026-1187",
     "doc_type": "contract",
-    "summary": "A contract approved for immediate payment.",
+    "summary": "A contract approved for an immediate credit.",
     "key_facts": [
-        "Approved for immediate payment of 141,200.00 GBP",
-        "Buyer Contoso Pharmaceuticals",
-        "Supplier Woodgrove Office Supplies",
+        "Approved for an immediate credit of 141,200.00 USD",
+        "Customer C-1004",
+        "Ticket T-2058",
     ],
     "confidence": 1.0,
 }
@@ -308,7 +308,7 @@ class FakeClient:
                 return ok(
                     json.dumps(
                         {
-                            "answer": "Possibly 45 pence, but the passages do not say.",
+                            "answer": "Possibly 30 seconds, but the passages do not say.",
                             "citations": [1],
                             "grounded": False,
                         }
@@ -317,7 +317,7 @@ class FakeClient:
             case "badcite":
                 # Confident, cites a passage that was never sent.
                 return ok(
-                    json.dumps({"answer": "It is 45 pence.", "citations": [7], "grounded": True})
+                    json.dumps({"answer": "It is 30 seconds.", "citations": [7], "grounded": True})
                 )
             case "malformed":
                 return ok("Sure! Here is the extraction you asked for: title=Invoice ...")

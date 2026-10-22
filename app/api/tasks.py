@@ -4,12 +4,16 @@
 Anything that writes or spends and is not in it stops the run with status "needs_approval" and
 the pending action in `pending`; nothing has happened yet. Run it again with the tool approved to
 let it through.
+
+The week 5 limits hold here too: with the kill switch on, or today's budget spent, a workflow or
+agent run is refused (503 or 429) before its first model call. Plain code calls no model.
 """
 
 import time
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlmodel import Session
 
@@ -17,14 +21,16 @@ from app.agents import plain
 from app.agents.agent import AgentStep, run_agent
 from app.agents.routing import tools_for
 from app.agents.workflow import run_workflow
+from app.api.schemas import ErrorOut
 from app.db.session import get_session
+from app.guard import Blocked, check_limits
 from app.llm.client import ModelClient
 from app.llm.masking import MaskingClient, start_run
 from app.llm.registry import get_model_client
 from app.retrieval.embed import Embedder, get_embedder
 from app.settings import Settings, get_settings
 from app.tools import ToolContext
-from app.trace import note
+from app.trace import mark_error, note
 
 router = APIRouter()
 
@@ -55,14 +61,18 @@ class TaskOut(BaseModel):
     latency_ms: int = 0
 
 
-@router.post("/tasks/run", response_model=TaskOut)
+@router.post(
+    "/tasks/run",
+    response_model=TaskOut,
+    responses={429: {"model": ErrorOut}, 503: {"model": ErrorOut}},
+)
 async def run_task(
     body: TaskIn,
     session: SessionDep,
     client: ClientDep,
     embedder: EmbedderDep,
     settings: SettingsDep,
-) -> TaskOut:
+) -> TaskOut | JSONResponse:
     started = time.perf_counter()
     ctx = ToolContext(
         session=session,
@@ -91,6 +101,16 @@ async def run_task(
             calls=[],
             latency_ms=ms(),
         )
+    # Limits first: the kill switch and the daily budget bound an agent's model calls as well.
+    try:
+        check_limits(settings, session)
+    except Blocked as e:
+        mark_error(e.kind, e.detail)
+        return JSONResponse(
+            status_code=503 if e.kind == "kill_switch" else 429,
+            content=ErrorOut(error=e.kind, detail=e.detail).model_dump(),
+        )
+
     if body.mode == "workflow":
         w = await run_workflow(ctx, body.question)
         return TaskOut(

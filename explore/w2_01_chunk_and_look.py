@@ -1,9 +1,10 @@
-"""Week 2, elaboration 1: cut one document four ways and look at where the cuts fall.
+"""Week 2, elaboration 1: cut one manual page every way and look at where the cuts fall.
 
     uv run python explore/w2_01_chunk_and_look.py [corpus/file]
 
-No model, no key. Read the output slowly. Find a table row cut in half. Find a clause number
-separated from its clause. Then decide which of those matter for the questions people will ask.
+No model, no key. Read the output slowly. Find a row of the settings table cut in half. Find a
+heading separated from the section it names. Then decide which of those matter for the questions
+the desk is asked.
 """
 
 import sys
@@ -12,7 +13,7 @@ from pathlib import Path
 from app.retrieval.chunkers import STRATEGIES
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT = ROOT / "corpus" / "contract-fabrikam-tailspin.txt"
+DEFAULT = ROOT / "corpus" / "generated" / "howto-v3-configuration.md"
 
 
 def main() -> None:
@@ -28,8 +29,9 @@ def main() -> None:
             tail = p.replace("\n", " ")[-40:]
             print(f"  [{i}] {head!r} ... {tail!r}")
         print()
-    print("Which strategy cut a table row? Which separated '3. Fees.' from the fee? Which kept the")
-    print("heading with its body? Now run scripts/retrieval_eval.py and see if it matters.")
+    print("Which strategy cut a row of the settings table? Which left '## Import file size limit'")
+    print("at the end of one chunk and its body in the next? Which kept each heading with its")
+    print("body? Now run scripts/retrieval_eval.py and see if it matters.")
 
 
 if __name__ == "__main__":

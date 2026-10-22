@@ -26,8 +26,9 @@ Change `VECTOR_STORE` in `.env`. Nothing else in the service changes.
 
 Not speed. **Filtering.**
 
-This service has to answer out of one version of a manual and never the other, and six of the
-corpus pages exist twice, worded almost identically. A store that can only rank by similarity
+This service has to answer out of one version of a manual and never the other, and more than a
+hundred of the corpus's topics exist twice, a version 2 page and a version 3 page worded almost
+identically. A store that can only rank by similarity
 forces you to over-fetch and filter afterwards, which quietly costs you recall: the wrong
 version's chunks take the top slots, you drop them, and you are left with fewer results than you
 asked for. Every store here filters *before* ranking, which is why
@@ -48,7 +49,7 @@ VECTOR_STORE=qdrant     uv run python scripts/retrieval_eval.py
 
 At this corpus size the quality numbers should be near identical, because all three are doing
 exact nearest-neighbour search over the same vectors. That is the expected result and it is worth
-writing down: at ten documents the store is not your problem, and knowing the size at which it
+writing down: at four hundred documents the store is not your problem, and knowing the size at which it
 becomes one is the useful part of the answer.
 
 ## Going hosted in week 6, if you want to

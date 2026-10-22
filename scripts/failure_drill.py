@@ -8,6 +8,8 @@ MODEL_TIMEOUT_S, MODEL_RETRY_BASE_DELAY_S), counting every attempt the retry hel
 latency the caller sees (p50 and p95), what failed and how, and the cost per call. Then two
 probes on the first provider: a timeout far too short to meet, and a model name that does not
 exist. The first must be retried and end in a timeout; the second must not be retried at all.
+With MODEL_FALLBACK_PROVIDER set, a third probe spends the primary's quota (every call answers 429,
+however often it is retried) and the fallback must answer, under your retry policy.
 
 Writes reports/failure_drill.json; `make evidence WEEK=1` keeps it. Your decision this week, the
 failure policy, is read off these numbers.
@@ -28,7 +30,7 @@ sys.path.insert(0, str(ROOT))
 from app.api.schemas import DocumentExtract  # noqa: E402
 from app.llm.client import Message, ModelClient, ModelError, ModelResponse  # noqa: E402
 from app.llm.cost import estimate_cost_usd, price_known  # noqa: E402
-from app.llm.registry import build_client  # noqa: E402
+from app.llm.registry import FallbackClient, build_client  # noqa: E402
 from app.llm.structured import SchemaError, complete_structured  # noqa: E402
 from app.settings import Settings, get_settings  # noqa: E402
 
@@ -66,7 +68,7 @@ def messages() -> list[Message]:
 
 
 async def one_call(
-    client: Counting, s: Settings, *, attempts: int, timeout_s: float
+    client: ModelClient, s: Settings, *, attempts: int, timeout_s: float
 ) -> tuple[str, int, int, int]:
     """(outcome, ms the caller waited, tokens in, tokens out)."""
     started = time.perf_counter()
@@ -137,6 +139,41 @@ async def probes(provider: str, s: Settings) -> dict[str, Any]:
     return {"timeout": timeout, "bad_request": bad}
 
 
+class Exhausted:
+    """A primary whose quota is gone: every call is rate limited, however often it is retried."""
+
+    def __init__(self, inner: ModelClient) -> None:
+        self.name = inner.name
+        self.model = inner.model
+
+    async def complete(self, messages: list[Message], *, json_mode: bool = True) -> ModelResponse:
+        raise ModelError("quota exhausted (simulated by the drill)", status=429, retryable=True)
+
+
+async def fallback_probe(s: Settings) -> dict[str, Any] | None:
+    """The primary's quota is spent; the fallback must answer. None without a fallback."""
+    if not s.model_fallback_provider:
+        return None
+    primary = build_client(
+        s.model_provider, model=s.model_name, api_key=s.model_api_key, settings=s
+    )
+    second = Counting(
+        build_client(
+            s.model_fallback_provider, model=None, api_key=s.model_fallback_api_key, settings=s
+        )
+    )
+    client = FallbackClient(Exhausted(primary), second)
+    outcome, ms, _, _ = await one_call(
+        client, s, attempts=s.model_retry_attempts, timeout_s=s.model_timeout_s
+    )
+    row = {"outcome": outcome, "fallback_attempts": second.attempts, "ms": ms}
+    print(
+        f"  fallback probe  {outcome} from {s.model_fallback_provider} in {ms} ms "
+        f"({second.attempts} fallback attempts)"
+    )
+    return row
+
+
 async def main(argv: list[str]) -> int:
     s = get_settings()
     ap = argparse.ArgumentParser()
@@ -157,7 +194,11 @@ async def main(argv: list[str]) -> int:
     }
     print(f"failure drill, policy {policy}\n")
     providers = {name: await drill(name, s, args.calls) for name in names}
-    report = {"policy": policy, "providers": providers, "probes": await probes(names[0], s)}
+    found = await probes(names[0], s)
+    fallback = await fallback_probe(s)
+    if fallback is not None:
+        found["fallback"] = fallback
+    report = {"policy": policy, "providers": providers, "probes": found}
     OUT.parent.mkdir(exist_ok=True)
     OUT.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print("\nwrote reports/failure_drill.json")

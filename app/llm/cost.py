@@ -1,6 +1,8 @@
 """List prices in USD per 1M tokens. Free tiers bill nothing; the design constraint is still real.
 
-Unknown model -> 0.0 with a warning flag, never a crash. Re-verify before each cohort.
+An unknown model costs 0.0: no exception and no warning. `estimate_cost_usd` cannot tell
+"free" from "not priced"; a caller that needs to know asks `price_known` first.
+Re-verify the prices before each cohort.
 """
 
 from dataclasses import dataclass

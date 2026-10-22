@@ -124,7 +124,7 @@ real model and writes `evidence/week-1.json`:
 | --- | --- | --- |
 | `schema_drill` | `scripts/schema_drill.py` | How often plain "reply in JSON" breaks the schema, against schema-enforced output with one repair. The case for Pydantic, as your number |
 | `tool_drill` | `scripts/tool_drill.py` | Twenty requests, run with first-draft descriptions and with yours: right tool, valid arguments, right id. The rise is caused by nothing but your descriptions |
-| `failure_drill` | `scripts/failure_drill.py` | Your failure policy on **two** providers: retries, p50 and p95 latency, cost per call, and two probes (an impossible timeout, a model that does not exist) |
+| `failure_drill` | `scripts/failure_drill.py` | Your failure policy on **two** providers: retries, p50 and p95 latency, cost per call, and two probes (an impossible timeout, a model that does not exist), plus a third with a fallback set: the primary's quota spent, the fallback must answer |
 
 Get keys from two providers and set the second as `MODEL_FALLBACK_PROVIDER`: the failure drill
 needs both, and so will week 4, when the agent becomes the hungriest thing you run.

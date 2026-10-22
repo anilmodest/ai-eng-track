@@ -105,7 +105,7 @@ yourself. Send what you tried with the request.
 | --- | --- | --- |
 | start | the basics: Weeks 1–2, getting the model layer and retrieval working at all | slow, mentor-supported; use both unblock calls early |
 | core | quality: Weeks 3–5, checking what you produce: evaluation, guardrails, traces | compressed |
-| pro | evidence: Week 6, the deployed piece, the write-up, the defence | self-directed |
+| pro | evidence: Week 6, the release and its rollback, the write-up, the defence | self-directed |
 
 Three layers of evidence, from cheapest to most human. None of them is self-reported.
 

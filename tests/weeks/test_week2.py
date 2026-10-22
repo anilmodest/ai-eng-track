@@ -246,37 +246,38 @@ def _hit(i: int, text: str, score: float) -> Hit:
     return Hit(chunk_id=i, document_id=i, filename=f"doc{i}.md", ordinal=0, text=text, score=score)
 
 
-MILEAGE = (
-    "## Mileage\nPersonal car: 45 pence per mile for the first 10,000 miles in the tax year, "
-    "then 25 pence. Electric cars: the same rate. Parking and tolls at cost."
+TIMEOUT = (
+    "## Where the setting lives\nThe default connection timeout is 15 seconds, set with the "
+    "CONNECT_TIMEOUT environment variable. Archived logs rotate daily."
 )
-HOTELS = "Hotel nightly caps: London 180 GBP, other UK cities 130 GBP. Breakfast is claimable."
-FLEET = "The fleet grew from 412 to 438 vehicles in the half. Electric vehicles rose from 31 to 57."
+RETRIES = "Retries: a failed run is retried three times, waiting 30 seconds between attempts."
+TICKETS = "Tickets grew from 412 to 438 in the quarter. Billing tickets rose from 31 to 57."
+QUESTION = "What is the default connection timeout?"
 
 
 def test_select_and_compress_keeps_the_passage_that_answers() -> None:
-    hits = [_hit(1, MILEAGE, 0.62), _hit(2, HOTELS, 0.31), _hit(3, FLEET, 0.12)]
-    out = select_and_compress("What is the mileage rate for a personal car?", hits, 1200)
-    assert out and "45 pence per mile" in out[0]
+    hits = [_hit(1, TIMEOUT, 0.62), _hit(2, RETRIES, 0.31), _hit(3, TICKETS, 0.12)]
+    out = select_and_compress(QUESTION, hits, 1200)
+    assert out and "15 seconds" in out[0]
 
 
 def test_select_and_compress_drops_unrelated_passages() -> None:
-    hits = [_hit(1, MILEAGE, 0.62), _hit(2, HOTELS, 0.31), _hit(3, FLEET, 0.12)]
-    out = select_and_compress("What is the mileage rate for a personal car?", hits, 5000)
-    assert not any("fleet grew" in p for p in out), "a passage far below the best score was kept"
+    hits = [_hit(1, TIMEOUT, 0.62), _hit(2, RETRIES, 0.31), _hit(3, TICKETS, 0.12)]
+    out = select_and_compress(QUESTION, hits, 5000)
+    assert not any("Tickets grew" in p for p in out), "a passage far below the best score was kept"
 
 
 def test_select_and_compress_respects_the_budget() -> None:
-    hits = [_hit(i, MILEAGE + " " + HOTELS, 0.5) for i in range(1, 9)]
-    out = select_and_compress("What is the mileage rate for a personal car?", hits, 300)
+    hits = [_hit(i, TIMEOUT + " " + RETRIES, 0.5) for i in range(1, 9)]
+    out = select_and_compress(QUESTION, hits, 300)
     assert sum(len(p) for p in out) <= 300
 
 
 def test_select_and_compress_trims_inside_a_passage() -> None:
-    hits = [_hit(1, MILEAGE, 0.6)]
-    out = select_and_compress("What is the mileage rate for a personal car?", hits, 1200)
-    assert "45 pence per mile" in out[0]
-    assert "Parking and tolls" not in out[0], "a sentence sharing no term with the question stayed"
+    hits = [_hit(1, TIMEOUT, 0.6)]
+    out = select_and_compress(QUESTION, hits, 1200)
+    assert "15 seconds" in out[0]
+    assert "Archived logs" not in out[0], "a sentence sharing no term with the question stayed"
 
 
 # ---- hybrid search: app/retrieval/hybrid.py --------------------------------------------------

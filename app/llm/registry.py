@@ -127,10 +127,17 @@ def build_client(
     )
 
 
-class FallbackClient:
-    """Tries the primary; on a retryable failure hands the SAME request to the fallback.
+# The primary cannot serve anything with this key: wrong, revoked, or out of credit. Not worth a
+# retry on the same provider, and exactly when the other provider should take over.
+_UNUSABLE_KEY = {401, 402, 403}
 
-    Retrying within one provider is retry.py's job. This is for when a quota is simply gone.
+
+class FallbackClient:
+    """Tries the primary; when it cannot answer, hands the SAME request to the fallback.
+
+    Retrying within one provider is retry.py's job. This is for when a quota is simply gone (a
+    retryable failure that outlasted the retries) or the key no longer works (401, 402, 403). A bad
+    request (400) is not handed over: the same request would fail on the other provider too.
     """
 
     def __init__(self, primary: ModelClient, fallback: ModelClient) -> None:
@@ -143,7 +150,7 @@ class FallbackClient:
         try:
             return await self.primary.complete(messages, json_mode=json_mode)
         except ModelError as e:
-            if not e.retryable:
+            if not (e.retryable or e.status in _UNUSABLE_KEY):
                 raise
             return await self.fallback.complete(messages, json_mode=json_mode)
 

@@ -8,7 +8,7 @@ rule-following agent; a scripted model stands in where a test needs one to misbe
 
 | Test | What must hold |
 | --- | --- |
-| `action_tools_are_described_and_say_truthfully_what_they_do` | Described in full; `draft_reply` needs no approval, `escalate` writes, `issue_credit` spends |
+| `action_tools_are_described_and_say_truthfully_what_they_do` | Described in full; `draft_reply` is not flagged (a person reads the draft before anything is sent), `escalate` writes, `issue_credit` spends |
 | `malformed_action_calls_never_reach_the_tool` | A team that does not exist, an empty reason or body, a bad amount, a bad id: refused before running |
 | `escalate_and_issue_credit_stop_for_approval_and_nothing_happens` | Without approval: a stop, and nothing written |
 | `approved_actions_are_carried_out_and_recorded` | With approval: done, and recorded |

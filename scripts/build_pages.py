@@ -645,7 +645,7 @@ JS = r"""
   function url(p) { return base.value.trim().replace(/\/$/, '') + p; }
   function out(id, v) { document.getElementById(id).textContent = typeof v === 'string' ? v : JSON.stringify(v, null, 2); }
   async function call(id, p, opts) {
-    if (!base.value.trim()) { out(id, 'Set the service URL first (your Space, or a public Codespace port).'); return; }
+    if (!base.value.trim()) { out(id, 'Set the service URL first (a public Codespace port, or your release running somewhere).'); return; }
     out(id, '...');
     const t0 = performance.now();
     try {
@@ -672,8 +672,8 @@ JS = r"""
   on('pg-extract', () => call('pg-extract-out', '/documents/' + document.getElementById('pg-docid').value + '/extract', { method: 'POST' }));
   on('pg-index', () => call('pg-search-out', '/index', { method: 'POST' }));
   on('pg-search', () => call('pg-search-out', '/search?q=' + encodeURIComponent(document.getElementById('pg-q').value) + '&k=3'));
-  on('pg-ask', () => call('pg-ask-out', '/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: document.getElementById('pg-question').value }) }));
-  on('pg-task', () => call('pg-task-out', '/tasks/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: document.getElementById('pg-tq').value, mode: document.getElementById('pg-mode').value, approved: document.getElementById('pg-approved').checked }) }));
+  on('pg-ask', () => call('pg-ask-out', '/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: document.getElementById('pg-question').value, version: document.getElementById('pg-version').value || null }) }));
+  on('pg-task', () => call('pg-task-out', '/tasks/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: document.getElementById('pg-tq').value, mode: document.getElementById('pg-mode').value, approve: document.getElementById('pg-approve').value.split(',').map(x => x.trim()).filter(Boolean) }) }));
   on('pg-traces', () => call('pg-traces-out', '/traces?limit=10'));
   }
 
@@ -1737,13 +1737,16 @@ published build. Nothing is stored here; every call goes straight to the address
 <div class="card"><h3>Ask</h3>
   <p><input id="pg-question" style="width:100%;max-width:460px;padding:8px"
      placeholder="How do I configure the connection timeout?">
+     <select id="pg-version" style="padding:7px" title="the customer's version">
+     <option value="">any version</option><option>v2</option><option>v3</option></select>
      <button class="btn primary" id="pg-ask">Ask</button></p>
   <pre id="pg-ask-out">&nbsp;</pre></div>
 <div class="card"><h3>Run a task three ways</h3>
   <p><input id="pg-tq" style="width:100%;max-width:420px;padding:8px" placeholder="a task">
      <select id="pg-mode" style="padding:7px"><option>plain</option><option>workflow</option>
      <option>agent</option></select>
-     <label style="font-size:14px"><input type="checkbox" id="pg-approved"> approved</label>
+     <input id="pg-approve" style="padding:6px;width:190px" placeholder="approve: issue_credit"
+     title="tools a person approved for this run, comma-separated">
      <button class="btn" id="pg-task">Run</button></p>
   <pre id="pg-task-out">&nbsp;</pre></div>
 <div class="card"><h3>Traces</h3>

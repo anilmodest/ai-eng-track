@@ -84,9 +84,9 @@ agent that keeps reaching for it is one careless approval away from paying out. 
 ## Personal data
 
 A ticket carries a name, an email address and a phone number, and none of them helps a model
-answer the question. Before every model call they are replaced with placeholders, the same person
-always the same placeholder within a run, and only an output a person approves (a draft) gets the
-real values back. The proof is not the code: it is a check of everything the model was actually
+answer the question. Before every model call that can see a ticket (agent and workflow runs)
+they are replaced with placeholders, the same person always the same placeholder within a run,
+and only an output a person approves (a draft) gets the real values back. The proof is not the code: it is a check of everything the model was actually
 shown, finding nothing.
 
 ## Traces anyone can read
@@ -105,7 +105,7 @@ over time.
 | Dashboard | `scripts/trace_report.py` | Run it; explain it to someone who does not code |
 | Least agency | `app/agents/routing.py`, the door in `app/tools/base.py` | Decide what each request is offered |
 | Guard | `app/guard.py` | Get attacked; build the defences, the second layer |
-| Personal data | `app/privacy.py`, `app/llm/masking.py`, `scripts/privacy_check.py` | Mask before every model call; prove nothing leaked |
+| Personal data | `app/privacy.py`, `app/llm/masking.py`, `scripts/privacy_check.py` | Mask before every model call that sees a ticket; prove nothing leaked |
 | OpenTelemetry | `GET /traces/{id}/otel` | Read a trace the way an employer's tool would |
 | Attack set | `eval/attacks.jsonl`, `scripts/attack.py` | Attack a peer; add what worked to the set |
 | Limits | `KILL_SWITCH`, `DAILY_BUDGET_USD` | Flip them; watch the service refuse |

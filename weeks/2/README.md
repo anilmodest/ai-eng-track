@@ -43,8 +43,8 @@ hits than were asked for. Losing recall quietly is still losing.
 `CONCEPT.md` first, then [worked example A](../../docs/worked-examples.md#example-a-retrieval-metrics-week-2)
 for how to read the metrics. Then, answering the three questions in `reflections/week-2.md`, Q1b:
 
-1. **`app/retrieval/chunkers.py`**: which strategy would cut the invoice table? What does
-   `by_section` repeat, and what does that cost?
+1. **`app/retrieval/chunkers.py`**: which strategy would cut a manual page's settings table? What
+   does `by_section` repeat, and what does that cost?
 2. **`app/retrieval/embed.py`**: what does the `hash` embedder know about meaning? Why does the
    repository have it at all?
 3. **`app/retrieval/store.py`**: where does the version filter run, for meaning search and for
@@ -53,7 +53,7 @@ for how to read the metrics. Then, answering the three questions in `reflections
 ## See it (1 hour, change nothing)
 
 ```
-uv run python explore/w2_01_chunk_and_look.py                     # one contract, cut four ways
+uv run python explore/w2_01_chunk_and_look.py                     # one manual page, cut five ways
 uv run python explore/w2_02_lost_in_the_middle.py --trials 3 --filler 40
 uv run python scripts/version_check.py                            # what similarity alone returns
 uv run python scripts/baseline.py                                 # does the model already know?

@@ -44,8 +44,10 @@ Then, answering in `reflections/week-3.md`, Q1b:
 uv run python explore/w3_01_ask_without_a_net.py
 ```
 
-Five questions the documents cannot answer, and five confident inventions. That is the system you
-do not want.
+One question the manual cannot answer (which error code is logged when a version 3 connection
+times out), asked three ways: with no instruction, told to answer only from the passage, and with
+a `grounded` flag. Watch the confident invention in the first round. That is the system you do
+not want.
 
 ## Build (5 to 7 hours)
 

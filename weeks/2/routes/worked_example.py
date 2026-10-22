@@ -41,7 +41,7 @@ if __name__ == "__main__":
     print("average precision @5:", round(average_precision(flags, 5), 3))
     print("  (precision at ranks 2, 3, 5 = 1/2, 2/3, 3/5; their mean = 0.589)")
     text = (
-        Path(__file__).resolve().parents[3] / "corpus" / "policy-contoso-expenses.md"
+        Path(__file__).resolve().parents[3] / "corpus" / "manual-v3-connection-timeout.md"
     ).read_text(encoding="utf-8")
     for i, c in enumerate(by_lines(text, 200)):
         print(f"[{i}] {len(c):>4} chars  {c[:60]!r}")

@@ -53,8 +53,9 @@ mentor and never block. Log your assistant use in `ai-use/week-4.yml` as you go.
 
 ### Core 1: three tools that act (`app/tools/actions.py`)
 
-`draft_reply` (no side effect a customer sees), `escalate` (writes) and `issue_credit` (spends,
-capped per ticket). What is yours: the descriptions, the constraints (a team that does not exist,
+`draft_reply` (saves a draft that a person reads before anything is sent: it reaches no customer
+and leaves the ticket unchanged, so it is not flagged and does not stop for approval), `escalate`
+(writes) and `issue_credit` (spends, capped per ticket). What is yours: the descriptions, the constraints (a team that does not exist,
 a negative or huge amount, an empty reason), **which write and which spend** (the flag on the spec
 is the whole of the permission), the cap (500 USD per ticket across all credits, never more than
 is owed), and refusals in words. Approval is enforced for you in `app/tools/base.py`; your job is

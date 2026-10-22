@@ -159,9 +159,8 @@ If you want a URL your mentor can open without running anything:
 The release workflow then also triggers that deploy and smoke-tests the live service. Free Render
 services sleep after 15 minutes and wake on the first request; that is fine.
 
-> Hugging Face Spaces used to be the recommended target here. As of September 2026 they charge a
-> PRO subscription for Docker Spaces, so the default moved to the registry, which costs nothing
-> and makes rollback a matter of running an earlier tag.
+The registry is the release either way. It costs nothing, and rollback is a matter of running an
+earlier tag.
 
 ## Keeping it free
 

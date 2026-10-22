@@ -41,7 +41,7 @@ prompt versions and the provider. And a rollback you have only read about is not
 
 ## Read (30 minutes)
 
-`CONCEPT.md`. Then `scripts/smoke.py`, `.github/workflows/deploy.yml` and
+`CONCEPT.md`. Then `scripts/smoke.py`, `.github/workflows/release.yml` and
 `.github/workflows/clean-clone.yml`, answering in `reflections/week-6.md`, Q1b: what does each
 check in the smoke test catch that the unit tests cannot?
 
@@ -55,7 +55,7 @@ mentor and never block. Log your assistant use in `ai-use/week-6.yml`.
 In this order, because you cannot roll back until there is something to roll back to.
 
 1. **The service says what it is.** `/health` reports version, commit, prompt versions, provider,
-   guard state and kill switch; the environment the deploy writes wins over the file.
+   guard state and kill switch; the environment the release workflow writes wins over the file.
 2. **You trust the smoke test.** Run it against a healthy service and a broken one before you rely
    on it; your page in `routes/` says how much of it your route gives you. It passes when the
    service is fine, fails on the wrong commit, treats a kill-switch refusal as intended, skips
@@ -63,8 +63,9 @@ In this order, because you cannot roll back until there is something to roll bac
 3. **Tag and release.** `git tag v1.0.0 && git push --tags`, then watch the **release** workflow.
    Pull the image on a machine that never built it and run the smoke test with `--expect-sha`.
 4. **Break it on purpose.** On `week-6`, change one thing the smoke test catches and the unit
-   tests do not (`RELEVANCE_THRESHOLD=1.5` in the image's environment, say). The release workflow
-   must **fail before it publishes**.
+   tests do not (`RELEVANCE_THRESHOLD=1.5` in the image's environment, say: no passage clears it,
+   so the service declines everything and the smoke test's third check, the version 3 question
+   on `/ask`, fails). The release workflow must **fail before it publishes**.
 5. **Roll back.** Actions, *release*, *Run workflow*, `ref: v1.0.0`; smoke-test the rolled-back
    image with `--expect-sha` of that tag. Note how many minutes it took.
 6. **Fix forward.** Revert the break properly, tag `v1.0.1`, release, smoke test.

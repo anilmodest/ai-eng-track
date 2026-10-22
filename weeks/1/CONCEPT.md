@@ -36,10 +36,10 @@ sequenceDiagram
 **2. It stalls.** A call that usually takes 800 ms sometimes takes 40 s, or never returns. Without a
 timeout, one slow call holds a connection, then a worker, then your whole service.
 
-**3. It costs.** Every call bills tokens in and tokens out. Ten thousand documents a day at half a
-cent each is 50 dollars a day, 18,000 a year, for one endpoint. Sending the same document twice is
-paying twice for the same answer. Sending a 60-page document when the first page would do is paying
-for 59 pages of nothing.
+**3. It costs.** Every call bills tokens in and tokens out. A desk taking 2,000 tickets a day, at
+five calls a ticket and half a cent a call, spends 50 dollars a day, 18,000 a year. Sending the same
+document twice is paying twice for the same answer. Sending a 60-page document when the first page
+would do is paying for 59 pages of nothing.
 
 ```mermaid
 flowchart LR
@@ -130,8 +130,8 @@ JSON" breaks the schema compared with schema-enforced output (`scripts/schema_dr
 
 - Why a 400 is not retried and a 429 is.
 - What "idempotent" means for this endpoint, and what key decides it.
-- What one extraction costs on each of your two providers, and which one you would pick for 10,000
-  documents a day.
+- What one extraction costs on each of your two providers, and which one you would pick for a desk
+  taking 2,000 tickets a day.
 - Why `git diff main` shows no provider-specific code after you switched providers.
 - How often plain "reply in JSON" broke the schema on your model, and how often schema-enforced
   output did: the number, not the rule.

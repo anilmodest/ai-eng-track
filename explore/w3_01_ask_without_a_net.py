@@ -15,10 +15,12 @@ from app.llm.client import Message
 from app.llm.registry import get_model_client
 
 PASSAGE = (
-    "[1] Northwind Traders Ltd invoices Contoso monthly in arrears. Contoso pays within thirty "
-    "(30) days. Disputed lines must be raised in writing within ten (10) business days."
+    "[1] manual-v3-connection-timeout.md: The timeout is the environment variable "
+    "KESTREL_CONNECT_TIMEOUT, in whole seconds. The default is 15 seconds. The value is read when "
+    "the runner starts. A value outside 1 to 120 is rejected at startup, with "
+    "E1104: KESTREL_CONNECT_TIMEOUT out of range in the startup log."
 )
-QUESTION = "What penalty does Contoso pay if it pays Northwind late?"
+QUESTION = "A customer on version 3 asks: which error code is logged when a connection times out?"
 
 ROUNDS = {
     "A. no grounding instruction": (
@@ -45,7 +47,8 @@ async def main() -> None:
     client = get_model_client()
     print(f"provider={client.name} model={client.model}\n")
     print(f"Question: {QUESTION}")
-    print("Context: one passage about invoicing terms. It says nothing about penalties.\n")
+    print("Context: one passage from the version 3 manual. It names no code for a timeout;")
+    print("E1104 is for a value out of range.\n")
     for label, (system, user, json_mode) in ROUNDS.items():
         r = await client.complete(
             [Message(role="system", content=system), Message(role="user", content=user)],

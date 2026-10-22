@@ -23,11 +23,12 @@ makes "did the defence work" a deterministic question.
 | Test | What must hold |
 | --- | --- |
 | `wrap_untrusted_cannot_be_closed_from_inside` | Data cannot close its own fence |
-| `detect_injection_strips_the_line_and_reports_it` / `..._leaves_clean_text_alone` | Known patterns stripped and reported; ordinary text untouched |
+| `detect_injection_strips_the_line_and_reports_it` / `detect_injection_leaves_clean_text_alone` | Known patterns stripped and reported; ordinary text untouched |
 | `scan_output_flags_figures_the_source_never_stated` | A figure not in the source is flagged |
-| `injected_document_is_extracted_as_data_not_instructions` / `without_the_guard_...` | The defence, and the attack without it |
+| `injected_document_is_extracted_as_data_not_instructions` / `without_the_guard_the_same_document_hijacks_the_model` | The defence, and the attack without it |
 | `poisoned_passage_is_flagged_on_ask` | Retrieved text is checked too |
 | `kill_switch_stops_every_model_call` / `daily_budget_caps_the_blast_radius` | The limits |
+| `kill_switch_stops_an_agent_before_its_first_model_call` | `POST /tasks/run`, agent and workflow, answers 503 `kill_switch` with no model call |
 | `with_the_guard_on_ticket_text_reaches_the_model_fenced` | A ticket reaches the model as data |
 | `attack_script_holds_with_the_guard_on` | No attack in the set succeeds |
 

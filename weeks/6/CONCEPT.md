@@ -42,7 +42,7 @@ The document says it plainly: interviewers ask what the feature did for the busi
   own evaluation, trace report and attack set, and then what it would cost at scale and what
   you chose not to build. Its most trusted section is "what went wrong on the way".
 - **The portfolio project**: a real corpus, real numbers, a public repository with green CI, a
-  live URL, and six reflections that show how you got there. That is what this repo has become.
+  published image anyone can pull and run, and six reflections that show how you got there. That is what this repo has become.
 - **The interview shape**: a software round with retrieval, agent and evaluation design layered
   on. Your defence at the end of this week is that round.
 
@@ -62,7 +62,8 @@ The document says it plainly: interviewers ask what the feature did for the busi
 - Which tag is published right now, and how you know without reading the workflow.
 - What a rollback took, in minutes, and what the smoke test said before and after.
 - What the feature does for the business, in one sentence with a number in it.
-- What you would change before 10,000 documents a day, and what it would cost.
+- What breaks first at ten times the desk's ticket volume, what you would change, and what it
+  would cost.
 
 ## Read more
 
@@ -70,5 +71,5 @@ Checked September 2026.
 
 - [Google SRE book: Release engineering](https://sre.google/sre-book/release-engineering/) — why a rollback you have never run is not a rollback.
 - [GitHub Docs: manually running a workflow](https://docs.github.com/en/actions/managing-workflow-runs/manually-running-a-workflow) — the `workflow_dispatch` mechanism your rollback uses.
-- [Hugging Face: Docker Spaces](https://huggingface.co/docs/hub/spaces-sdks-docker) — what the deploy workflow pushes to, and the constraints (port 7860, user 1000, sleeping).
+- [GitHub Docs: Working with the Container registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry) — where the release workflow publishes your image, and how to make the package public so a stranger can pull it.
 - [Hamel Husain: Your AI product needs evals](https://hamel.dev/blog/posts/evals/) — the last section, on what to say to stakeholders, is a good model for the write-up.

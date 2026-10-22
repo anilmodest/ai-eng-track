@@ -9,8 +9,9 @@ fakes, the evaluation gate, the attack gate and the records gate.
 | `health_reflects_the_build_the_deploy_wrote` | `GIT_SHA` and `APP_VERSION` from the environment win |
 | `smoke_test_passes_against_the_service` | `scripts/smoke.py` exits 0 in-process |
 | `smoke_test_fails_on_the_wrong_commit` | `--expect-sha deadbeef` exits 1 |
-| `smoke_test_treats_the_kill_switch_as_intended` | a 503 `kill_switch` on extract is a pass, with no model call |
-| `deploy_workflow_supports_rollback_by_ref` | `workflow_dispatch` with a `ref`, the commit stamped into `build_info.py`, and the smoke test gating the publish |
+| `smoke_test_treats_the_kill_switch_as_intended` | a 503 `kill_switch` on ask is a pass, with no model call |
+| `smoke_test_fails_when_everything_declines` | `RELEVANCE_THRESHOLD=1.5` passes the unit tests; the smoke test's `/ask` check exits 1 |
+| `release_workflow_supports_rollback_by_ref` | `workflow_dispatch` with a `ref`, the commit stamped into `build_info.py`, and the smoke test gating the publish |
 | `smoke_script_is_runnable_standalone` | `--help` works |
 | `smoke_test_skips_exercises_that_are_not_built_yet` | a typed 501 counts as skipped, so a week 1 fellow can still release |
 | `a_wrong_answer_still_fails_even_when_other_weeks_are_unbuilt` | skipping the unbuilt is not the same as passing the wrong |

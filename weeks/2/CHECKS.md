@@ -52,7 +52,10 @@ are in your evidence file.
 
 | Test | What must hold |
 | --- | --- |
-| `select_and_compress_*` (four tests) | The given compressor keeps the answering passage, drops the unrelated, trims inside a passage and keeps to the budget |
+| `select_and_compress_keeps_the_passage_that_answers` | The given compressor keeps the passage that answers |
+| `select_and_compress_drops_unrelated_passages` | A passage far below the best score is dropped |
+| `select_and_compress_trims_inside_a_passage` | A sentence sharing no term with the question is trimmed |
+| `select_and_compress_respects_the_budget` | The passages kept fit the character budget |
 | `search_docs_is_described_and_needs_a_version` | The tool and its three arguments are described; the version is required |
 | `search_docs_refuses_malformed_calls_before_searching` | A missing or unknown version, an empty query or an out-of-range k never reaches the search |
 | `search_docs_returns_only_that_versions_pages_with_what_a_citation_needs` | Only that version's pages, each with its file; no results is an answer in words |
