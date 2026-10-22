@@ -171,6 +171,12 @@ Your mentor reads the brief built from the week you merged and gives a one-click
 track, something to probe at session 3, or an offer of an unblock call. The gate and the hub page
 are your feedback this week, and your mentor passes on the hidden evaluation's totals.
 
-## Optional: self-test
+## Quizzes: practice here, a short check on BridgePath
 
-`QUIZ.md` in this folder, with an explanation for every answer. The score stays in your browser.
+`QUIZ.md` in this folder is the practice quiz, with an explanation for every answer. On the hub page
+it is interactive, untimed and repeatable, and the score stays in your browser: it never reaches the
+repository, your mentor or your route. Use it to find what to re-read.
+
+Your mentor also assigns this week's check on BridgePath. It has different questions, some of them
+timed, and you take it once; your mentor sees that score. It asks about what you built and measured
+this week, so the work is the preparation.

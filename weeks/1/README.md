@@ -200,7 +200,12 @@ not your diff during the call.
 
 **This is the one point where your route can change.** After it, it holds.
 
-## Optional: self-test
+## Quizzes: practice here, a short check on BridgePath
 
-`QUIZ.md` in this folder, with an explanation for every answer. On the hub page it is interactive.
-The score stays in your browser: it never reaches the repository, your mentor or your route.
+`QUIZ.md` in this folder is the practice quiz, with an explanation for every answer. On the hub page
+it is interactive, untimed and repeatable, and the score stays in your browser: it never reaches the
+repository, your mentor or your route. Use it to find what to re-read.
+
+Your mentor also assigns this week's check on BridgePath. It has different questions, some of them
+timed, and you take it once; your mentor sees that score. It asks about what you built and measured
+this week, so the work is the preparation.

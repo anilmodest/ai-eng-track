@@ -88,6 +88,12 @@ by the end of the week, that is what an unblock call is for.
 Your route is already in this repository: you made it from your route's template, and `.route`
 says which. Open `weeks/1/CONCEPT.md`.
 
-## Optional: self-test
+## Quizzes: practice here, a short check on BridgePath
 
-`QUIZ.md` in this folder has a few questions on this week's concept, each with an explanation. On the hub page they are interactive and scored, but the score lives only in your browser: it never reaches the repo, your mentor or your route. Use it to find what to re-read.
+`QUIZ.md` in this folder is the practice quiz, with an explanation for every answer. On the hub page
+it is interactive, untimed and repeatable, and the score stays in your browser: it never reaches the
+repository, your mentor or your route. Use it to find what to re-read.
+
+Your mentor also assigns this week's check on BridgePath. It has different questions, some of them
+timed, and you take it once; your mentor sees that score. It asks about what you built and measured
+this week, so the work is the preparation.

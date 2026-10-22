@@ -133,6 +133,12 @@ Your route changes what this week gives you: the page in `routes/` in this folde
    `reflections/week-5.md`.
 3. Open a pull request `week-5 → main`.
 
-## Optional: self-test
+## Quizzes: practice here, a short check on BridgePath
 
-`QUIZ.md` in this folder. The score stays in your browser.
+`QUIZ.md` in this folder is the practice quiz, with an explanation for every answer. On the hub page
+it is interactive, untimed and repeatable, and the score stays in your browser: it never reaches the
+repository, your mentor or your route. Use it to find what to re-read.
+
+Your mentor also assigns this week's check on BridgePath. It has different questions, some of them
+timed, and you take it once; your mentor sees that score. It asks about what you built and measured
+this week, so the work is the preparation.

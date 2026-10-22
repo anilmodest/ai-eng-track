@@ -692,7 +692,7 @@ JS = r"""
     renderIn(document.body);
   }
 
-  // ---- self-test ---------------------------------------------------------------------------
+  // ---- practice quiz -----------------------------------------------------------------------
   const quiz = (cfg.quiz || {});
   const KEY = 'hub.quiz';
   function load() { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } }
@@ -708,7 +708,7 @@ JS = r"""
     if (el) {
       const any = t.of && Object.keys(state).length;
       el.hidden = !any;
-      el.textContent = any ? 'self-test ' + t.got + '/' + t.of + ' (yours only)' : '';
+      el.textContent = any ? 'practice quiz ' + t.got + '/' + t.of + ' (yours only)' : '';
     }
     for (const w in quiz) {
       const sc = document.getElementById('qscore-' + w);
@@ -765,7 +765,7 @@ JS = r"""
     const st = load(); st[w] = { score, done: answered === qs.length, at: Date.now() }; save(st);
     paintTotals(st);
   }
-  // The self-test sits in a card on the week page, so build every one present on load.
+  // The practice quiz sits in a card on the week page, so build every one present on load.
   Object.keys(quiz).forEach(w => { if (document.getElementById('quiz-' + w)) build(w); });
   paintTotals(load());
 })();
@@ -1345,7 +1345,7 @@ def render_week(w: "Week", weeks: list["Week"], repo: str) -> str:
             f'<div class="prose">{w.concept_html}</div>'
         )
     if w.quiz:
-        parts.append(f'<h2><span class="n">Optional</span>self-test</h2>{quiz_html(w)}')
+        parts.append(f'<h2><span class="n">Practice</span>quiz</h2>{quiz_html(w)}')
 
     nav = []
     if w.n > 0:
@@ -1434,10 +1434,14 @@ def page(title: str, body: str, cfg: dict[str, Any] | None = None) -> str:
 def quiz_html(w: Week) -> str:
     return (
         f'<div class="card quiz" id="quiz-{w.n}"></div>'
-        '<p class="fineprint">Answers are kept in this browser only, under <code>hub.quiz</code> '
-        "in local storage. They are never sent anywhere: not to the repository, not to the "
-        "progress export, not to your mentor, and they have no effect on your route. Clearing "
-        "your browser data clears them. The explanations are the point, not the score.</p>"
+        '<p class="fineprint">Practice: untimed and repeatable. Answers are kept in this browser '
+        "only, under <code>hub.quiz</code> in local storage. They are never sent anywhere: not to "
+        "the repository, not to the progress export, not to your mentor, and they have no effect "
+        "on your route. Clearing your browser data clears them. The explanations are the point, "
+        "not the score.</p>"
+        '<p class="fineprint">Your mentor also assigns this week\'s check on BridgePath: different '
+        "questions, some of them timed, taken once, and your mentor sees that score. It asks about "
+        "what you built and measured this week, so the work is the preparation.</p>"
     )
 
 
